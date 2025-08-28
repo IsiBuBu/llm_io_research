@@ -1,4 +1,3 @@
-# config.py
 from dataclasses import dataclass, field
 from typing import Dict, List, Any, Optional
 
@@ -23,17 +22,21 @@ class GameConfig:
     discount_factor: float = 0.95
     max_retries: int = 3
     num_games: int = 20  # Number of games to run per configuration
+    
+    # Override constants for specific configurations
+    market_size_override: Optional[int] = None
+    demand_intercept_override: Optional[float] = None
+    market_value_override: Optional[int] = None
 
 @dataclass
 class ExperimentConfig:
-    """Configuration for experimental setup"""
-    challenger_models: List[ModelConfig]
+    """Configuration for experimental setup - always 1 challenger vs (n-1) defenders"""
+    challenger_model: ModelConfig
     defender_model: ModelConfig
-    num_defenders: int = 2  # Will be adjusted based on number_of_players
     
     def get_num_defenders(self, total_players: int) -> int:
-        """Calculate number of defenders based on total players"""
-        return max(1, total_players - 1)  # Always leave 1 spot for challenger
+        """Number of defenders = total_players - 1 (challenger takes 1 slot)"""
+        return max(1, total_players - 1)
 
 @dataclass
 class PlayerResult:
@@ -41,7 +44,6 @@ class PlayerResult:
     player_id: str
     profit: float
     actions: List[Dict[str, Any]] = field(default_factory=list)
-    reasoning: List[str] = field(default_factory=list)
     win: bool = False
 
 @dataclass
@@ -49,38 +51,115 @@ class GameResult:
     """Results for a complete game"""
     game_name: str
     config: GameConfig
-    experiment_config: ExperimentConfig
     players: List[PlayerResult]
     total_industry_profit: float
+    experiment_config: Optional[ExperimentConfig] = None
     market_price: Optional[float] = None
     additional_metrics: Dict[str, float] = field(default_factory=dict)
 
 class GameConstants:
-    """Economic constants for all games"""
+    """Economic constants for all games - configuration-dependent scaling"""
     
-    # Salop (1979) Constants
-    SALOP_MARGINAL_COST = 8
-    SALOP_FIXED_COST = 100
-    SALOP_MARKET_SIZE = 1000
-    SALOP_TRANSPORT_COST = 0.5
+    # Base constants (per player or fixed)
+    _SALOP_BASE_MARKET_SIZE = 300  # Per player
+    _SALOP_MARGINAL_COST = 8       # Fixed per unit
+    _SALOP_FIXED_COST = 100        # Fixed per firm
+    _SALOP_TRANSPORT_COST = 0.5    # Fixed per unit distance
     
-    # Spulber (1995) Constants
-    SPULBER_MARGINAL_COST = 8
-    SPULBER_MARKET_VALUE = 1000
-    SPULBER_RIVAL_COST_MEAN = 10
-    SPULBER_RIVAL_COST_STD = 2
+    _SPULBER_MARGINAL_COST = 8     # Fixed per unit
+    _SPULBER_MARKET_VALUE = 1000   # Fixed total contract value (doesn't scale)
+    _SPULBER_RIVAL_COST_MEAN = 10  # Fixed
+    _SPULBER_RIVAL_COST_STD = 2    # Fixed
     
-    # Green & Porter (1984) Constants
-    GP_MARGINAL_COST = 20
-    GP_DEMAND_INTERCEPT = 100
-    GP_DEMAND_SHOCK_STD = 5
+    _GP_BASE_DEMAND_INTERCEPT = 35 # Per player (scales total market)
+    _GP_MARGINAL_COST = 20         # Fixed per unit
+    _GP_DEMAND_SHOCK_STD = 5       # Fixed
     
-    # Athey & Bagwell (2008) Constants
-    AB_HIGH_COST = 25
-    AB_LOW_COST = 15
-    AB_MARKET_PRICE = 50
-    AB_MARKET_SIZE = 1000
-    AB_COST_PERSISTENCE = 0.7
+    _AB_BASE_MARKET_SIZE = 350     # Per player
+    _AB_HIGH_COST = 25             # Fixed per unit
+    _AB_LOW_COST = 15              # Fixed per unit
+    _AB_MARKET_PRICE = 50          # Fixed per unit
+    _AB_COST_PERSISTENCE = 0.7     # Fixed probability
+    
+    def __init__(self, config: GameConfig):
+        """Initialize constants based on game configuration"""
+        self.config = config
+    
+    @property
+    def SALOP_MARGINAL_COST(self) -> float:
+        return self._SALOP_MARGINAL_COST
+    
+    @property
+    def SALOP_FIXED_COST(self) -> float:
+        return self._SALOP_FIXED_COST
+    
+    @property
+    def SALOP_TRANSPORT_COST(self) -> float:
+        return self._SALOP_TRANSPORT_COST
+    
+    @property
+    def SALOP_MARKET_SIZE(self) -> int:
+        """Market size scales with number of players unless overridden"""
+        if self.config.market_size_override is not None:
+            return self.config.market_size_override
+        return self._SALOP_BASE_MARKET_SIZE * self.config.number_of_players
+    
+    @property
+    def SPULBER_MARGINAL_COST(self) -> float:
+        return self._SPULBER_MARGINAL_COST
+    
+    @property
+    def SPULBER_RIVAL_COST_MEAN(self) -> float:
+        return self._SPULBER_RIVAL_COST_MEAN
+    
+    @property
+    def SPULBER_RIVAL_COST_STD(self) -> float:
+        return self._SPULBER_RIVAL_COST_STD
+    
+    @property
+    def SPULBER_MARKET_VALUE(self) -> int:
+        """Market value stays fixed (same contract, more bidders) unless overridden"""
+        if self.config.market_value_override is not None:
+            return self.config.market_value_override
+        return self._SPULBER_MARKET_VALUE
+    
+    @property
+    def GP_MARGINAL_COST(self) -> float:
+        return self._GP_MARGINAL_COST
+    
+    @property
+    def GP_DEMAND_SHOCK_STD(self) -> float:
+        return self._GP_DEMAND_SHOCK_STD
+    
+    @property
+    def GP_DEMAND_INTERCEPT(self) -> float:
+        """Demand intercept scales with players (bigger total market) unless overridden"""
+        if self.config.demand_intercept_override is not None:
+            return self.config.demand_intercept_override
+        return self._GP_BASE_DEMAND_INTERCEPT * self.config.number_of_players
+    
+    @property
+    def AB_HIGH_COST(self) -> float:
+        return self._AB_HIGH_COST
+    
+    @property
+    def AB_LOW_COST(self) -> float:
+        return self._AB_LOW_COST
+    
+    @property
+    def AB_MARKET_PRICE(self) -> float:
+        return self._AB_MARKET_PRICE
+    
+    @property
+    def AB_COST_PERSISTENCE(self) -> float:
+        return self._AB_COST_PERSISTENCE
+    
+    @property
+    def AB_MARKET_SIZE(self) -> int:
+        """Market size scales with number of players unless overridden"""
+        if self.config.market_size_override is not None:
+            return self.config.market_size_override
+        return self._AB_BASE_MARKET_SIZE * self.config.number_of_players
 
 # Available Gemini models with thinking capabilities
 AVAILABLE_MODELS = {
@@ -119,6 +198,12 @@ AVAILABLE_MODELS = {
         thinking_available=True,
         thinking_enabled=True,
         display_name='gemini-2.0-flash-thinking'
+    ),
+    'gemini-2.0-flash-lite': ModelConfig(
+        model_name='gemini-2.0-flash-lite',
+        thinking_available=False,
+        thinking_enabled=False,
+        display_name='gemini-2.0-flash-lite'
     )
 }
 
@@ -127,41 +212,57 @@ class ExperimentPresets:
     """Pre-configured experimental setups for different research questions"""
     
     @staticmethod
-    def thinking_vs_no_thinking() -> ExperimentConfig:
-        """Compare models with and without thinking enabled"""
-        return ExperimentConfig(
-            challenger_models=[
-                AVAILABLE_MODELS['gemini-2.5-flash'],
-                AVAILABLE_MODELS['gemini-2.5-flash-thinking'],
-                AVAILABLE_MODELS['gemini-2.0-flash'],
-                AVAILABLE_MODELS['gemini-2.0-flash-thinking']
-            ],
-            defender_model=AVAILABLE_MODELS['gemini-2.5-flash']  # Consistent baseline
-        )
-    
-    @staticmethod
-    def model_comparison() -> ExperimentConfig:
-        """Compare different model architectures"""
-        return ExperimentConfig(
-            challenger_models=[
-                AVAILABLE_MODELS['gemini-2.5-pro'],
-                AVAILABLE_MODELS['gemini-2.5-flash'],
-                AVAILABLE_MODELS['gemini-2.5-flash-lite'],
-                AVAILABLE_MODELS['gemini-2.0-flash']
-            ],
-            defender_model=AVAILABLE_MODELS['gemini-2.5-flash']
-        )
-    
-    @staticmethod
-    def custom_setup(challenger_model_keys: List[str], 
-                    defender_model_key: str) -> ExperimentConfig:
-        """Create custom experimental setup"""
-        challenger_models = [AVAILABLE_MODELS[key] for key in challenger_model_keys]
-        defender_model = AVAILABLE_MODELS[defender_model_key]
+    def all_models_vs_baseline() -> List[ExperimentConfig]:
+        """All available models as challengers vs consistent defender baseline"""
+        challenger_keys = [
+            'gemini-2.5-pro',
+            'gemini-2.5-flash',
+            'gemini-2.5-flash-thinking', 
+            'gemini-2.5-flash-lite',
+            'gemini-2.0-flash',
+            'gemini-2.0-flash-thinking',
+            'gemini-2.0-flash-lite'
+        ]
+        baseline_defender = AVAILABLE_MODELS['gemini-2.5-flash']
         
+        return [
+            ExperimentConfig(
+                challenger_model=AVAILABLE_MODELS[key],
+                defender_model=baseline_defender
+            ) for key in challenger_keys
+        ]
+    
+    @staticmethod
+    def thinking_comparison() -> List[ExperimentConfig]:
+        """Compare models with and without thinking vs baseline"""
+        configs = []
+        baseline_defender = AVAILABLE_MODELS['gemini-2.5-flash']
+        
+        thinking_pairs = [
+            ('gemini-2.5-flash', 'gemini-2.5-flash-thinking'),
+            ('gemini-2.0-flash', 'gemini-2.0-flash-thinking')
+        ]
+        
+        for no_thinking, with_thinking in thinking_pairs:
+            configs.extend([
+                ExperimentConfig(
+                    challenger_model=AVAILABLE_MODELS[no_thinking],
+                    defender_model=baseline_defender
+                ),
+                ExperimentConfig(
+                    challenger_model=AVAILABLE_MODELS[with_thinking], 
+                    defender_model=baseline_defender
+                )
+            ])
+        
+        return configs
+    
+    @staticmethod
+    def single_challenger(challenger_key: str, defender_key: str = 'gemini-2.5-flash') -> ExperimentConfig:
+        """Single challenger vs defender configuration"""
         return ExperimentConfig(
-            challenger_models=challenger_models,
-            defender_model=defender_model
+            challenger_model=AVAILABLE_MODELS[challenger_key],
+            defender_model=AVAILABLE_MODELS[defender_key]
         )
 
 # Game-specific configurations

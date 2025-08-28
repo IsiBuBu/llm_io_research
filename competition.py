@@ -9,7 +9,7 @@ from games.salop_game import SalopGame
 from games.spulber_game import SpulberGame
 from games.green_porter_game import GreenPorterGame
 from games.athey_bagwell_game import AtheyBagwellGame
-from metrics.comprehensive_metrics import ComprehensiveMetricsCalculator
+from games.metrics.comprehensive_metrics import ComprehensiveMetricsCalculator
 
 class GameCompetition:
     def __init__(self):
@@ -42,13 +42,12 @@ class GameCompetition:
                 player_id=player_id,
                 profit=0.0,
                 actions=[],
-                reasoning=[]
+                win=False
             ))
         
         # Run game rounds
         for round_num in range(1, config.number_of_rounds + 1):
             round_actions = {}
-            round_reasoning = {}
             
             # Get decisions from all agents
             for player_id, agent in all_agents.items():
@@ -60,12 +59,10 @@ class GameCompetition:
                         decision = self._get_default_action(game_name)
                     
                     round_actions[player_id] = decision
-                    round_reasoning[player_id] = decision.get('reasoning', '')
                     
                 except Exception as e:
                     self.logger.error(f"Error from player {player_id}: {e}")
                     round_actions[player_id] = self._get_default_action(game_name)
-                    round_reasoning[player_id] = f"Error: {str(e)}"
             
             # Calculate payoffs
             try:
@@ -89,7 +86,6 @@ class GameCompetition:
             for player_id in all_agents.keys():
                 player_result = next(pr for pr in player_results if pr.player_id == player_id)
                 player_result.actions.append(round_actions.get(player_id, {}))
-                player_result.reasoning.append(round_reasoning.get(player_id, ''))
                 
                 round_profit = round_payoffs.get(player_id, 0)
                 discounted_profit = round_profit * (config.discount_factor ** (round_num - 1))

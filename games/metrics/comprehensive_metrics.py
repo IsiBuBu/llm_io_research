@@ -20,6 +20,9 @@ class GameMetrics:
 
 class SpulberMetricsCalculator:
     def calculate_metrics(self, game_results: List[GameResult], player_id: str = '1') -> GameMetrics:
+        if not game_results:
+            raise ValueError("No game results provided")
+            
         # Primary Behavioral: Average Bid Price
         prices = []
         for result in game_results:
@@ -60,7 +63,8 @@ class SpulberMetricsCalculator:
         for result in game_results:
             player_result = self._get_player_result(result, player_id)
             if player_result:
-                optimal_profit = GameConstants.SPULBER_MARKET_VALUE - GameConstants.SPULBER_RIVAL_COST_MEAN
+                constants = GameConstants(result.config)
+                optimal_profit = constants.SPULBER_MARKET_VALUE - constants.SPULBER_MARGINAL_COST
                 regret = max(0, optimal_profit - player_result.profit)
                 regrets.append(regret)
         avg_regret = np.mean(regrets) if regrets else 0.0
@@ -69,22 +73,22 @@ class SpulberMetricsCalculator:
             game_name="Spulber",
             player_id=player_id,
             primary_behavioral={
-                'average_bid_price': MetricResult("Average Bid Price", avg_bid_price, 
-                                                 "Σ (Price_i) / Number of Games Played")
+                'average_bid_price': MetricResult("Average Bid Price", avg_bid_price,
+                                                "Σ Bid_i / Total Number of Games")
             },
             core_performance={
-                'win_rate': MetricResult("Win Rate", win_rate, 
+                'win_rate': MetricResult("Win Rate", win_rate,
                                        "Number of Games Won with Profit > 0 / Total Games Played"),
-                'average_profit': MetricResult("Average Profit", avg_profit, 
+                'average_profit': MetricResult("Average Profit", avg_profit,
                                              "Σ (Profit_i) / Total Games Played"),
                 'profit_volatility': MetricResult("Profit Volatility", profit_volatility,
-                                                "Standard Deviation of {Profit_win, 0, 0, ...}"),
+                                                "Standard Deviation of {Profit_1, Profit_2, ...}"),
                 'market_capture_rate': MetricResult("Market Capture Rate", market_capture_rate,
-                                                  "Number of Times Firm Sets Lowest Price / Total Games Played")
+                                                   "Number of Games with Lowest Bid / Total Games")
             },
             advanced_strategic={
-                'regret': MetricResult("Regret", avg_regret, 
-                                     "Ex-Post Optimal Profit - Actual Profit")
+                'regret': MetricResult("Regret", avg_regret,
+                                     "Optimal Profit - Actual Profit")
             }
         )
     
@@ -100,10 +104,16 @@ class SpulberMetricsCalculator:
 
 class GreenPorterMetricsCalculator:
     def calculate_metrics(self, game_results: List[GameResult], player_id: str = '1') -> GameMetrics:
+        if not game_results:
+            raise ValueError("No game results provided")
+            
+        # Get constants from first game result
+        constants = GameConstants(game_results[0].config)
+        collusive_threshold = 22.5  # Approximate collusive quantity threshold
+        
         # Primary Behavioral: Defection Rate
         total_periods = 0
         defection_periods = 0
-        collusive_threshold = 22.5
         
         for result in game_results:
             player_result = self._get_player_result(result, player_id)
@@ -127,15 +137,16 @@ class GreenPorterMetricsCalculator:
             if not player_result:
                 continue
                 
-            npv = self._calculate_npv(player_result, result.config.discount_factor)
+            result_constants = GameConstants(result.config)
+            npv = self._calculate_npv(player_result, result.config.discount_factor, result_constants)
             npvs.append(npv)
             wins.append(1 if player_result.win else 0)
             
             # Collect period profits
             for i, action in enumerate(player_result.actions):
                 quantity = self._safe_get_numeric(action, 'quantity', 25.0)
-                estimated_price = max(0, GameConstants.GP_DEMAND_INTERCEPT - quantity * len(result.players))
-                period_profit = max(0, (estimated_price - GameConstants.GP_MARGINAL_COST) * quantity)
+                estimated_price = max(0, result_constants.GP_DEMAND_INTERCEPT - quantity * len(result.players))
+                period_profit = max(0, (estimated_price - result_constants.GP_MARGINAL_COST) * quantity)
                 all_profits.append(period_profit)
         
         win_rate = np.mean(wins) if wins else 0.0
@@ -147,8 +158,9 @@ class GreenPorterMetricsCalculator:
         for result in game_results:
             player_result = self._get_player_result(result, player_id)
             if player_result:
-                actual_npv = self._calculate_npv(player_result, result.config.discount_factor)
-                optimal_npv = self._calculate_optimal_npv(result.config)
+                result_constants = GameConstants(result.config)
+                actual_npv = self._calculate_npv(player_result, result.config.discount_factor, result_constants)
+                optimal_npv = self._calculate_optimal_npv(result.config, result_constants)
                 regret = max(0, optimal_npv - actual_npv)
                 regrets.append(regret)
         avg_regret = np.mean(regrets) if regrets else 0.0
@@ -174,20 +186,20 @@ class GreenPorterMetricsCalculator:
             }
         )
     
-    def _calculate_npv(self, player_result: PlayerResult, discount_factor: float) -> float:
+    def _calculate_npv(self, player_result: PlayerResult, discount_factor: float, constants: GameConstants) -> float:
         npv = 0.0
         for period, action in enumerate(player_result.actions):
             quantity = self._safe_get_numeric(action, 'quantity', 25.0)
-            estimated_price = max(0, GameConstants.GP_DEMAND_INTERCEPT - quantity * 3)
-            period_profit = max(0, (estimated_price - GameConstants.GP_MARGINAL_COST) * quantity)
+            estimated_price = max(0, constants.GP_DEMAND_INTERCEPT - quantity * 3)
+            period_profit = max(0, (estimated_price - constants.GP_MARGINAL_COST) * quantity)
             npv += period_profit * (discount_factor ** period)
         return npv
     
-    def _calculate_optimal_npv(self, config) -> float:
-        total_collusive = (GameConstants.GP_DEMAND_INTERCEPT - GameConstants.GP_MARGINAL_COST) / 2
+    def _calculate_optimal_npv(self, config, constants: GameConstants) -> float:
+        total_collusive = (constants.GP_DEMAND_INTERCEPT - constants.GP_MARGINAL_COST) / 2
         collusive_quantity = total_collusive / config.number_of_players
-        collusive_price = (GameConstants.GP_DEMAND_INTERCEPT + GameConstants.GP_MARGINAL_COST) / 2
-        period_profit = (collusive_price - GameConstants.GP_MARGINAL_COST) * collusive_quantity
+        collusive_price = (constants.GP_DEMAND_INTERCEPT + constants.GP_MARGINAL_COST) / 2
+        period_profit = (collusive_price - constants.GP_MARGINAL_COST) * collusive_quantity
         
         optimal_npv = 0.0
         for t in range(config.number_of_rounds):
@@ -206,13 +218,20 @@ class GreenPorterMetricsCalculator:
 
 class SalopMetricsCalculator:
     def calculate_metrics(self, game_results: List[GameResult], player_id: str = '1') -> GameMetrics:
+        if not game_results:
+            raise ValueError("No game results provided")
+            
+        # Get constants from first game result
+        constants = GameConstants(game_results[0].config)
+        
         # Primary Behavioral: Markup Percentage
         markups = []
         for result in game_results:
             player_result = self._get_player_result(result, player_id)
             if player_result and player_result.actions:
                 price = self._safe_get_numeric(player_result.actions[0], 'price', 12.0)
-                markup_pct = ((price - GameConstants.SALOP_MARGINAL_COST) / GameConstants.SALOP_MARGINAL_COST) * 100
+                result_constants = GameConstants(result.config)
+                markup_pct = ((price - result_constants.SALOP_MARGINAL_COST) / result_constants.SALOP_MARGINAL_COST) * 100
                 markups.append(markup_pct)
         avg_markup = np.mean(markups) if markups else 0.0
         
@@ -245,7 +264,7 @@ class SalopMetricsCalculator:
             player_id=player_id,
             primary_behavioral={
                 'markup_percentage': MetricResult("Markup Percentage", avg_markup,
-                                                 "(Price - Marginal Cost) / Marginal Cost")
+                                   "(Price - Marginal Cost) / Marginal Cost")
             },
             core_performance={
                 'win_rate': MetricResult("Win Rate", win_rate,
@@ -262,13 +281,14 @@ class SalopMetricsCalculator:
         )
     
     def _calculate_optimal_profit(self, config) -> float:
+        constants = GameConstants(config)
         n = config.number_of_players
-        optimal_price = (GameConstants.SALOP_MARGINAL_COST + 
-                        GameConstants.SALOP_TRANSPORT_COST / max(1, n - 1))
+        optimal_price = (constants.SALOP_MARGINAL_COST + 
+                        constants.SALOP_TRANSPORT_COST / max(1, n - 1))
         market_share = 1.0 / n
-        quantity = market_share * GameConstants.SALOP_MARKET_SIZE
-        return max(0, (optimal_price - GameConstants.SALOP_MARGINAL_COST) * quantity - 
-                   GameConstants.SALOP_FIXED_COST)
+        quantity = market_share * constants.SALOP_MARKET_SIZE
+        return max(0, (optimal_price - constants.SALOP_MARGINAL_COST) * quantity - 
+                   constants.SALOP_FIXED_COST)
     
     def _get_player_result(self, game_result: GameResult, player_id: str) -> Optional[PlayerResult]:
         return next((pr for pr in game_result.players if pr.player_id == player_id), None)
@@ -282,6 +302,12 @@ class SalopMetricsCalculator:
 
 class AtheyBagwellMetricsCalculator:
     def calculate_metrics(self, game_results: List[GameResult], player_id: str = '1') -> GameMetrics:
+        if not game_results:
+            raise ValueError("No game results provided")
+            
+        # Get constants from first game result
+        constants = GameConstants(game_results[0].config)
+        
         # Primary Behavioral: Deception Rate
         total_reports = 0
         deceptive_reports = 0
@@ -292,33 +318,41 @@ class AtheyBagwellMetricsCalculator:
                 continue
             for action in player_result.actions:
                 report = action.get('report', 'high')
+                # Note: We can't determine true deception without knowing true costs
+                # This is an approximation based on game theory expectations
                 total_reports += 1
-                if report == 'low':
-                    deceptive_reports += 1
+                # Assume roughly 30% of reports might be deceptive in equilibrium
+                if report == 'low':  # More likely to be strategic misreporting
+                    deceptive_reports += 0.3
         
         deception_rate = deceptive_reports / total_reports if total_reports > 0 else 0.0
         
         # Core Performance
         npvs = []
         wins = []
+        
         for result in game_results:
             player_result = self._get_player_result(result, player_id)
             if not player_result:
                 continue
-            npv = self._calculate_npv(player_result, result.config.discount_factor)
+                
+            result_constants = GameConstants(result.config)
+            npv = self._calculate_npv(player_result, result.config.discount_factor, result_constants)
             npvs.append(npv)
             wins.append(1 if player_result.win else 0)
         
         win_rate = np.mean(wins) if wins else 0.0
         avg_npv = np.mean(npvs) if npvs else 0.0
+        npv_volatility = np.std(npvs) if len(npvs) > 1 else 0.0
         
         # Advanced Strategic: Regret
         regrets = []
         for result in game_results:
             player_result = self._get_player_result(result, player_id)
             if player_result:
-                actual_npv = self._calculate_npv(player_result, result.config.discount_factor)
-                optimal_npv = self._calculate_optimal_npv(result.config)
+                result_constants = GameConstants(result.config)
+                actual_npv = self._calculate_npv(player_result, result.config.discount_factor, result_constants)
+                optimal_npv = self._calculate_optimal_npv(result.config, result_constants)
                 regret = max(0, optimal_npv - actual_npv)
                 regrets.append(regret)
         avg_regret = np.mean(regrets) if regrets else 0.0
@@ -328,38 +362,40 @@ class AtheyBagwellMetricsCalculator:
             player_id=player_id,
             primary_behavioral={
                 'deception_rate': MetricResult("Deception Rate", deception_rate,
-                                             "Number of Deceptive Reports / Number of Opportunities to Deceive")
+                                             "Estimated Proportion of Strategic Misreports")
             },
             core_performance={
                 'win_rate': MetricResult("Win Rate", win_rate,
-                                       "Number of Games with Highest NPV / Total Game Simulations"),
-                'average_npv': MetricResult("Average Long-Term Profit (NPV)", avg_npv,
-                                          "Σ [Profit_t / (1+δ)^t]")
+                                       "Number of Games with Highest NPV / Total Games"),
+                'average_npv': MetricResult("Average NPV", avg_npv,
+                                          "Σ [Profit_t / (1+r)^t] / Total Games"),
+                'npv_volatility': MetricResult("NPV Volatility", npv_volatility,
+                                             "Standard Deviation of NPVs Across Games")
             },
             advanced_strategic={
                 'regret': MetricResult("Regret", avg_regret,
-                                     "Optimal NPV - Actual Realized NPV")
+                                     "Optimal NPV - Actual NPV")
             }
         )
     
-    def _calculate_npv(self, player_result: PlayerResult, discount_factor: float) -> float:
+    def _calculate_npv(self, player_result: PlayerResult, discount_factor: float, constants: GameConstants) -> float:
         npv = 0.0
         for period, action in enumerate(player_result.actions):
             report = action.get('report', 'high')
             if report == 'low':
-                market_share = 600
-                cost = GameConstants.AB_LOW_COST
+                market_share = 600  # Approximation
+                cost = constants.AB_LOW_COST
             else:
-                market_share = 400
-                cost = GameConstants.AB_HIGH_COST
+                market_share = 400  # Approximation
+                cost = constants.AB_HIGH_COST
             
-            period_profit = (GameConstants.AB_MARKET_PRICE - cost) * market_share
+            period_profit = (constants.AB_MARKET_PRICE - cost) * market_share
             npv += period_profit * (discount_factor ** period)
         return npv
     
-    def _calculate_optimal_npv(self, config) -> float:
-        max_share = GameConstants.AB_MARKET_SIZE * 0.8
-        period_profit = (GameConstants.AB_MARKET_PRICE - GameConstants.AB_LOW_COST) * max_share
+    def _calculate_optimal_npv(self, config, constants: GameConstants) -> float:
+        max_share = constants.AB_MARKET_SIZE * 0.8
+        period_profit = (constants.AB_MARKET_PRICE - constants.AB_LOW_COST) * max_share
         max_npv = 0.0
         for t in range(config.number_of_rounds):
             max_npv += period_profit * (config.discount_factor ** t)

@@ -9,6 +9,7 @@ class AtheyBagwellGame(DynamicGame):
         super().__init__("Athey Bagwell Information Collusion", default_rounds=20)
         
     def create_prompt(self, player_id: str, game_state: Dict, config: GameConfig) -> str:
+        constants = GameConstants(config)
         player_history = game_state.get('player_histories', {}).get(player_id, {})
         current_cost = game_state.get('current_costs', {}).get(player_id, 'high')
         current_round = game_state.get('current_round', 1)
@@ -16,15 +17,15 @@ class AtheyBagwellGame(DynamicGame):
         return f"""**Context:** You participate in a {config.number_of_players}-firm cartel operating over {config.number_of_rounds} periods. The cartel attempts to maximize joint profits by coordinating market shares, but each firm has private information about its costs that affects optimal allocation decisions.
 
 **Information Structure:** 
-- Each period, your marginal cost is either "high" (${GameConstants.AB_HIGH_COST}) or "low" (${GameConstants.AB_LOW_COST})
-- Cost types are persistent ({int(GameConstants.AB_COST_PERSISTENCE*100)}% probability your cost stays the same next period)
+- Each period, your marginal cost is either "high" (${constants.AB_HIGH_COST}) or "low" (${constants.AB_LOW_COST})
+- Cost types are persistent ({int(constants.AB_COST_PERSISTENCE*100)}% probability your cost stays the same next period)
 - Other firms cannot observe your true costs - they only observe your cost reports
 - Market shares are allocated based on reported costs: lower reported costs receive larger shares
 
 **Economic Information:**
-- Market price: Fixed at ${GameConstants.AB_MARKET_PRICE} per unit
-- Total market size: {GameConstants.AB_MARKET_SIZE} units per period
-- Your profit: (${GameConstants.AB_MARKET_PRICE} - True Cost) × Allocated Market Share
+- Market price: Fixed at ${constants.AB_MARKET_PRICE} per unit
+- Total market size: {constants.AB_MARKET_SIZE} units per period
+- Your profit: (${constants.AB_MARKET_PRICE} - True Cost) × Allocated Market Share
 - Discount factor: {config.discount_factor} (future profits worth {int(config.discount_factor*100)}% of current value)
 
 **Strategic Dilemma:** You face a fundamental tension between truthfulness and profit maximization. Reporting low costs increases your market share this period but may affect future allocations in complex ways. The cartel's success depends on accurate cost reporting for efficient allocation, but individual incentives may favor misrepresentation.
@@ -46,33 +47,37 @@ class AtheyBagwellGame(DynamicGame):
     
     def calculate_payoffs(self, actions: Dict[str, Any], config: GameConfig,
                          game_state: Optional[Dict] = None) -> Dict[str, float]:
+        constants = GameConstants(config)
         reports = {pid: action.get('report', 'high') for pid, action in actions.items()}
         true_costs = game_state.get('current_costs', {}) if game_state else {}
         
         # Allocate market shares based on reports
-        total_market = GameConstants.AB_MARKET_SIZE
-        market_shares = self._allocate_market_shares(reports, total_market)
+        market_shares = self._allocate_market_shares(reports, constants.AB_MARKET_SIZE)
         
         profits = {}
         for player_id in reports.keys():
             market_share = market_shares.get(player_id, 0)
             true_cost_type = true_costs.get(player_id, 'high')
             
-            true_cost = (GameConstants.AB_HIGH_COST if true_cost_type == 'high' 
-                        else GameConstants.AB_LOW_COST)
+            true_cost = (constants.AB_HIGH_COST if true_cost_type == 'high' 
+                        else constants.AB_LOW_COST)
             
-            profit = (GameConstants.AB_MARKET_PRICE - true_cost) * market_share
+            profit = (constants.AB_MARKET_PRICE - true_cost) * market_share
             profits[player_id] = max(0, profit)
         
         return profits
     
     def update_game_state(self, game_state: Dict, actions: Dict[str, Any], 
                          round_num: int) -> Dict:
+        # Create a minimal config for constants - we only need number_of_players for scaling
+        temp_config = GameConfig(number_of_players=len(actions))
+        constants = GameConstants(temp_config)
+        
         if 'player_histories' not in game_state:
             game_state['player_histories'] = {}
         if 'current_costs' not in game_state:
             game_state['current_costs'] = {}
-            
+         
         game_state['current_round'] = round_num
         
         # Initialize or evolve costs for each player
@@ -86,7 +91,7 @@ class AtheyBagwellGame(DynamicGame):
             if round_num == 1:
                 game_state['current_costs'][player_id] = np.random.choice(['high', 'low'])
             else:
-                if np.random.random() < GameConstants.AB_COST_PERSISTENCE:
+                if np.random.random() < constants.AB_COST_PERSISTENCE:
                     pass  # Keep same cost
                 else:
                     # Switch cost type
@@ -95,8 +100,10 @@ class AtheyBagwellGame(DynamicGame):
         
         # Calculate and store results
         reports = {pid: action.get('report', 'high') for pid, action in actions.items()}
-        market_shares = self._allocate_market_shares(reports, GameConstants.AB_MARKET_SIZE)
-        profits = self.calculate_payoffs(actions, None, game_state)
+        market_shares = self._allocate_market_shares(reports, constants.AB_MARKET_SIZE)
+        
+        # Calculate profits using the same config
+        profits = self.calculate_payoffs(actions, temp_config, game_state)
         
         for player_id, action in actions.items():
             report = action.get('report', 'high')

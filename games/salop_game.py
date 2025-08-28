@@ -9,18 +9,19 @@ class SalopGame(StaticGame):
         super().__init__("Salop Spatial Competition")
     
     def create_prompt(self, player_id: str, game_state: Dict, config: GameConfig) -> str:
+        constants = GameConstants(config)
         neighbors = self._get_neighbors(player_id, config.number_of_players)
         
         return f"""**Context:** You are Firm {player_id} in a circular market with {config.number_of_players} competing firms. Each firm is located at a fixed position on a circle, and customers are distributed evenly around the circle. Customers will buy from the firm offering the lowest total cost (price + transportation cost to reach that firm).
 
-**Market Dynamics:** Your market share depends critically on your price relative to your immediate neighbors on the circle. If you price too high, customers will switch to nearby competitors. If you price too low, you may capture more market share but sacrifice profit margins. The total market size is fixed at {GameConstants.SALOP_MARKET_SIZE} customers.
+**Market Dynamics:** Your market share depends critically on your price relative to your immediate neighbors on the circle. If you price too high, customers will switch to nearby competitors. If you price too low, you may capture more market share but sacrifice profit margins. The total market size is fixed at {constants.SALOP_MARKET_SIZE} customers.
 
-**Your Position:** You are located between Firm {neighbors[0]} and Firm {neighbors[1]}. Transportation costs are linear - customers pay ${GameConstants.SALOP_TRANSPORT_COST} per unit of distance to reach any firm.
+**Your Position:** You are located between Firm {neighbors[0]} and Firm {neighbors[1]}. Transportation costs are linear - customers pay ${constants.SALOP_TRANSPORT_COST} per unit of distance to reach any firm.
 
 **Economic Information:**
-- Your marginal cost: ${GameConstants.SALOP_MARGINAL_COST} per unit
-- Your fixed cost: ${GameConstants.SALOP_FIXED_COST} per period
-- Profit calculation: (Price - ${GameConstants.SALOP_MARGINAL_COST}) × Quantity Sold - ${GameConstants.SALOP_FIXED_COST}
+- Your marginal cost: ${constants.SALOP_MARGINAL_COST} per unit
+- Your fixed cost: ${constants.SALOP_FIXED_COST} per period
+- Profit calculation: (Price - ${constants.SALOP_MARGINAL_COST}) × Quantity Sold - ${constants.SALOP_FIXED_COST}
 - Market demand is perfectly inelastic (customers always buy one unit)
 
 **Strategic Considerations:** In this market, you face a fundamental trade-off between market share and profit margins. Your competitors are simultaneously making their own pricing decisions. Consider how your pricing strategy affects both your immediate neighbors and the overall market equilibrium.
@@ -33,6 +34,7 @@ class SalopGame(StaticGame):
     
     def calculate_payoffs(self, actions: Dict[str, Any], config: GameConfig, 
                          game_state: Optional[Dict] = None) -> Dict[str, float]:
+        constants = GameConstants(config)
         prices = {pid: self._safe_get_numeric(action, 'price', 12.0) 
                  for pid, action in actions.items()}
         
@@ -53,21 +55,21 @@ class SalopGame(StaticGame):
             if left_price == price:
                 left_boundary = 0.5 / n
             else:
-                left_boundary = (left_price - price) / (2 * GameConstants.SALOP_TRANSPORT_COST) + (1/n)/2
+                left_boundary = (left_price - price) / (2 * constants.SALOP_TRANSPORT_COST) + (1/n)/2
             
             if right_price == price:
                 right_boundary = 0.5 / n
             else:
-                right_boundary = (right_price - price) / (2 * GameConstants.SALOP_TRANSPORT_COST) + (1/n)/2
+                right_boundary = (right_price - price) / (2 * constants.SALOP_TRANSPORT_COST) + (1/n)/2
             
             left_boundary = max(0, min(1/n, left_boundary))
             right_boundary = max(0, min(1/n, right_boundary))
             
             market_share = left_boundary + right_boundary
-            quantity_sold = market_share * GameConstants.SALOP_MARKET_SIZE
+            quantity_sold = market_share * constants.SALOP_MARKET_SIZE
             
-            profit = ((price - GameConstants.SALOP_MARGINAL_COST) * quantity_sold - 
-                     GameConstants.SALOP_FIXED_COST)
+            profit = ((price - constants.SALOP_MARGINAL_COST) * quantity_sold - 
+                     constants.SALOP_FIXED_COST)
             profits[player_id] = max(0, profit)
         
         return profits
