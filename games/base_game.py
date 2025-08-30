@@ -3,7 +3,7 @@ import json
 import re
 import numpy as np
 from abc import ABC, abstractmethod
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional, Tuple, Union
 from dataclasses import asdict
 
 from config import GameConfig, GameConstants, PlayerResult
@@ -431,11 +431,15 @@ class EconomicGame(ABC):
             }
             enhanced_actions.append(enhanced_action)
         
+        # Determine player role
+        player_role = "challenger" if player_id == "challenger" else "defender"
+        
         player_result = PlayerResult(
             player_id=player_id,
             profit=total_profit,
             actions=enhanced_actions,
-            win=False  # Will be determined later
+            win=False,  # Will be determined later
+            player_role=player_role
         )
         
         return player_result
@@ -504,6 +508,10 @@ class StaticGame(EconomicGame):
         call_id = game_state.get('call_id', 'unknown')
         
         try:
+            # Ensure player_histories exists
+            if 'player_histories' not in game_state:
+                game_state['player_histories'] = {}
+            
             # Calculate payoffs
             payoff_result = self.calculate_payoffs(actions, config, game_state)
             
@@ -533,10 +541,22 @@ class StaticGame(EconomicGame):
                 player_hist = game_state['player_histories'][player_id]
                 player_hist['actions'].append(action)
                 player_hist['profits'].append(profit)
+                
+                # Safely update cumulative profit with fallback
+                if 'cumulative_profit' not in player_hist:
+                    player_hist['cumulative_profit'] = 0.0
                 player_hist['cumulative_profit'] += profit
+                
+                # Safely update reasoning with fallback
+                if 'reasoning' not in player_hist:
+                    player_hist['reasoning'] = []
                 player_hist['reasoning'].append(reasoning)
                 
                 self.logger.debug(f"[{call_id}] Updated {player_id}: profit=${profit:.2f}")
+            
+            # Ensure round_history exists
+            if 'round_history' not in game_state:
+                game_state['round_history'] = []
             
             # Store round information
             game_state['round_history'].append({
@@ -545,6 +565,8 @@ class StaticGame(EconomicGame):
                 'profits': profits.copy(),
                 'timestamp': game_state.get('call_id', 'unknown')
             })
+            
+            return game_state
             
             return game_state
             
@@ -627,7 +649,12 @@ class DynamicGame(EconomicGame):
                 player_hist = game_state['player_histories'][player_id]
                 player_hist['actions'].append(action)
                 player_hist['profits'].append(profit)
+                
+                # Safely update cumulative profit with fallback
+                if 'cumulative_profit' not in player_hist:
+                    player_hist['cumulative_profit'] = 0.0
                 player_hist['cumulative_profit'] += profit
+                
                 player_hist['reasoning'].append(reasoning)
                 
                 # Round-by-round analysis
@@ -699,12 +726,16 @@ class DynamicGame(EconomicGame):
             }
             enhanced_actions.append(enhanced_action)
         
+        # Determine player role
+        player_role = "challenger" if player_id == "challenger" else "defender"
+        
         # Create player result with NPV
         player_result = PlayerResult(
             player_id=player_id,
             profit=discounted_profit,  # Use NPV for dynamic games
             actions=enhanced_actions,
-            win=False
+            win=False,
+            player_role=player_role
         )
         
         # Add dynamic game specific metrics

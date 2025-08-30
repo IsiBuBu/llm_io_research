@@ -259,13 +259,35 @@ Choose your price considering both immediate profit maximization and the strateg
             market_shares = {}
             n = config.number_of_players
             
+            # Create mapping from player IDs to positions (0-indexed)
+            player_list = list(actions.keys())
+            
+            # Ensure we have enough players for spatial competition
+            if len(player_list) < 2:
+                self.logger.warning(f"[{call_id}] Not enough players ({len(player_list)}) for spatial competition")
+                # Return basic profits for single player case
+                return {player_id: max(0, (price - constants.SALOP_MARGINAL_COST) * constants.SALOP_MARKET_SIZE - constants.SALOP_FIXED_COST) 
+                       for player_id, price in prices.items()}
+            
+            player_positions = {player_id: i for i, player_id in enumerate(player_list)}
+            
             # Calculate profits for each firm using Salop model
             for player_id, price in prices.items():
-                player_num = int(player_id.split('_')[-1]) if '_' in player_id else int(player_id)
+                player_pos = player_positions[player_id]
                 
-                # Get neighbor prices with circular topology
-                left_neighbor_id = self._get_neighbor_id((player_num - 2) % n + 1)
-                right_neighbor_id = self._get_neighbor_id(player_num % n + 1)
+                # Get neighbor positions with circular topology
+                left_neighbor_pos = (player_pos - 1) % len(player_list)
+                right_neighbor_pos = (player_pos + 1) % len(player_list)
+                
+                # Get neighbor player IDs - use bounds checking
+                if left_neighbor_pos >= len(player_list) or right_neighbor_pos >= len(player_list):
+                    self.logger.error(f"[{call_id}] Index out of bounds: pos={player_pos}, left={left_neighbor_pos}, right={right_neighbor_pos}, players={len(player_list)}")
+                    # Use the player's own price as neighbor prices for safety
+                    left_neighbor_id = player_id
+                    right_neighbor_id = player_id
+                else:
+                    left_neighbor_id = player_list[left_neighbor_pos]
+                    right_neighbor_id = player_list[right_neighbor_pos]
                 
                 left_price = prices.get(left_neighbor_id, price)
                 right_price = prices.get(right_neighbor_id, price)
@@ -442,10 +464,9 @@ Choose your price considering both immediate profit maximization and the strateg
     def _get_neighbors(self, player_id: str, total_players: int) -> Tuple[str, str]:
         """Get circular neighbors for spatial competition"""
         try:
-            player_num = int(player_id.split('_')[-1]) if '_' in player_id else int(player_id)
-            left_neighbor = self._get_neighbor_id((player_num - 2) % total_players + 1)
-            right_neighbor = self._get_neighbor_id(player_num % total_players + 1)
-            return left_neighbor, right_neighbor
+            # For now, return generic neighbor names since we don't have the full player list here
+            # The actual neighbor calculation is done in calculate_payoffs where we have all players
+            return "neighbor_left", "neighbor_right"
         except:
             return "neighbor_left", "neighbor_right"
     

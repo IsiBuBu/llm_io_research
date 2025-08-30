@@ -80,6 +80,7 @@ class PlayerResult:
     profit: float
     actions: List[Dict[str, Any]] = field(default_factory=list)
     win: bool = False
+    player_role: str = "unknown"  # "challenger" or "defender"
 
 @dataclass
 class GameResult:
@@ -91,6 +92,7 @@ class GameResult:
     experiment_config: Optional[ExperimentConfig] = None
     market_price: Optional[float] = None
     additional_metrics: Dict[str, float] = field(default_factory=dict)
+    challenger_model_key: Optional[str] = None  # Track which challenger model was used
 
 class GameConstants:
     """Economic constants for all games - loaded from config.json"""

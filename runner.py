@@ -2,9 +2,11 @@ import os
 import logging
 import json
 import time
+import traceback
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any, Optional
+from dataclasses import asdict
 import pandas as pd
 
 from config import (
@@ -292,6 +294,9 @@ class ExperimentRunner:
         # Enhanced debug analysis
         self._debug_experiment_results(results)
         
+        # Export results to JSON file
+        self._export_experiment_results(results, "quick_debug_results", "debug_test")
+        
         self.experiments_run += 1
         self.total_games_run += experiment_config.num_games
         
@@ -460,6 +465,142 @@ class ExperimentRunner:
         self._export_thesis_results(all_preset_results, f"{output_dir}/combined")
         
         return all_preset_results
+    
+    def run_comprehensive_all_games_experiment(self, output_dir: str = "comprehensive_all_games_results") -> Dict[str, Any]:
+        """Run comprehensive experiments: all challenger models vs all games"""
+        
+        self.logger.info("=== RUNNING COMPREHENSIVE ALL GAMES EXPERIMENT ===")
+        self.logger.info("This will run all challenger models against all 4 games")
+        
+        # Define all available games
+        all_games = ['salop', 'spulber', 'green_porter', 'athey_bagwell']
+        
+        # Load your main setup from config.json
+        base_experiment_config = self.experiment_presets['your_main_setup']
+        
+        self.logger.info(f"Defender: {base_experiment_config.defender_model_key}")
+        self.logger.info(f"Challengers: {len(base_experiment_config.challenger_model_keys)} models")
+        self.logger.info(f"Games: {len(all_games)} games")
+        self.logger.info(f"Games per setup: {base_experiment_config.num_games}")
+        
+        # Create output directory
+        os.makedirs(output_dir, exist_ok=True)
+        
+        all_results = {
+            'session_id': self.session_id,
+            'start_time': datetime.now().isoformat(),
+            'experiments_by_game': {},
+            'comprehensive_summary': {}
+        }
+        
+        total_experiments = len(all_games) * len(base_experiment_config.challenger_model_keys)
+        current_experiment = 0
+        
+        # Run experiments for each game
+        for game_name in all_games:
+            self.logger.info(f"Starting experiments for {game_name}")
+            
+            game_results = {}
+            
+            # Run each challenger model against this game
+            for challenger_key in base_experiment_config.challenger_model_keys:
+                current_experiment += 1
+                
+                self.logger.info(f"[{current_experiment}/{total_experiments}] Running {challenger_key} vs {game_name}")
+                
+                # Create experiment config for this specific combination
+                experiment_config = ExperimentConfig(
+                    defender_model_key=base_experiment_config.defender_model_key,
+                    challenger_model_keys=[challenger_key],  # Single challenger at a time
+                    game_name=game_name,
+                    num_players=base_experiment_config.num_players,
+                    num_rounds=base_experiment_config.num_rounds,
+                    num_games=base_experiment_config.num_games,
+                    include_thinking=base_experiment_config.include_thinking
+                )
+                
+                try:
+                    result = self.competition.run_experiment(experiment_config)
+                    game_results[challenger_key] = result
+                    
+                    # Log success
+                    if 'summary_metrics' in result:
+                        self.logger.info(f"  ✓ Completed: {result['summary_metrics'].get('successful_games', 0)} games successful")
+                    
+                    self.total_games_run += base_experiment_config.num_games
+                    
+                except Exception as e:
+                    self.logger.error(f"  ✗ Failed: {e}")
+                    game_results[challenger_key] = {
+                        'error': str(e),
+                        'experiment_config': asdict(experiment_config)
+                    }
+            
+            all_results['experiments_by_game'][game_name] = game_results
+            self.logger.info(f"Completed all challengers for {game_name}")
+        
+        # Calculate comprehensive summary
+        all_results['comprehensive_summary'] = self._calculate_comprehensive_summary(all_results)
+        all_results['end_time'] = datetime.now().isoformat()
+        
+        # Export results
+        self._export_experiment_results(all_results, output_dir, "comprehensive_all_games")
+        
+        self.experiments_run += total_experiments
+        
+        self.logger.info(f"=== COMPREHENSIVE EXPERIMENT COMPLETED ===")
+        self.logger.info(f"Total experiments: {total_experiments}")
+        self.logger.info(f"Total games run: {self.total_games_run}")
+        
+        return all_results
+
+    def _calculate_comprehensive_summary(self, all_results: Dict) -> Dict[str, Any]:
+        """Calculate summary statistics across all games and models"""
+        
+        summary = {
+            'games_tested': list(all_results['experiments_by_game'].keys()),
+            'models_performance': {},
+            'game_difficulty': {},
+            'overall_stats': {
+                'total_experiments': 0,
+                'successful_experiments': 0,
+                'total_games': 0,
+                'successful_games': 0
+            }
+        }
+        
+        # Analyze performance by model across all games
+        for game_name, game_results in all_results['experiments_by_game'].items():
+            for model_key, result in game_results.items():
+                if model_key not in summary['models_performance']:
+                    summary['models_performance'][model_key] = {
+                        'games_tested': [],
+                        'total_experiments': 0,
+                        'successful_experiments': 0,
+                        'average_success_rate': 0.0
+                    }
+                
+                summary['models_performance'][model_key]['games_tested'].append(game_name)
+                summary['models_performance'][model_key]['total_experiments'] += 1
+                
+                if 'error' not in result:
+                    summary['models_performance'][model_key]['successful_experiments'] += 1
+                
+                # Update overall stats
+                summary['overall_stats']['total_experiments'] += 1
+                if 'error' not in result:
+                    summary['overall_stats']['successful_experiments'] += 1
+                    if 'summary_metrics' in result:
+                        summary['overall_stats']['total_games'] += result['summary_metrics'].get('total_games', 0)
+                        summary['overall_stats']['successful_games'] += result['summary_metrics'].get('successful_games', 0)
+        
+        # Calculate success rates
+        for model_key in summary['models_performance']:
+            total = summary['models_performance'][model_key]['total_experiments']
+            successful = summary['models_performance'][model_key]['successful_experiments']
+            summary['models_performance'][model_key]['average_success_rate'] = (successful / total * 100) if total > 0 else 0
+        
+        return summary
     
     def _analyze_thinking_performance(self, results: Dict[str, Any]):
         """Analyze performance differences between thinking and non-thinking models"""
@@ -697,30 +838,70 @@ def debug_single_model(model_key: str, prompt: str = None) -> Dict[str, Any]:
 if __name__ == "__main__":
     """Example usage and testing"""
     
+    import sys
+    
     try:
         # Initialize runner
         runner = ExperimentRunner(debug=True)
         
-        # Show available configurations
-        runner.list_available_configurations()
-        
-        # Test all models individually first
-        print("\n" + "="*50)
-        print("TESTING ALL MODELS INDIVIDUALLY")
-        print("="*50)
-        individual_results = runner.test_all_models_individually()
-        
-        # Run quick debug test
-        print("\n" + "="*50) 
-        print("RUNNING QUICK DEBUG TEST")
-        print("="*50)
-        debug_results = runner.run_quick_debug_test()
-        
-        # Run your main experiment
-        print("\n" + "="*50)
-        print("RUNNING YOUR MAIN EXPERIMENT") 
-        print("="*50)
-        main_results = runner.run_your_main_experiment()
+        # Check for command line arguments
+        if len(sys.argv) > 1:
+            command = sys.argv[1].lower()
+            
+            if command == "quick" or command == "debug_test":
+                print("RUNNING QUICK DEBUG TEST")
+                print("="*50)
+                debug_results = runner.run_quick_debug_test()
+                
+            elif command == "individual":
+                print("TESTING ALL MODELS INDIVIDUALLY")
+                print("="*50)
+                individual_results = runner.test_all_models_individually()
+                
+            elif command == "comprehensive":
+                print("RUNNING COMPREHENSIVE ALL GAMES EXPERIMENT") 
+                print("="*50)
+                main_results = runner.run_comprehensive_all_games_experiment()
+                
+            elif command in runner.available_presets:
+                print(f"RUNNING PRESET: {command}")
+                print("="*50)
+                results = runner.run_preset_experiment(command)
+                
+            elif command == "list":
+                runner.list_available_configurations()
+                
+            else:
+                print(f"Unknown command: {command}")
+                print("Available commands:")
+                print("  quick / debug_test  - Run quick debug test")
+                print("  individual         - Test all models individually")
+                print("  comprehensive      - Run comprehensive all games experiment")
+                print("  list              - List available configurations")
+                print("  [preset_name]     - Run specific preset")
+                print(f"  Available presets: {list(runner.available_presets.keys())}")
+        else:
+            # Default behavior - run everything
+            # Show available configurations
+            runner.list_available_configurations()
+            
+            # Test all models individually first
+            print("\n" + "="*50)
+            print("TESTING ALL MODELS INDIVIDUALLY")
+            print("="*50)
+            individual_results = runner.test_all_models_individually()
+            
+            # Run quick debug test
+            print("\n" + "="*50) 
+            print("RUNNING QUICK DEBUG TEST")
+            print("="*50)
+            debug_results = runner.run_quick_debug_test()
+            
+            # Run comprehensive all games experiment
+            print("\n" + "="*50)
+            print("RUNNING COMPREHENSIVE ALL GAMES EXPERIMENT") 
+            print("="*50)
+            main_results = runner.run_comprehensive_all_games_experiment()
         
         # Session summary
         stats = runner.get_session_statistics()

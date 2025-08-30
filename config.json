@@ -1,0 +1,319 @@
+{
+  "models": {
+    "gemini-2.0-flash-lite": {
+      "model_name": "gemini-2.0-flash-lite",
+      "thinking_available": false,
+      "thinking_enabled": false,
+      "display_name": "Gemini 2.0 Flash Lite (Defender)",
+      "api_version": "v1",
+      "max_retries": 3,
+      "timeout": 30
+    },
+    "gemini-2.0-flash": {
+      "model_name": "gemini-2.0-flash",
+      "thinking_available": false,
+      "thinking_enabled": false,
+      "display_name": "Gemini 2.0 Flash",
+      "api_version": "v1",
+      "max_retries": 3,
+      "timeout": 30
+    },
+    "gemini-2.0-flash-exp": {
+      "model_name": "gemini-2.0-flash-exp",
+      "thinking_available": false,
+      "thinking_enabled": false,
+      "display_name": "Gemini 2.0 Flash Exp",
+      "api_version": "v1",
+      "max_retries": 3,
+      "timeout": 30
+    },
+    "gemini-2.5-flash": {
+      "model_name": "gemini-2.5-flash",
+      "thinking_available": true,
+      "thinking_enabled": false,
+      "display_name": "Gemini 2.5 Flash (Thinking Disabled)",
+      "api_version": "v1",
+      "max_retries": 3,
+      "timeout": 30
+    },
+    "gemini-2.5-flash-thinking": {
+      "model_name": "gemini-2.5-flash",
+      "thinking_available": true,
+      "thinking_enabled": true,
+      "display_name": "Gemini 2.5 Flash (Dynamic Thinking)",
+      "api_version": "v1",
+      "max_retries": 3,
+      "timeout": 30
+    },
+    "gemini-2.5-flash-lite": {
+      "model_name": "gemini-2.5-flash-lite",
+      "thinking_available": true,
+      "thinking_enabled": false,
+      "display_name": "Gemini 2.5 Flash Lite (No Thinking)",
+      "api_version": "v1",
+      "max_retries": 3,
+      "timeout": 30
+    },
+    "gemini-2.5-flash-lite-thinking": {
+      "model_name": "gemini-2.5-flash-lite",
+      "thinking_available": true,
+      "thinking_enabled": true,
+      "display_name": "Gemini 2.5 Flash Lite (Dynamic Thinking)",
+      "api_version": "v1",
+      "max_retries": 3,
+      "timeout": 30
+    },
+    "gemini-2.5-pro": {
+      "model_name": "gemini-2.5-pro",
+      "thinking_available": true,
+      "thinking_enabled": true,
+      "display_name": "Gemini 2.5 Pro (Always Thinking)",
+      "api_version": "v1",
+      "max_retries": 3,
+      "timeout": 30
+    }
+  },
+  "experiment_presets": {
+    "your_main_setup": {
+      "defender_model_key": "gemini-2.0-flash-lite",
+      "challenger_model_keys": [
+        "gemini-2.0-flash-lite",
+        "gemini-2.0-flash",
+        "gemini-2.5-flash",
+        "gemini-2.5-flash-thinking",
+        "gemini-2.5-flash-lite",
+        "gemini-2.5-flash-lite-thinking",
+        "gemini-2.5-pro"
+      ],
+            "game_name": "salop",
+      "num_players": 3,
+      "num_rounds": 1,
+      "num_games": 20,
+      "include_thinking": true
+    },
+    "thinking_comparison": {
+      "defender_model_key": "gemini-2.0-flash-lite",
+      "challenger_model_keys": [
+        "gemini-2.0-flash-lite",
+        "gemini-2.0-flash",
+        "gemini-2.5-flash",
+        "gemini-2.5-flash-thinking",
+        "gemini-2.5-flash-lite",
+        "gemini-2.5-flash-lite-thinking",
+        "gemini-2.5-pro"
+      ],
+      "game_name": "spulber",
+      "num_players": 3,
+      "num_rounds": 1,
+      "num_games": 15,
+      "include_thinking": true
+    },
+    "generation_comparison": {
+      "defender_model_key": "gemini-2.0-flash-lite",
+      "challenger_model_keys": [
+        "gemini-2.0-flash-lite",
+        "gemini-2.0-flash",
+        "gemini-2.5-flash",
+        "gemini-2.5-flash-thinking",
+        "gemini-2.5-flash-lite",
+        "gemini-2.5-flash-lite-thinking",
+        "gemini-2.5-pro"
+      ],
+      "game_name": "green_porter", 
+      "num_players": 3,
+      "num_rounds": 1,
+      "num_games": 25,
+      "include_thinking": true
+    },
+    "debug_test": {
+      "defender_model_key": "gemini-2.0-flash-lite",
+      "challenger_model_keys": [
+        "gemini-2.5-pro",
+        "gemini-2.0-flash"
+      ],
+      "game_name": "salop",
+      "num_players": 3,
+      "num_rounds": 1,
+      "num_games": 3,
+      "include_thinking": true
+    },
+    "lite_models_only": {
+      "defender_model_key": "gemini-2.0-flash-lite",
+      "challenger_model_keys": [
+        "gemini-2.5-flash-lite",
+        "gemini-2.5-flash-lite-thinking"
+      ],
+      "game_name": "athey_bagwell",
+      "num_players": 3,
+      "num_rounds": 1,
+      "num_games": 10,
+      "include_thinking": true
+    }
+  },
+  "game_constants": {
+    "salop": {
+      "base_market_size": 300,
+      "marginal_cost": 8,
+      "fixed_cost": 100,
+      "transport_cost": 0.5
+    },
+    "spulber": {
+      "base_market_size": 1000,
+      "marginal_cost": 10,
+      "demand_slope": 1.0
+    },
+    "green_porter": {
+      "base_demand_intercept": 100,
+      "marginal_cost": 10,
+      "demand_shock_std": 5
+    },
+    "athey_bagwell": {
+      "high_cost": 15,
+      "low_cost": 5,
+      "market_price": 50,
+      "cost_persistence": 0.8,
+      "base_market_size": 1000
+    }
+  },
+  "game_configs": {
+    "static_games": {
+      "salop": [
+        {
+          "number_of_players": 3,
+          "number_of_rounds": 1,
+          "discount_factor": 0.95,
+          "max_retries": 3,
+          "num_games": 20
+        }
+      ],
+      "spulber": [
+        {
+          "number_of_players": 3,
+          "number_of_rounds": 1,
+          "discount_factor": 0.95,
+          "max_retries": 3,
+          "num_games": 20
+        }
+      ]
+    },
+    "dynamic_games": {
+      "green_porter": [
+        {
+          "number_of_players": 3,
+          "number_of_rounds": 10,
+          "discount_factor": 0.95,
+          "max_retries": 3,
+          "num_games": 15
+        }
+      ],
+      "athey_bagwell": [
+        {
+          "number_of_players": 3,
+          "number_of_rounds": 10,
+          "discount_factor": 0.95,
+          "max_retries": 3,
+          "num_games": 15
+        }
+      ]
+    },
+    "quick_test_games": {
+      "salop": [
+        {
+          "number_of_players": 3,
+          "number_of_rounds": 1,
+          "discount_factor": 0.95,
+          "max_retries": 3,
+          "num_games": 2
+        }
+      ],
+      "green_porter": [
+        {
+          "number_of_players": 3,
+          "number_of_rounds": 5,
+          "discount_factor": 0.95,
+          "max_retries": 3,
+          "num_games": 2
+        }
+      ]
+    }
+  },
+  "logging": {
+    "level": "DEBUG",
+    "file": "llm_experiments.log",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s",
+    "console_level": "INFO",
+    "max_log_file_size": "10MB",
+    "backup_count": 5
+  },
+  "api": {
+    "gemini_api_key_env": "GEMINI_API_KEY",
+    "rate_limit_delay": 1,
+    "default_timeout": 30,
+    "max_retries": 3,
+    "backoff_factor": 2,
+    "request_timeout": 60
+  },
+  "debugging": {
+    "verbose_logging": true,
+    "log_api_requests": true,
+    "log_api_responses": true,
+    "log_token_usage": true,
+    "log_thinking_output": true,
+    "save_raw_responses": false,
+    "performance_tracking": true
+  },
+  "experimental_settings": {
+    "default_temperature": 0.0,
+    "enable_retry_logic": true,
+    "capture_intermediate_states": true,
+    "parallel_execution": false,
+    "result_caching": false
+  },
+  "output_settings": {
+    "results_directory": "experiment_results",
+    "export_formats": ["json", "csv"],
+    "include_raw_responses": false,
+    "compress_large_outputs": true,
+    "auto_backup_results": true
+  },
+  "model_pricing": {
+    "comment": "Pricing per 1K tokens - update as needed for cost estimation",
+    "gemini-2.5-pro": {
+      "input": 0.00125,
+      "output": 0.005,
+      "thinking": 0.005
+    },
+    "gemini-2.5-flash": {
+      "input": 0.000075,
+      "output": 0.0003,
+      "thinking": 0.0003
+    },
+    "gemini-2.5-flash-lite": {
+      "input": 0.000075,
+      "output": 0.0003, 
+      "thinking": 0.0003
+    },
+    "gemini-2.0-flash": {
+      "input": 0.000075,
+      "output": 0.0003,
+      "thinking": 0.0003
+    },
+    "gemini-2.0-flash-lite": {
+      "input": 0.000075,
+      "output": 0.0003,
+      "thinking": 0.0003
+    }
+  },
+  "validation_rules": {
+    "min_players": 2,
+    "max_players": 10,
+    "min_rounds": 1,
+    "max_rounds": 100,
+    "min_games": 1,
+    "max_games": 1000,
+    "required_fields": {
+      "models": ["model_name", "thinking_available"],
+      "experiment_presets": ["defender_model_key", "challenger_model_keys", "game_name"]
+    }
+  }
+}

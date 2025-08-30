@@ -1,10 +1,11 @@
 import logging
+import os
 import time
 import json
 import traceback
 from datetime import datetime
 from typing import Dict, List, Any, Optional, Union
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 import pandas as pd
 from pathlib import Path
 
@@ -78,16 +79,27 @@ class GeminiLLMAgent:
             # Build generation config
             config_dict = {}
             
-            # Configure thinking based on model capabilities
+            # Configure thinking based on model capabilities and documentation
             if self.model_config.thinking_available:
-                if self.model_config.thinking_enabled and include_thinking:
+                # Special handling for Gemini 2.5 Pro - cannot disable thinking
+                if "2.5-pro" in self.model_config.model_name:
                     config_dict['thinking_config'] = genai_types.ThinkingConfig(
                         include_thoughts=True,
-                        thinking_budget=-1  # Let model manage budget
+                        thinking_budget=-1  # Dynamic thinking (always on for Pro)
+                    )
+                    if self.debug:
+                        self.logger.debug(f"[{call_id}] Gemini 2.5 Pro: Always thinking enabled (cannot disable)")
+                
+                elif self.model_config.thinking_enabled and include_thinking:
+                    config_dict['thinking_config'] = genai_types.ThinkingConfig(
+                        include_thoughts=True,
+                        thinking_budget=-1  # Dynamic thinking
                     )
                     if self.debug:
                         self.logger.debug(f"[{call_id}] Thinking enabled with dynamic budget")
-                elif not self.model_config.thinking_enabled or not include_thinking:
+                        
+                else:
+                    # Disable thinking for other models
                     config_dict['thinking_config'] = genai_types.ThinkingConfig(
                         thinking_budget=0  # Disable thinking
                     )
@@ -239,28 +251,41 @@ class GameCompetition:
         
         self.logger.info("GameCompetition initialized with JSON configuration")
     
-    def create_agents(self, experiment_config: ExperimentConfig) -> Dict[str, GeminiLLMAgent]:
-        """Create agents based on experiment configuration"""
+    def create_agents(self, experiment_config: ExperimentConfig, challenger_model_key: str = None) -> Dict[str, GeminiLLMAgent]:
+        """Create agents based on experiment configuration with specified challenger model"""
         agents = {}
         
-        # Create defender agent
+        # Get models
         defender_model = experiment_config.get_defender_model()
-        agents['defender'] = GeminiLLMAgent(defender_model, debug=self.debug)
-        
-        self.logger.info(f"Created defender agent: {defender_model.display_name}")
-        
-        # Create challenger agents
         challenger_models = experiment_config.get_challenger_models()
-        for i, challenger_model in enumerate(challenger_models):
-            agent_key = f"challenger_{i}_{challenger_model.display_name.replace(' ', '_')}"
-            agents[agent_key] = GeminiLLMAgent(challenger_model, debug=self.debug)
+        
+        # Calculate how many defenders we need (all players except 1 challenger)
+        num_defenders = experiment_config.num_players - 1
+        
+        self.logger.info(f"Creating {num_defenders} defender agents and 1 challenger agent for {experiment_config.num_players} total players")
+        
+        # Create defender agents (multiple copies of same model)
+        for i in range(num_defenders):
+            agent_key = f"defender_{i}" if num_defenders > 1 else "defender"
+            agents[agent_key] = GeminiLLMAgent(defender_model, debug=self.debug)
             
-            self.logger.info(f"Created challenger agent: {challenger_model.display_name}")
+            self.logger.info(f"Created defender agent {i+1}/{num_defenders}: {defender_model.display_name}")
+        
+        # Create 1 challenger agent (use specified challenger model or first one)
+        if challenger_model_key:
+            # Get the specific challenger model by key
+            challenger_model = get_model_config(challenger_model_key)
+        else:
+            challenger_model = challenger_models[0]
+            
+        agents['challenger'] = GeminiLLMAgent(challenger_model, debug=self.debug)
+        
+        self.logger.info(f"Created challenger agent: {challenger_model.display_name}")
         
         return agents
     
     def run_single_game(self, game_name: str, experiment_config: ExperimentConfig, 
-                       config: GameConfig, game_instance_id: str = "") -> GameResult:
+                       config: GameConfig, game_instance_id: str = "", challenger_model_key: str = None) -> GameResult:
         """Run a single game with enhanced debugging"""
         
         if game_name not in self.games:
@@ -272,8 +297,8 @@ class GameCompetition:
         self.logger.info(f"[{call_id}] Starting {game_name} game")
         self.logger.debug(f"[{call_id}] Players: {config.number_of_players}, Rounds: {config.number_of_rounds}")
         
-        # Create agents
-        agents = self.create_agents(experiment_config)
+        # Create agents with specific challenger model
+        agents = self.create_agents(experiment_config, challenger_model_key)
         
         # Initialize game state
         game_state = {
@@ -366,15 +391,35 @@ class GameCompetition:
             market_price = game_state.get('final_market_price')
             total_industry_profit = sum(pr.profit for pr in player_results)
             
+            # Separate challenger and defender results for enhanced metrics
+            challenger_result = None
+            defender_results = []
+            
+            for pr in player_results:
+                if pr.player_id == "challenger":
+                    challenger_result = pr
+                else:
+                    defender_results.append(pr)
+            
+            # Calculate defender summary metrics
+            if defender_results:
+                total_defender_profit = sum(pr.profit for pr in defender_results)
+                defender_wins = sum(1 for pr in defender_results if pr.win)
+                avg_defender_profit = total_defender_profit / len(defender_results)
+            else:
+                total_defender_profit = 0
+                defender_wins = 0
+                avg_defender_profit = 0
+            
             # Enhanced logging of results
             self.logger.info(f"[{call_id}] Game completed successfully")
             self.logger.info(f"[{call_id}] API calls: {total_responses} total, {failed_responses} failed")
             self.logger.info(f"[{call_id}] Total industry profit: {total_industry_profit:.2f}")
             
             if self.verbose_logging:
-                for pr in player_results:
-                    agent_type = "defender" if "defender" in pr.player_id else "challenger"
-                    self.logger.debug(f"[{call_id}] {pr.player_id} ({agent_type}): profit={pr.profit:.2f}, win={pr.win}")
+                if challenger_result:
+                    self.logger.debug(f"[{call_id}] Challenger: profit={challenger_result.profit:.2f}, win={challenger_result.win}")
+                self.logger.debug(f"[{call_id}] Defenders: total_profit={total_defender_profit:.2f}, wins={defender_wins}/{len(defender_results)}")
             
             return GameResult(
                 game_name=game_name,
@@ -383,12 +428,20 @@ class GameCompetition:
                 total_industry_profit=total_industry_profit,
                 experiment_config=experiment_config,
                 market_price=market_price,
+                challenger_model_key=challenger_model_key,
                 additional_metrics={
                     'total_api_calls': total_responses,
                     'failed_api_calls': failed_responses,
                     'success_rate': (total_responses - failed_responses) / total_responses if total_responses > 0 else 0,
-                    'average_response_time': sum(resp.response_time for resp_list in game_state['player_histories'].values() 
-                                               for resp in resp_list['responses']) / total_responses if total_responses > 0 else 0
+                    'average_response_time': sum(resp['response_time'] for resp_list in game_state['player_histories'].values() 
+                                               for resp in resp_list['responses']) / total_responses if total_responses > 0 else 0,
+                    # Add challenger/defender summary
+                    'challenger_profit': challenger_result.profit if challenger_result else 0,
+                    'challenger_win': challenger_result.win if challenger_result else False,
+                    'defender_count': len(defender_results),
+                    'total_defender_profit': total_defender_profit,
+                    'average_defender_profit': avg_defender_profit,
+                    'defender_wins': defender_wins
                 }
             )
             
@@ -404,6 +457,7 @@ class GameCompetition:
                 players=[],
                 total_industry_profit=0.0,
                 experiment_config=experiment_config,
+                challenger_model_key=challenger_model_key,
                 additional_metrics={
                     'error': error_msg,
                     'total_api_calls': total_responses,
@@ -412,7 +466,7 @@ class GameCompetition:
             )
     
     def run_experiment(self, experiment_config: ExperimentConfig) -> Dict[str, Any]:
-        """Run a complete experiment with enhanced tracking"""
+        """Run a complete experiment with enhanced tracking - runs num_games for each challenger model"""
         
         self.experiment_start_time = time.time()
         experiment_id = f"{experiment_config.game_name}_{int(time.time())}"
@@ -421,7 +475,10 @@ class GameCompetition:
         self.logger.info(f"Game: {experiment_config.game_name}")
         self.logger.info(f"Defender: {experiment_config.defender_model_key}")
         self.logger.info(f"Challengers: {experiment_config.challenger_model_keys}")
-        self.logger.info(f"Games to run: {experiment_config.num_games}")
+        self.logger.info(f"Games per challenger: {experiment_config.num_games}")
+        
+        total_expected_games = len(experiment_config.challenger_model_keys) * experiment_config.num_games
+        self.logger.info(f"Total expected games: {total_expected_games}")
         
         # Reset statistics
         self.total_api_calls = 0
@@ -444,39 +501,70 @@ class GameCompetition:
         )
         
         successful_games = 0
+        total_game_count = 0
         
-        # Run multiple game instances
-        for game_idx in range(experiment_config.num_games):
-            game_instance_id = f"{experiment_id}_game_{game_idx}"
+        # Run games for each challenger model
+        for challenger_idx, challenger_model_key in enumerate(experiment_config.challenger_model_keys):
+            self.logger.info(f"=== Running games for challenger {challenger_idx + 1}/{len(experiment_config.challenger_model_keys)}: {challenger_model_key} ===")
             
-            self.logger.info(f"Running game {game_idx + 1}/{experiment_config.num_games}")
-            
-            try:
-                game_result = self.run_single_game(
-                    experiment_config.game_name,
-                    experiment_config, 
-                    game_config,
-                    game_instance_id
-                )
+            # Run multiple game instances for this challenger
+            for game_idx in range(experiment_config.num_games):
+                total_game_count += 1
+                game_instance_id = f"{experiment_id}_challenger_{challenger_idx}_game_{game_idx}"
                 
-                experiment_results['game_results'].append(asdict(game_result))
+                self.logger.info(f"Running game {total_game_count}/{total_expected_games} (Challenger: {challenger_model_key}, Game {game_idx + 1}/{experiment_config.num_games})")
                 
-                if not game_result.additional_metrics.get('error'):
-                    successful_games += 1
-                
-                # Rate limiting
-                api_config = get_api_config()
-                delay = api_config.get('rate_limit_delay', 1)
-                time.sleep(delay)
-                
-            except Exception as e:
-                error_msg = f"Game {game_idx} failed: {str(e)}"
-                self.logger.error(error_msg)
-                experiment_results['game_results'].append({
-                    'game_name': experiment_config.game_name,
-                    'error': error_msg,
-                    'game_index': game_idx
-                })
+                try:
+                    game_result = self.run_single_game(
+                        experiment_config.game_name,
+                        experiment_config, 
+                        game_config,
+                        game_instance_id,
+                        challenger_model_key
+                    )
+                    
+                    # Create simplified result
+                    simplified_result = self.create_simplified_game_result(
+                        game_result, 
+                        total_game_count, 
+                        total_expected_games,
+                        challenger_model_key
+                    )
+                    
+                    experiment_results['game_results'].append(simplified_result)
+                    
+                    if not game_result.additional_metrics.get('error'):
+                        successful_games += 1
+                    
+                    # Rate limiting
+                    api_config = get_api_config()
+                    delay = api_config.get('rate_limit_delay', 1)
+                    time.sleep(delay)
+                    
+                except Exception as e:
+                    error_msg = f"Game {total_game_count} failed: {str(e)}"
+                    self.logger.error(error_msg)
+                    experiment_results['game_results'].append({
+                        'game_number': f"{total_game_count}/{total_expected_games}",
+                        'challenger_model': challenger_model_key,
+                        'error': error_msg,
+                        'challenger': None,
+                        'defenders': [],
+                        'summary': {
+                            'total_industry_profit': 0,
+                            'challenger_profit': 0,
+                            'challenger_win': False,
+                            'defender_count': 0,
+                            'total_defender_profit': 0,
+                            'average_defender_profit': 0,
+                            'defender_wins': 0
+                        },
+                        'performance': {
+                            'api_calls': 0,
+                            'success_rate': 0,
+                            'avg_response_time': 0
+                        }
+                    })
         
         # Calculate summary metrics
         experiment_duration = time.time() - self.experiment_start_time
@@ -484,8 +572,8 @@ class GameCompetition:
         summary_metrics = {
             'total_duration': experiment_duration,
             'successful_games': successful_games,
-            'failed_games': experiment_config.num_games - successful_games,
-            'success_rate': successful_games / experiment_config.num_games,
+            'failed_games': total_expected_games - successful_games,
+            'success_rate': successful_games / total_expected_games if total_expected_games > 0 else 0,
             'total_api_calls': self.total_api_calls,
             'failed_api_calls': self.failed_calls,
             'api_success_rate': (self.total_api_calls - self.failed_calls) / self.total_api_calls if self.total_api_calls > 0 else 0,
@@ -500,7 +588,7 @@ class GameCompetition:
         # Log experiment summary
         self.logger.info(f"=== EXPERIMENT {experiment_id} COMPLETED ===")
         self.logger.info(f"Duration: {experiment_duration:.1f}s")
-        self.logger.info(f"Games: {successful_games}/{experiment_config.num_games} successful")
+        self.logger.info(f"Games: {successful_games}/{total_expected_games} successful")
         self.logger.info(f"API calls: {self.total_api_calls} total, {self.failed_calls} failed")
         self.logger.info(f"Tokens used: {self.total_tokens_used:,}")
         
@@ -633,6 +721,93 @@ class GameCompetition:
         except Exception as e:
             self.logger.error(f"Export failed: {str(e)}")
             self.logger.error(f"Traceback: {traceback.format_exc()}")
+
+    def create_simplified_game_result(self, game_result, game_number, total_games, challenger_model):
+        """Create a simplified game result with focus on challenger and summary."""
+        try:
+            # Extract challenger data (with reasoning if available)
+            challenger_data = None
+            if hasattr(game_result, 'players') and game_result.players:
+                for player in game_result.players:
+                    if hasattr(player, 'player_role') and player.player_role == 'challenger':
+                        # Extract reasoning from actions if available
+                        reasoning = None
+                        thinking = None
+                        if player.actions:
+                            reasoning = player.actions[0].get('reasoning', 'No reasoning available')
+                            thinking = player.actions[0].get('thinking', None)
+                        
+                        challenger_data = {
+                            "profit": player.profit,
+                            "price": player.actions[0].get('action_data', {}).get('price') if player.actions else None,
+                            "win": player.win,
+                            "reasoning": reasoning,
+                            "thinking": thinking
+                        }
+                        break
+            
+            # Extract simplified defender data (no reasoning)
+            defenders = []
+            if hasattr(game_result, 'players') and game_result.players:
+                for player in game_result.players:
+                    if hasattr(player, 'player_role') and player.player_role == 'defender':
+                        defenders.append({
+                            "profit": player.profit,
+                            "price": player.actions[0].get('action_data', {}).get('price') if player.actions else None,
+                            "win": player.win
+                        })
+            
+            # Calculate summary metrics
+            challenger_profit = challenger_data['profit'] if challenger_data else 0
+            total_defender_profit = sum(d['profit'] for d in defenders)
+            defender_wins = sum(1 for d in defenders if d['win'])
+            
+            simplified_result = {
+                "game_number": f"{game_number}/{total_games}",
+                "challenger_model": challenger_model,
+                "challenger": challenger_data,
+                "defenders": defenders,
+                "summary": {
+                    "total_industry_profit": game_result.total_industry_profit,
+                    "challenger_profit": challenger_profit,
+                    "challenger_win": challenger_data['win'] if challenger_data else False,
+                    "defender_count": len(defenders),
+                    "total_defender_profit": total_defender_profit,
+                    "average_defender_profit": total_defender_profit / len(defenders) if defenders else 0,
+                    "defender_wins": defender_wins
+                },
+                "performance": {
+                    "api_calls": game_result.additional_metrics.get('total_api_calls', 0),
+                    "success_rate": 1.0,
+                    "avg_response_time": game_result.additional_metrics.get('average_response_time', 0)
+                }
+            }
+            
+            return simplified_result
+            
+        except Exception as e:
+            # Return error format if something goes wrong
+            return {
+                "game_number": f"{game_number}/{total_games}",
+                "challenger_model": challenger_model,
+                "error": f"Game {game_number} failed: {str(e)}",
+                "challenger": None,
+                "defenders": [],
+                "summary": {
+                    "total_industry_profit": 0,
+                    "challenger_profit": 0,
+                    "challenger_win": False,
+                    "defender_count": 0,
+                    "total_defender_profit": 0,
+                    "average_defender_profit": 0,
+                    "defender_wins": 0
+                },
+                "performance": {
+                    "api_calls": 0,
+                    "success_rate": 0,
+                    "avg_response_time": 0
+                }
+            }
 
 def setup_competition_logging():
     """Setup logging based on config.json settings"""
