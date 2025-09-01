@@ -55,13 +55,16 @@
       "base_demand_intercept": 100,
       "marginal_cost": 10.0,
       "collusive_quantity": 22.5,
-      "discount_rate": 0.05
+      "discount_rate": 0.05,
+      "demand_shock_std": 5.0
     },
     "athey_bagwell": {
       "high_cost": 15.0,
       "low_cost": 5.0,
       "market_price": 50.0,
-      "discount_factor": 0.95
+      "discount_factor": 0.95,
+      "market_size": 1000,
+      "cost_persistence": 0.8
     }
   },
   "logging": {

@@ -140,7 +140,7 @@ def validate_config() -> bool:
         if not models:
             logging.error("No models configured")
             return False
-        
+    
         # Check game constants exist for expected games
         constants = get_game_constants()
         expected_games = ['salop', 'spulber', 'green_porter', 'athey_bagwell']
@@ -230,6 +230,11 @@ class GameConstants:
     def GP_DISCOUNT_RATE(self) -> float:
         return self._constants['green_porter']['discount_rate']
     
+    # ADDED: Missing Green Porter constants
+    @property
+    def GP_DEMAND_SHOCK_STD(self) -> float:
+        return self._constants['green_porter'].get('demand_shock_std', 5.0)
+    
     # Athey Bagwell constants
     @property
     def AB_HIGH_COST(self) -> float:
@@ -246,6 +251,15 @@ class GameConstants:
     @property
     def AB_DISCOUNT_FACTOR(self) -> float:
         return self._constants['athey_bagwell']['discount_factor']
+    
+    # ADDED: Missing Athey-Bagwell constants  
+    @property
+    def AB_MARKET_SIZE(self) -> int:
+        return self._constants['athey_bagwell'].get('market_size', 1000)
+    
+    @property
+    def AB_COST_PERSISTENCE(self) -> float:
+        return self._constants['athey_bagwell'].get('cost_persistence', 0.8)
 
 
 # Result data classes for compatibility

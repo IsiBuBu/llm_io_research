@@ -15,11 +15,10 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 
-# Import configuration system
+# Import configuration system - FIXED: Only import functions that actually exist
 from config import (
     ExperimentConfig, GameConfig, ModelConfig,
-    get_available_models, get_experiment_presets, get_game_configs,
-    validate_config, load_config_file
+    get_available_models, validate_config, load_config_file
 )
 from competition import GameCompetition
 
@@ -75,7 +74,7 @@ class ExperimentCLI:
         
         # Load configurations from config files
         self.available_models = get_available_models()
-        self.experiment_presets = get_experiment_presets()
+        # REMOVED: self.experiment_presets = get_experiment_presets() - function doesn't exist
         self.config_data = config
         
         # Get available games from the competition system
@@ -242,152 +241,95 @@ class ExperimentCLI:
                 for j, challenger in enumerate(experiment_config['challenger_models']):
                     current_experiment += 1
                     self.print_progress(current_experiment, total_experiments, 
-                                      f"{challenger} vs {experiment_config['defender_model']}")
-                    time.sleep(0.1)  # Brief pause for visual effect
+                                      f"Running {game_name} vs {challenger}")
                 
-                # Run experiment
-                print(f"\n{Colors.CYAN}🚀 Starting {game_name} experiment...{Colors.END}")
-                game_results = self.competition.run_experiment(game_experiment_config)
-                all_results['games_run'][game_name] = game_results
+                # Run the experiment
+                experiment_result = self.competition.run_experiment(game_experiment_config)
                 
-                # Display results
-                self._display_game_results(game_name, game_results)
-                
+                all_results['games_run'][game_name] = experiment_result
                 self.experiments_run += 1
-                self.total_games_run += len(game_results.get('game_results', []))
+                
+                # Quick summary for this game
+                if 'summary_metrics' in experiment_result:
+                    overview = experiment_result['summary_metrics'].get('experiment_overview', {})
+                    success_rate = overview.get('success_rate', 0)
+                    duration = overview.get('total_duration', 0)
+                    
+                    print(f"{Colors.GREEN}✅ {game_name}: {success_rate:.1%} success, {duration:.1f}s{Colors.END}")
+                else:
+                    print(f"{Colors.YELLOW}⚠️  {game_name}: Completed with warnings{Colors.END}")
+                
+                time.sleep(1)  # Brief pause between games
                 
             except Exception as e:
                 self.print_error(f"Failed to run {game_name}: {e}")
-                all_results['games_run'][game_name] = {'error': str(e), 'success': False}
-                continue
+                all_results['games_run'][game_name] = {'error': str(e)}
         
-        # Generate session summary
-        print(f"\n{Colors.YELLOW}📊 Generating session summary...{Colors.END}")
-        all_results['session_summary'] = self._generate_session_summary(all_results)
+        # Calculate session summary
         all_results['end_time'] = datetime.now().isoformat()
+        all_results['session_summary'] = self._calculate_session_summary(all_results)
         
         # Export results
-        if custom_output:
-            export_dir = Path(custom_output)
-            export_dir.mkdir(exist_ok=True)
-        else:
-            export_dir = self.output_dir
-            
-        timestamp = int(time.time())
-        self._export_results(all_results, export_dir, f"{experiment_type}_{timestamp}")
+        self._export_results(all_results, experiment_type, custom_output)
         
         # Display final summary
         self._display_final_summary(all_results)
         
         return all_results
 
-    def _display_game_results(self, game_name: str, results: Dict[str, Any]):
-        """Display game results with nice formatting"""
+    def _calculate_session_summary(self, all_results: Dict[str, Any]) -> Dict[str, Any]:
+        """Calculate comprehensive session summary"""
         
-        try:
-            summary = results.get('summary_metrics', {})
-            exp_overview = summary.get('experiment_overview', {})
-            
-            success_rate = exp_overview.get('success_rate', 0)
-            duration = exp_overview.get('total_duration', 0)
-            successful_games = exp_overview.get('successful_games', 0)
-            total_games = exp_overview.get('total_games', 0)
-            
-            # Results box
-            print(f"\n{Colors.GREEN}╭{'─'*50}╮")
-            print(f"│ {Colors.BOLD}📊 {game_name.upper()} RESULTS{Colors.END}{Colors.GREEN}" + " " * (27 - len(game_name)) + "│")
-            print(f"├{'─'*50}┤")
-            print(f"│ ✅ Success Rate: {success_rate:>6.1%}                 │")
-            print(f"│ ⏱️  Duration:     {duration:>6.1f}s                 │")
-            print(f"│ 🎮 Games:        {successful_games:>3}/{total_games:<3}                  │")
-            
-            # Additional metrics if available
-            if 'api_stats' in summary:
-                api_stats = summary['api_stats']
-                total_calls = api_stats.get('total_calls', 0)
-                failed_calls = api_stats.get('failed_calls', 0)
-                print(f"│ 📡 API Calls:    {total_calls:>6} ({failed_calls} failed)      │")
-            
-            print(f"╰{'─'*50}╯{Colors.END}")
-            
-            # Behavioral insights if available
-            if 'comprehensive_metrics' in results:
-                self._display_behavioral_insights(results['comprehensive_metrics'])
-                
-        except Exception as e:
-            self.print_warning(f"Error displaying results for {game_name}: {e}")
+        start_time = datetime.fromisoformat(all_results['start_time'])
+        end_time = datetime.fromisoformat(all_results['end_time'])
+        duration = (end_time - start_time).total_seconds()
+        
+        games_run = all_results['games_run']
+        successful_games = sum(1 for result in games_run.values() if 'error' not in result)
+        total_games = len(games_run)
+        success_rate = successful_games / total_games if total_games > 0 else 0
+        
+        return {
+            'session_duration': duration,
+            'games_tested': list(games_run.keys()),
+            'successful_games': successful_games,
+            'total_games': total_games,
+            'success_rate': success_rate,
+            'total_experiments_run': self.experiments_run,
+            'experiment_type': all_results['experiment_type']
+        }
 
-    def _display_behavioral_insights(self, comprehensive_metrics: Dict[str, Any]):
-        """Display behavioral insights in a nice format"""
+    def _export_results(self, results: Dict[str, Any], experiment_type: str, 
+                       custom_output: Optional[str] = None):
+        """Export experiment results to files"""
         
-        try:
-            if not comprehensive_metrics:
-                return
-            
-            print(f"\n{Colors.BLUE}🧠 Behavioral Insights:{Colors.END}")
-            
-            # Model performance insights
-            if 'model_performance' in comprehensive_metrics:
-                perf = comprehensive_metrics['model_performance']
-                for model, metrics in perf.items():
-                    win_rate = metrics.get('win_rate', 0)
-                    avg_profit = metrics.get('avg_profit', 0)
-                    print(f"  🤖 {Colors.CYAN}{model}{Colors.END}: {win_rate:.1%} win rate, ${avg_profit:.2f} avg profit")
-            
-            # Strategic patterns
-            if 'strategic_patterns' in comprehensive_metrics:
-                patterns = comprehensive_metrics['strategic_patterns']
-                cooperation_rate = patterns.get('cooperation_rate', 0)
-                competition_rate = patterns.get('competition_rate', 0)
-                print(f"  🤝 Cooperation: {Colors.GREEN}{cooperation_rate:.1%}{Colors.END}")
-                print(f"  ⚔️  Competition: {Colors.RED}{competition_rate:.1%}{Colors.END}")
-                        
-        except Exception as e:
-            self.print_warning(f"Error displaying behavioral insights: {e}")
-
-    def _generate_session_summary(self, all_results: Dict[str, Any]) -> Dict[str, Any]:
-        """Generate session summary"""
+        # Determine output directory
+        if custom_output:
+            output_dir = Path(custom_output)
+        else:
+            output_dir = self.output_dir
         
-        try:
-            games_run = all_results.get('games_run', {})
-            successful_games = sum(1 for results in games_run.values() if not results.get('error'))
-            failed_games = len(games_run) - successful_games
-            
-            session_duration = (datetime.now() - self.session_start_time).total_seconds()
-            
-            return {
-                'experiment_type': all_results.get('experiment_type', 'unknown'),
-                'session_duration': session_duration,
-                'total_games_attempted': len(games_run),
-                'successful_games': successful_games,
-                'failed_games': failed_games,
-                'success_rate': successful_games / len(games_run) if games_run else 0,
-                'total_experiments_run': self.experiments_run,
-                'total_individual_games': self.total_games_run,
-                'games_tested': all_results.get('games_tested', [])
-            }
-            
-        except Exception as e:
-            return {'error': str(e)}
-
-    def _export_results(self, results: Dict[str, Any], output_dir: Path, filename_prefix: str):
-        """Export results to files"""
+        output_dir.mkdir(exist_ok=True)
         
+        # Create filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename_prefix = f"{experiment_type}_{timestamp}"
+        
+        # Export JSON results
+        json_file = output_dir / f"{filename_prefix}_results.json"
         try:
-            # Export JSON
-            json_file = output_dir / f"{filename_prefix}_results.json"
             with open(json_file, 'w', encoding='utf-8') as f:
                 json.dump(results, f, indent=2, ensure_ascii=False, default=str)
             self.print_success(f"Results exported to {json_file}")
-            
-            # Export CSV if pandas available
-            if PANDAS_AVAILABLE:
-                self._export_csv_summary(results, output_dir, filename_prefix)
-            
         except Exception as e:
-            self.print_error(f"Failed to export results: {e}")
+            self.print_error(f"Failed to export JSON: {e}")
+        
+        # Export CSV summary if pandas is available
+        if PANDAS_AVAILABLE:
+            self._export_csv_summary(results, output_dir, filename_prefix)
 
-    def _export_csv_summary(self, results: Dict[str, Any], output_dir: Path, filename_prefix: str):
+    def _export_csv_summary(self, results: Dict[str, Any], 
+                           output_dir: Path, filename_prefix: str):
         """Export CSV summary"""
         
         try:
