@@ -1,475 +1,614 @@
-# runner.py - Compact Version with Comprehensive Metrics
+#!/usr/bin/env python3
 """
-Essential experiment runner with comprehensive behavioral metrics integration.
-Provides streamlined access to LLM game theory experiments and behavioral analysis.
+LLM Game Theory Experiment CLI Runner
+Uses config.json and config.py for all configuration management
+Supports two experiment types: main (full) and debug (quick)
 """
 
 import os
 import json
-import time
 import logging
-from datetime import datetime
+import time
+import argparse
+import sys
 from pathlib import Path
+from datetime import datetime
 from typing import Dict, List, Any, Optional
 
+# Import configuration system
 from config import (
-    ExperimentConfig, GameConfig, 
-    get_available_models, get_experiment_presets,
-    ExperimentPresets, GameConfigs, validate_config
+    ExperimentConfig, GameConfig, ModelConfig,
+    get_available_models, get_experiment_presets, get_game_configs,
+    validate_config, load_config_file
 )
 from competition import GameCompetition
 
-class ExperimentRunner:
-    """Compact experiment runner with comprehensive behavioral metrics"""
+try:
+    import pandas as pd
+    PANDAS_AVAILABLE = True
+except ImportError:
+    PANDAS_AVAILABLE = False
+
+
+class Colors:
+    """ANSI color codes for terminal output"""
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    BOLD = '\033[1m'
+    END = '\033[0m'
+
+
+class ExperimentCLI:
+    """CLI runner that uses config.json and config.py"""
     
-    def __init__(self, gemini_api_key: str = None, debug: bool = False):
-        """Initialize experiment runner"""
+    def __init__(self, debug_mode: bool = False, output_base_dir: str = "results"):
+        """Initialize CLI using configuration files"""
         
-        # Setup logging
+        # Set up logging
+        log_level = logging.DEBUG if debug_mode else logging.INFO
         logging.basicConfig(
-            level=logging.DEBUG if debug else logging.INFO,
+            level=log_level,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
         )
         self.logger = logging.getLogger(__name__)
         
-        # Validate configuration
+        # Validate configuration first
         if not validate_config():
-            raise ValueError("Invalid configuration. Check config.json file.")
+            raise ValueError("Invalid configuration. Please check config.json file.")
         
-        # Setup API key
-        if gemini_api_key:
-            os.environ['GEMINI_API_KEY'] = gemini_api_key
-        elif not os.getenv('GEMINI_API_KEY'):
-            raise ValueError("GEMINI_API_KEY required")
+        # Set API key from config
+        config = load_config_file()
+        api_config = config.get('api', {})
+        api_key_env = api_config.get('gemini_api_key_env', 'GEMINI_API_KEY')
+        
+        if not os.getenv(api_key_env):
+            raise ValueError(f"API key required. Please set the {api_key_env} environment variable.")
+        
+        self.print_info(f"Using API key from environment variable: {api_key_env}")
         
         # Initialize competition system
-        self.competition = GameCompetition(debug=debug)
-        self.debug = debug
+        self.competition = GameCompetition(debug=debug_mode)
         
-        # Load configurations
+        # Load configurations from config files
         self.available_models = get_available_models()
         self.experiment_presets = get_experiment_presets()
+        self.config_data = config
+        
+        # Get available games from the competition system
+        self.available_games = list(self.competition.games.keys())
+        
+        # Set up output directory
+        self.output_dir = Path(output_base_dir)
+        self.output_dir.mkdir(exist_ok=True)
         
         # Session tracking
-        self.session_start_time = time.time()
         self.experiments_run = 0
         self.total_games_run = 0
+        self.session_start_time = datetime.now()
         
-        self.logger.info(f"ExperimentRunner initialized - {len(self.available_models)} models, {len(self.experiment_presets)} presets")
+        self.logger.info(f"ExperimentCLI initialized with {len(self.available_models)} models, {len(self.available_games)} games")
 
-    def run_preset_experiment(self, preset_key: str, games: List[str] = None, 
-                            output_dir: str = "results") -> Dict[str, Any]:
-        """Run experiment using predefined preset with comprehensive metrics"""
+    def print_header(self, text: str):
+        """Print a colorful header"""
+        print(f"\n{Colors.HEADER}{Colors.BOLD}{'='*60}")
+        print(f"🧠 {text}")
+        print(f"{'='*60}{Colors.END}")
+
+    def print_info(self, text: str):
+        """Print info message"""
+        print(f"{Colors.CYAN}ℹ️  {text}{Colors.END}")
+
+    def print_success(self, text: str):
+        """Print success message"""
+        print(f"{Colors.GREEN}✅ {text}{Colors.END}")
+
+    def print_warning(self, text: str):
+        """Print warning message"""
+        print(f"{Colors.YELLOW}⚠️  {text}{Colors.END}")
+
+    def print_error(self, text: str):
+        """Print error message"""
+        print(f"{Colors.RED}❌ {text}{Colors.END}")
+
+    def print_progress(self, current: int, total: int, text: str = ""):
+        """Print progress indicator"""
+        percentage = (current / total) * 100 if total > 0 else 0
+        bar_length = 40
+        filled_length = int(bar_length * current // total) if total > 0 else 0
+        bar = '█' * filled_length + '░' * (bar_length - filled_length)
+        print(f"\r{Colors.BLUE}📊 [{bar}] {percentage:.1f}% {text}{Colors.END}", end='', flush=True)
+        if current == total:
+            print()  # New line when complete
+
+    def create_experiment_config(self, experiment_type: str, games: Optional[List[str]] = None) -> Dict[str, Any]:
+        """Create experiment configuration based on type (main or debug)"""
         
-        if preset_key not in self.experiment_presets:
-            available = list(self.experiment_presets.keys())
-            raise ValueError(f"Unknown preset: {preset_key}. Available: {available}")
+        # Get base configuration from config.json
+        config = self.config_data
         
-        experiment_config = self.experiment_presets[preset_key]
+        # Get models from config
+        defender_model = None
+        challenger_models = []
+        
+        # Find a suitable defender and challengers from available models
+        model_keys = list(self.available_models.keys())
+        if len(model_keys) < 2:
+            raise ValueError("Need at least 2 models configured for experiments")
+        
+        defender_model = model_keys[0]  # Use first model as defender
+        challenger_models = model_keys[1:2]  # Use second model as challenger for debug, more for main
+        
+        # For main experiments, use more challengers if available
+        if experiment_type == "main" and len(model_keys) > 2:
+            challenger_models = model_keys[1:3]  # Use up to 2 challengers for main
+        
+        # Set number of players, rounds, and games based on experiment type
+        if experiment_type == "debug":
+            # Debug: Quick testing
+            num_players = 2
+            num_rounds = 1
+            num_games = 1
+        elif experiment_type == "main":
+            # Main: Full testing
+            num_players = 3
+            num_rounds = 3
+            num_games = 2
+        else:
+            raise ValueError(f"Unknown experiment type: {experiment_type}. Use 'main' or 'debug'")
         
         # Default to all games if not specified
+        if games is None:
+            games = self.available_games.copy()
+        
+        # Validate games
+        invalid_games = [g for g in games if g not in self.available_games]
+        if invalid_games:
+            self.print_warning(f"Skipping invalid games: {invalid_games}")
+            games = [g for g in games if g in self.available_games]
+        
         if not games:
-            games = ['salop', 'spulber', 'green_porter', 'athey_bagwell']
+            raise ValueError("No valid games specified")
         
-        self.logger.info(f"=== RUNNING PRESET EXPERIMENT: {preset_key} ===")
-        self.logger.info(f"Games: {games}")
-        self.logger.info(f"Defender: {experiment_config.defender_model_key}")
-        self.logger.info(f"Challengers: {experiment_config.challenger_model_keys}")
+        return {
+            'experiment_type': experiment_type,
+            'defender_model': defender_model,
+            'challenger_models': challenger_models,
+            'games': games,
+            'num_players': num_players,
+            'num_rounds': num_rounds,
+            'num_games': num_games,
+            'include_thinking': True
+        }
+
+    def run_experiment(self, experiment_type: str, games: Optional[List[str]] = None, 
+                      custom_output: Optional[str] = None) -> Dict[str, Any]:
+        """Run experiment with specified type (main or debug)"""
         
+        if experiment_type not in ['main', 'debug']:
+            self.print_error(f"Unknown experiment type '{experiment_type}'. Use 'main' or 'debug'")
+            return {}
+        
+        # Create experiment configuration
+        try:
+            experiment_config = self.create_experiment_config(experiment_type, games)
+        except Exception as e:
+            self.print_error(f"Failed to create experiment configuration: {e}")
+            return {}
+        
+        self.print_header(f"{experiment_type.upper()} Experiment")
+        
+        print(f"{Colors.CYAN}🎮 Games: {', '.join(experiment_config['games'])}")
+        print(f"🛡️  Defender: {experiment_config['defender_model']}")
+        print(f"⚔️  Challengers: {', '.join(experiment_config['challenger_models'])}")
+        print(f"👥 Players: {experiment_config['num_players']}")
+        print(f"🔄 Rounds: {experiment_config['num_rounds']}")
+        print(f"🎯 Games per experiment: {experiment_config['num_games']}{Colors.END}")
+        
+        # Initialize results
         all_results = {
-            'preset_key': preset_key,
-            'experiment_config': experiment_config.__dict__,
+            'experiment_type': experiment_type,
+            'experiment_config': experiment_config,
             'games_run': {},
-            'comprehensive_analysis': {},
             'session_summary': {},
-            'start_time': datetime.now().isoformat()
+            'start_time': datetime.now().isoformat(),
+            'games_tested': experiment_config['games'].copy()
         }
         
+        # Calculate total experiments for progress tracking
+        total_experiments = len(experiment_config['games']) * len(experiment_config['challenger_models'])
+        current_experiment = 0
+        
         # Run each game
-        for game_name in games:
-            if game_name not in self.competition.games:
-                self.logger.warning(f"Skipping unknown game: {game_name}")
-                continue
+        for i, game_name in enumerate(experiment_config['games']):
+            print(f"\n{Colors.BLUE}{Colors.BOLD}--- 🎮 Running {game_name.upper()} ({i+1}/{len(experiment_config['games'])}) ---{Colors.END}")
             
-            self.logger.info(f"\n--- Running {game_name.upper()} ---")
-            
-            # Create game-specific experiment config
+            # Create ExperimentConfig object for this game
             game_experiment_config = ExperimentConfig(
-                defender_model_key=experiment_config.defender_model_key,
-                challenger_model_keys=experiment_config.challenger_model_keys,
+                defender_model_key=experiment_config['defender_model'],
+                challenger_model_keys=experiment_config['challenger_models'],
                 game_name=game_name,
-                num_players=experiment_config.num_players,
-                num_rounds=experiment_config.num_rounds,
-                num_games=experiment_config.num_games,
-                include_thinking=experiment_config.include_thinking
+                num_players=experiment_config['num_players'],
+                num_rounds=experiment_config['num_rounds'],
+                num_games=experiment_config['num_games'],
+                include_thinking=experiment_config['include_thinking']
             )
             
             try:
-                # Run experiment with comprehensive metrics
+                # Show progress for challengers
+                for j, challenger in enumerate(experiment_config['challenger_models']):
+                    current_experiment += 1
+                    self.print_progress(current_experiment, total_experiments, 
+                                      f"{challenger} vs {experiment_config['defender_model']}")
+                    time.sleep(0.1)  # Brief pause for visual effect
+                
+                # Run experiment
+                print(f"\n{Colors.CYAN}🚀 Starting {game_name} experiment...{Colors.END}")
                 game_results = self.competition.run_experiment(game_experiment_config)
                 all_results['games_run'][game_name] = game_results
                 
-                # Log key results
-                self._log_game_results(game_name, game_results)
+                # Display results
+                self._display_game_results(game_name, game_results)
                 
                 self.experiments_run += 1
                 self.total_games_run += len(game_results.get('game_results', []))
                 
             except Exception as e:
-                self.logger.error(f"Failed to run {game_name}: {e}")
-                all_results['games_run'][game_name] = {'error': str(e)}
+                self.print_error(f"Failed to run {game_name}: {e}")
+                all_results['games_run'][game_name] = {'error': str(e), 'success': False}
+                continue
         
-        # Generate comprehensive analysis
-        all_results['comprehensive_analysis'] = self._analyze_all_results(all_results)
+        # Generate session summary
+        print(f"\n{Colors.YELLOW}📊 Generating session summary...{Colors.END}")
         all_results['session_summary'] = self._generate_session_summary(all_results)
         all_results['end_time'] = datetime.now().isoformat()
         
         # Export results
-        self._export_results(all_results, output_dir, f"{preset_key}_{int(time.time())}")
+        if custom_output:
+            export_dir = Path(custom_output)
+            export_dir.mkdir(exist_ok=True)
+        else:
+            export_dir = self.output_dir
+            
+        timestamp = int(time.time())
+        self._export_results(all_results, export_dir, f"{experiment_type}_{timestamp}")
         
-        # Display summary
-        self._display_summary(all_results)
+        # Display final summary
+        self._display_final_summary(all_results)
         
         return all_results
 
-    def run_single_game(self, game_name: str, defender_key: str, challenger_keys: List[str],
-                       num_players: int = 2, num_rounds: int = 1, num_games: int = 1) -> Dict[str, Any]:
-        """Run single game experiment with comprehensive metrics"""
+    def _display_game_results(self, game_name: str, results: Dict[str, Any]):
+        """Display game results with nice formatting"""
         
-        experiment_config = ExperimentConfig(
-            defender_model_key=defender_key,
-            challenger_model_keys=challenger_keys,
-            game_name=game_name,
-            num_players=num_players,
-            num_rounds=num_rounds,
-            num_games=num_games,
-            include_thinking=False
-        )
-        
-        self.logger.info(f"Running single {game_name} experiment")
-        results = self.competition.run_experiment(experiment_config)
-        
-        # Log and display key metrics
-        self._log_game_results(game_name, results)
-        self._display_behavioral_insights(results.get('comprehensive_metrics', {}))
-        
-        return results
-
-    def run_debug_test(self) -> Dict[str, Any]:
-        """Quick debug test with comprehensive metrics"""
-        self.logger.info("=== RUNNING DEBUG TEST ===")
-        return self.run_preset_experiment('debug_test', games=['salop'])
-
-    def run_main_experiment(self) -> Dict[str, Any]:
-        """Run main experiment if available"""
-        if 'main_experiment' in self.experiment_presets:
-            return self.run_preset_experiment('main_experiment')
-        else:
-            self.logger.warning("main_experiment preset not found, running debug_test")
-            return self.run_debug_test()
-
-    def _log_game_results(self, game_name: str, results: Dict[str, Any]):
-        """Log key results from game experiment"""
-        
-        summary = results.get('summary_metrics', {})
-        exp_overview = summary.get('experiment_overview', {})
-        
-        self.logger.info(f"{game_name.upper()} Results:")
-        self.logger.info(f"  ✓ Success Rate: {exp_overview.get('success_rate', 0):.1%}")
-        self.logger.info(f"  ⏱️  Duration: {exp_overview.get('total_duration', 0):.1f}s")
-        self.logger.info(f"  🎮 Games: {exp_overview.get('successful_games', 0)}")
-        
-        # Display behavioral insights
-        behavioral = summary.get('behavioral_insights', {})
-        key_findings = behavioral.get('key_findings', [])
-        if key_findings:
-            self.logger.info("  🧠 Key Behavioral Findings:")
-            for finding in key_findings[:2]:  # Top 2 findings
-                self.logger.info(f"    • {finding}")
-
-    def _analyze_all_results(self, all_results: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze results across all games"""
-        
-        analysis = {
-            'cross_game_patterns': {},
-            'model_performance_summary': {},
-            'behavioral_consistency': {},
-            'strategic_insights': []
-        }
-        
-        # Extract metrics from all games
-        all_metrics = {}
-        model_performance = {}
-        
-        for game_name, game_result in all_results['games_run'].items():
-            if 'error' in game_result:
-                continue
+        try:
+            summary = results.get('summary_metrics', {})
+            exp_overview = summary.get('experiment_overview', {})
             
-            # Extract comprehensive metrics
-            comp_metrics = game_result.get('comprehensive_metrics', {})
-            if comp_metrics:
-                all_metrics[game_name] = comp_metrics
+            success_rate = exp_overview.get('success_rate', 0)
+            duration = exp_overview.get('total_duration', 0)
+            successful_games = exp_overview.get('successful_games', 0)
+            total_games = exp_overview.get('total_games', 0)
             
-            # Extract model performance
-            model_perf = game_result.get('summary_metrics', {}).get('model_performance', {})
-            for model_key, stats in model_perf.items():
-                if model_key not in model_performance:
-                    model_performance[model_key] = {}
-                model_performance[model_key][game_name] = stats
-        
-        # Analyze cross-game patterns
-        if all_metrics:
-            analysis['cross_game_patterns'] = self._analyze_cross_game_patterns(all_metrics)
-        
-        # Summarize model performance across games
-        analysis['model_performance_summary'] = self._summarize_model_performance(model_performance)
-        
-        # Generate insights
-        analysis['strategic_insights'] = self._generate_strategic_insights(all_metrics, model_performance)
-        
-        return analysis
-
-    def _analyze_cross_game_patterns(self, all_metrics: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze behavioral patterns across different games"""
-        
-        patterns = {
-            'cooperation_by_game': {},
-            'rationality_by_game': {},
-            'consistency_analysis': {}
-        }
-        
-        # Extract key behavioral metrics by game
-        for game_name, game_metrics in all_metrics.items():
-            aggregate = game_metrics.get('aggregate_analysis', {})
-            behavioral_avg = aggregate.get('behavioral_averages', {})
-            magic_metrics = behavioral_avg.get('magic_behavioral', {})
+            # Results box
+            print(f"\n{Colors.GREEN}╭{'─'*50}╮")
+            print(f"│ {Colors.BOLD}📊 {game_name.upper()} RESULTS{Colors.END}{Colors.GREEN}" + " " * (27 - len(game_name)) + "│")
+            print(f"├{'─'*50}┤")
+            print(f"│ ✅ Success Rate: {success_rate:>6.1%}                 │")
+            print(f"│ ⏱️  Duration:     {duration:>6.1f}s                 │")
+            print(f"│ 🎮 Games:        {successful_games:>3}/{total_games:<3}                  │")
             
-            if magic_metrics:
-                if 'cooperation' in magic_metrics:
-                    patterns['cooperation_by_game'][game_name] = magic_metrics['cooperation']['mean']
-                if 'rationality' in magic_metrics:
-                    patterns['rationality_by_game'][game_name] = magic_metrics['rationality']['mean']
-        
-        return patterns
-
-    def _summarize_model_performance(self, model_performance: Dict[str, Any]) -> Dict[str, Any]:
-        """Summarize model performance across all games"""
-        
-        summary = {}
-        
-        for model_key, game_stats in model_performance.items():
-            total_games = sum(stats.get('total_games', 0) for stats in game_stats.values())
-            total_wins = sum(stats.get('wins', 0) for stats in game_stats.values())
-            avg_profit = sum(stats.get('avg_profit', 0) for stats in game_stats.values()) / len(game_stats) if game_stats else 0
+            # Additional metrics if available
+            if 'api_stats' in summary:
+                api_stats = summary['api_stats']
+                total_calls = api_stats.get('total_calls', 0)
+                failed_calls = api_stats.get('failed_calls', 0)
+                print(f"│ 📡 API Calls:    {total_calls:>6} ({failed_calls} failed)      │")
             
-            summary[model_key] = {
-                'overall_win_rate': total_wins / total_games if total_games > 0 else 0,
-                'average_profit': avg_profit,
-                'games_played': len(game_stats),
-                'total_games': total_games
-            }
-        
-        return summary
-
-    def _generate_strategic_insights(self, all_metrics: Dict[str, Any], 
-                                   model_performance: Dict[str, Any]) -> List[str]:
-        """Generate strategic insights from cross-game analysis"""
-        
-        insights = []
-        
-        # Analyze cooperation patterns
-        coop_games = []
-        for game_name, metrics in all_metrics.items():
-            aggregate = metrics.get('aggregate_analysis', {})
-            behavioral = aggregate.get('behavioral_averages', {}).get('magic_behavioral', {})
-            if 'cooperation' in behavioral:
-                coop_level = behavioral['cooperation']['mean']
-                if coop_level > 0.6:
-                    coop_games.append(game_name)
-        
-        if coop_games:
-            insights.append(f"High cooperation observed in: {', '.join(coop_games)}")
-        
-        # Analyze model consistency
-        model_count = len(model_performance)
-        if model_count > 1:
-            insights.append(f"Analyzed {model_count} different models across multiple games")
-        
-        # Add game-specific insights
-        if 'spulber' in all_metrics:
-            insights.append("Bertrand competition analysis includes rationality and judgment metrics")
-        if 'green_porter' in all_metrics:
-            insights.append("Collusion game analysis includes cooperation and coordination metrics")
-        if 'athey_bagwell' in all_metrics:
-            insights.append("Information collusion analysis includes deception detection")
-        
-        return insights
-
-    def _generate_session_summary(self, all_results: Dict[str, Any]) -> Dict[str, Any]:
-        """Generate session summary statistics"""
-        
-        session_duration = time.time() - self.session_start_time
-        successful_games = len([g for g in all_results['games_run'].values() if 'error' not in g])
-        total_games = len(all_results['games_run'])
-        
-        return {
-            'session_duration': session_duration,
-            'experiments_run': self.experiments_run,
-            'total_games_run': self.total_games_run,
-            'successful_games': successful_games,
-            'total_games': total_games,
-            'success_rate': successful_games / total_games if total_games > 0 else 0,
-            'comprehensive_metrics_enabled': True
-        }
-
-    def _display_summary(self, all_results: Dict[str, Any]):
-        """Display comprehensive experiment summary"""
-        
-        print("\n" + "="*60)
-        print("🧠 COMPREHENSIVE BEHAVIORAL ANALYSIS SUMMARY")
-        print("="*60)
-        
-        # Session overview
-        summary = all_results.get('session_summary', {})
-        print(f"⏱️  Session Duration: {summary.get('session_duration', 0):.1f}s")
-        print(f"🎮 Games Run: {summary.get('successful_games', 0)}/{summary.get('total_games', 0)}")
-        print(f"✅ Success Rate: {summary.get('success_rate', 0):.1%}")
-        
-        # Cross-game insights
-        analysis = all_results.get('comprehensive_analysis', {})
-        insights = analysis.get('strategic_insights', [])
-        if insights:
-            print(f"\n🧠 Strategic Insights:")
-            for insight in insights:
-                print(f"   • {insight}")
-        
-        # Model performance summary
-        model_summary = analysis.get('model_performance_summary', {})
-        if model_summary:
-            print(f"\n🤖 Model Performance Summary:")
-            for model_key, stats in model_summary.items():
-                print(f"   {model_key}: {stats['overall_win_rate']:.1%} win rate, ${stats['average_profit']:.2f} avg profit")
-        
-        # Cross-game patterns
-        patterns = analysis.get('cross_game_patterns', {})
-        coop_by_game = patterns.get('cooperation_by_game', {})
-        if coop_by_game:
-            print(f"\n🤝 Cooperation Levels by Game:")
-            for game, coop_level in coop_by_game.items():
-                print(f"   {game}: {coop_level:.2f}")
-        
-        print("="*60)
+            print(f"╰{'─'*50}╯{Colors.END}")
+            
+            # Behavioral insights if available
+            if 'comprehensive_metrics' in results:
+                self._display_behavioral_insights(results['comprehensive_metrics'])
+                
+        except Exception as e:
+            self.print_warning(f"Error displaying results for {game_name}: {e}")
 
     def _display_behavioral_insights(self, comprehensive_metrics: Dict[str, Any]):
-        """Display behavioral insights from comprehensive metrics"""
-        
-        if not comprehensive_metrics or 'error' in comprehensive_metrics:
-            return
-        
-        print(f"\n🧠 Behavioral Insights:")
-        
-        # Display aggregate behavioral metrics
-        aggregate = comprehensive_metrics.get('aggregate_analysis', {})
-        behavioral_avg = aggregate.get('behavioral_averages', {})
-        
-        magic_metrics = behavioral_avg.get('magic_behavioral', {})
-        if magic_metrics:
-            print(f"   MAgIC Behavioral Metrics:")
-            for metric_name, stats in magic_metrics.items():
-                if isinstance(stats, dict) and 'mean' in stats:
-                    print(f"     {metric_name.title()}: {stats['mean']:.3f}")
-
-    def _export_results(self, results: Dict[str, Any], output_dir: str, filename_prefix: str):
-        """Export results to JSON file"""
-        
-        output_path = Path(output_dir)
-        output_path.mkdir(exist_ok=True)
-        
-        # Export main results
-        results_file = output_path / f"{filename_prefix}_results.json"
+        """Display behavioral insights in a nice format"""
         
         try:
-            with open(results_file, 'w') as f:
-                json.dump(results, f, indent=2, default=str)
+            if not comprehensive_metrics:
+                return
             
-            self.logger.info(f"📄 Results exported to {results_file}")
+            print(f"\n{Colors.BLUE}🧠 Behavioral Insights:{Colors.END}")
             
-            # Export summary CSV if possible
-            self._export_summary_csv(results, output_path, filename_prefix)
+            # Model performance insights
+            if 'model_performance' in comprehensive_metrics:
+                perf = comprehensive_metrics['model_performance']
+                for model, metrics in perf.items():
+                    win_rate = metrics.get('win_rate', 0)
+                    avg_profit = metrics.get('avg_profit', 0)
+                    print(f"  🤖 {Colors.CYAN}{model}{Colors.END}: {win_rate:.1%} win rate, ${avg_profit:.2f} avg profit")
+            
+            # Strategic patterns
+            if 'strategic_patterns' in comprehensive_metrics:
+                patterns = comprehensive_metrics['strategic_patterns']
+                cooperation_rate = patterns.get('cooperation_rate', 0)
+                competition_rate = patterns.get('competition_rate', 0)
+                print(f"  🤝 Cooperation: {Colors.GREEN}{cooperation_rate:.1%}{Colors.END}")
+                print(f"  ⚔️  Competition: {Colors.RED}{competition_rate:.1%}{Colors.END}")
+                        
+        except Exception as e:
+            self.print_warning(f"Error displaying behavioral insights: {e}")
+
+    def _generate_session_summary(self, all_results: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate session summary"""
+        
+        try:
+            games_run = all_results.get('games_run', {})
+            successful_games = sum(1 for results in games_run.values() if not results.get('error'))
+            failed_games = len(games_run) - successful_games
+            
+            session_duration = (datetime.now() - self.session_start_time).total_seconds()
+            
+            return {
+                'experiment_type': all_results.get('experiment_type', 'unknown'),
+                'session_duration': session_duration,
+                'total_games_attempted': len(games_run),
+                'successful_games': successful_games,
+                'failed_games': failed_games,
+                'success_rate': successful_games / len(games_run) if games_run else 0,
+                'total_experiments_run': self.experiments_run,
+                'total_individual_games': self.total_games_run,
+                'games_tested': all_results.get('games_tested', [])
+            }
             
         except Exception as e:
-            self.logger.error(f"Failed to export results: {e}")
+            return {'error': str(e)}
 
-    def _export_summary_csv(self, results: Dict[str, Any], output_path: Path, filename_prefix: str):
-        """Export summary to CSV format"""
+    def _export_results(self, results: Dict[str, Any], output_dir: Path, filename_prefix: str):
+        """Export results to files"""
         
         try:
-            import pandas as pd
+            # Export JSON
+            json_file = output_dir / f"{filename_prefix}_results.json"
+            with open(json_file, 'w', encoding='utf-8') as f:
+                json.dump(results, f, indent=2, ensure_ascii=False, default=str)
+            self.print_success(f"Results exported to {json_file}")
             
-            # Create summary data
+            # Export CSV if pandas available
+            if PANDAS_AVAILABLE:
+                self._export_csv_summary(results, output_dir, filename_prefix)
+            
+        except Exception as e:
+            self.print_error(f"Failed to export results: {e}")
+
+    def _export_csv_summary(self, results: Dict[str, Any], output_dir: Path, filename_prefix: str):
+        """Export CSV summary"""
+        
+        try:
             summary_data = []
+            games_run = results.get('games_run', {})
             
-            for game_name, game_result in results.get('games_run', {}).items():
-                if 'error' in game_result:
-                    continue
-                
-                summary_metrics = game_result.get('summary_metrics', {})
-                exp_overview = summary_metrics.get('experiment_overview', {})
-                
-                summary_data.append({
-                    'game': game_name,
-                    'success_rate': exp_overview.get('success_rate', 0),
-                    'duration': exp_overview.get('total_duration', 0),
-                    'games_run': exp_overview.get('successful_games', 0),
-                    'comprehensive_metrics': 'available' if game_result.get('comprehensive_metrics') else 'unavailable'
-                })
+            for game_name, game_result in games_run.items():
+                if game_result.get('error'):
+                    summary_data.append({
+                        'game': game_name,
+                        'success_rate': 0.0,
+                        'duration': 0.0,
+                        'games_run': 0,
+                        'comprehensive_metrics': 'error',
+                        'error': game_result.get('error', 'Unknown error')
+                    })
+                else:
+                    summary = game_result.get('summary_metrics', {})
+                    exp_overview = summary.get('experiment_overview', {})
+                    
+                    summary_data.append({
+                        'game': game_name,
+                        'success_rate': exp_overview.get('success_rate', 0),
+                        'duration': exp_overview.get('total_duration', 0),
+                        'games_run': exp_overview.get('successful_games', 0),
+                        'comprehensive_metrics': 'available' if game_result.get('comprehensive_metrics') else 'unavailable',
+                        'error': None
+                    })
             
             if summary_data:
                 df = pd.DataFrame(summary_data)
-                csv_file = output_path / f"{filename_prefix}_summary.csv"
+                csv_file = output_dir / f"{filename_prefix}_summary.csv"
                 df.to_csv(csv_file, index=False)
-                self.logger.info(f"📊 Summary exported to {csv_file}")
+                self.print_success(f"Summary exported to {csv_file}")
                 
-        except ImportError:
-            self.logger.debug("pandas not available - skipping CSV export")
         except Exception as e:
-            self.logger.error(f"Failed to export CSV: {e}")
+            self.print_error(f"Failed to export CSV: {e}")
 
-    def list_available_presets(self):
-        """List all available experiment presets"""
-        print("\n📋 Available Experiment Presets:")
-        for preset_key, config in self.experiment_presets.items():
-            print(f"   {preset_key}: {config.game_name} - {config.defender_model_key} vs {len(config.challenger_model_keys)} challengers")
+    def _display_final_summary(self, all_results: Dict[str, Any]):
+        """Display final comprehensive summary"""
+        
+        session_summary = all_results.get('session_summary', {})
+        
+        print(f"\n{Colors.HEADER}{Colors.BOLD}")
+        print("╭" + "─" * 58 + "╮")
+        print("│" + " " * 12 + f"🎯 {session_summary.get('experiment_type', 'UNKNOWN').upper()} EXPERIMENT COMPLETED" + " " * 12 + "│")
+        print("├" + "─" * 58 + "┤")
+        print(f"│ ⏱️  Duration:     {session_summary.get('session_duration', 0):>8.1f}s" + " " * 21 + "│")
+        print(f"│ 🎮 Games:        {', '.join(session_summary.get('games_tested', [])):<30}│")
+        print(f"│ ✅ Success Rate: {session_summary.get('success_rate', 0):>8.1%}" + " " * 21 + "│")
+        print(f"│ 🔢 Experiments:  {session_summary.get('total_experiments_run', 0):>8}" + " " * 21 + "│")
+        print("╰" + "─" * 58 + "╯")
+        print(f"{Colors.END}")
 
-    def list_available_models(self):
-        """List all available models"""
-        print("\n🤖 Available Models:")
-        for model_key, config in self.available_models.items():
-            thinking_status = " (Thinking)" if config.thinking_enabled else " (Thinking Available)" if config.thinking_available else ""
-            print(f"   {model_key}: {config.display_name}{thinking_status}")
+    # CLI Information Methods
+    def list_models(self):
+        """List all available models from config"""
+        print(f"\n{Colors.HEADER}🤖 Available Models (from config.json):{Colors.END}")
+        for model_key, model_config in self.available_models.items():
+            thinking_status = ""
+            if model_config.thinking_enabled:
+                thinking_status = f"{Colors.GREEN} (🧠 Thinking Enabled){Colors.END}"
+            elif model_config.thinking_available:
+                thinking_status = f"{Colors.YELLOW} (🧠 Thinking Available){Colors.END}"
+            print(f"  {Colors.CYAN}• {model_key:<20}{Colors.END} - {model_config.display_name}{thinking_status}")
 
-# Convenience functions
-def quick_debug_test(api_key: str = None) -> Dict[str, Any]:
-    """Quick way to run debug test"""
-    runner = ExperimentRunner(gemini_api_key=api_key, debug=True)
-    return runner.run_debug_test()
+    def list_games(self):
+        """List all available games"""
+        print(f"\n{Colors.HEADER}🎮 Available Games:{Colors.END}")
+        for game in self.available_games:
+            print(f"  {Colors.CYAN}• {game}{Colors.END}")
 
-def run_preset(preset_key: str, api_key: str = None) -> Dict[str, Any]:
-    """Quick way to run any preset"""
-    runner = ExperimentRunner(gemini_api_key=api_key)
-    return runner.run_preset_experiment(preset_key)
+    def show_config(self):
+        """Show current configuration"""
+        print(f"\n{Colors.HEADER}⚙️  Current Configuration:{Colors.END}")
+        
+        config = self.config_data
+        
+        # Show experiment types
+        print(f"\n{Colors.BLUE}📊 Experiment Types:{Colors.END}")
+        print(f"  {Colors.CYAN}• debug{Colors.END} - Quick testing (2 players, 1 round, 1 game)")
+        print(f"  {Colors.CYAN}• main{Colors.END}  - Full testing (3 players, 3 rounds, 2 games)")
+        
+        # Show models
+        print(f"\n{Colors.BLUE}🤖 Models: {len(self.available_models)}{Colors.END}")
+        for model_key in self.available_models.keys():
+            print(f"  • {model_key}")
+        
+        # Show games
+        print(f"\n{Colors.BLUE}🎮 Games: {len(self.available_games)}{Colors.END}")
+        for game in self.available_games:
+            print(f"  • {game}")
+
+    def interactive_menu(self):
+        """Interactive CLI menu"""
+        while True:
+            self.print_header("LLM Game Theory Experiment CLI")
+            print(f"{Colors.BLUE}Select an option:{Colors.END}")
+            print("1. Run Debug Experiment (quick: 2 players, 1 round, 1 game)")
+            print("2. Run Main Experiment (full: 3 players, 3 rounds, 2 games)")
+            print("3. List Available Models")
+            print("4. List Available Games")
+            print("5. Show Current Configuration")
+            print("6. Exit")
+            
+            try:
+                choice = input(f"\n{Colors.YELLOW}Enter your choice (1-6): {Colors.END}").strip()
+                
+                if choice == '1':
+                    self.run_experiment('debug')
+                elif choice == '2':
+                    self.run_experiment('main')
+                elif choice == '3':
+                    self.list_models()
+                elif choice == '4':
+                    self.list_games()
+                elif choice == '5':
+                    self.show_config()
+                elif choice == '6':
+                    self.print_success("Goodbye!")
+                    break
+                else:
+                    self.print_warning("Invalid choice, please try again")
+                    
+                if choice in ['1', '2']:
+                    input(f"\n{Colors.YELLOW}Press Enter to continue...{Colors.END}")
+                    
+            except KeyboardInterrupt:
+                print(f"\n{Colors.YELLOW}Interrupted by user{Colors.END}")
+                break
+            except Exception as e:
+                self.print_error(f"Error: {e}")
+
+
+def main():
+    """Main CLI entry point"""
+    parser = argparse.ArgumentParser(
+        description="LLM Game Theory Experiment CLI - Uses config.json for all settings",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python runner.py --debug                    # Run debug experiment (quick testing)
+  python runner.py --main                     # Run main experiment (full testing)
+  python runner.py --games salop spulber      # Run specific games only
+  python runner.py --list-models              # List models from config.json
+  python runner.py --show-config              # Show current configuration
+  python runner.py --interactive              # Interactive menu mode
+        """
+    )
+    
+    # Experiment commands
+    parser.add_argument('--debug', action='store_true',
+                        help='Run debug experiment (quick: 2 players, 1 round, 1 game)')
+    parser.add_argument('--main', action='store_true',
+                        help='Run main experiment (full: 3 players, 3 rounds, 2 games)')
+    parser.add_argument('--games', nargs='+', metavar='GAME',
+                        help='Specify games to run (default: all available)')
+    
+    # Information commands
+    parser.add_argument('--list-models', action='store_true',
+                        help='List available models from config.json')
+    parser.add_argument('--list-games', action='store_true',
+                        help='List available games')
+    parser.add_argument('--show-config', action='store_true',
+                        help='Show current configuration')
+    
+    # Options
+    parser.add_argument('--output', type=str, metavar='DIR',
+                        help='Custom output directory')
+    parser.add_argument('--verbose', action='store_true',
+                        help='Enable verbose logging')
+    parser.add_argument('--interactive', action='store_true',
+                        help='Start interactive menu mode')
+    
+    args = parser.parse_args()
+    
+    # If no arguments, show help
+    if len(sys.argv) == 1:
+        parser.print_help()
+        return
+    
+    # Initialize CLI
+    try:
+        cli = ExperimentCLI(debug_mode=args.verbose, output_base_dir=args.output or "results")
+    except Exception as e:
+        print(f"{Colors.RED}❌ Failed to initialize: {e}{Colors.END}")
+        print(f"{Colors.YELLOW}💡 Make sure config.json exists and is valid{Colors.END}")
+        return
+    
+    try:
+        # Handle information commands
+        if args.list_models:
+            cli.list_models()
+            return
+        elif args.list_games:
+            cli.list_games()
+            return
+        elif args.show_config:
+            cli.show_config()
+            return
+        elif args.interactive:
+            cli.interactive_menu()
+            return
+        
+        # Handle experiment commands
+        if args.debug:
+            cli.run_experiment('debug', games=args.games, custom_output=args.output)
+        elif args.main:
+            cli.run_experiment('main', games=args.games, custom_output=args.output)
+        else:
+            cli.print_warning("No experiment command specified")
+            parser.print_help()
+            
+    except KeyboardInterrupt:
+        cli.print_warning("Interrupted by user")
+    except Exception as e:
+        cli.print_error(f"Error: {e}")
+        if args.verbose:
+            import traceback
+            traceback.print_exc()
+
 
 if __name__ == "__main__":
-    # Quick test if run directly
-    print("🧠 LLM Game Theory Experiments with Comprehensive Behavioral Metrics")
-    print("Run: python runner.py or use quick_debug_test()")
-    
-    # Example usage
-    try:
-        if os.getenv('GEMINI_API_KEY'):
-            results = quick_debug_test()
-            print("✅ Debug test completed successfully!")
-        else:
-            print("⚠️  Set GEMINI_API_KEY environment variable to run tests")
-    except Exception as e:
-        print(f"❌ Error: {e}")
+    main()
