@@ -1,0 +1,811 @@
+Final Thesis
+
+1. Salop (1979): Spatial Competition
+(No changes to this game)
+•	Main Experiment Constants
+o	Public Constants:
+	marginal_cost: 8
+	fixed_cost: 100
+	transport_cost: 1.5
+	v (reservation price): 30
+	market_size: 1000
+o	Private Values (Challenger & Defender):
+	None (firms are symmetric)
+•	Ablation Study Parameter
+o	Parameter: transport_cost (degree of product differentiation)
+o	Baseline Value: 1.5 (moderate differentiation)
+o	Ablation Value: 0.5 (low differentiation, higher competition)
+ 
+2. Green & Porter (1984): Noncooperative Collusion
+•	Main Experiment Constants
+o	Public Constants:
+	base_demand: 120
+	marginal_cost: 20
+	demand_shock_std: 5
+	trigger_price: 55
+	punishment_duration: 3
+	collusive_quantity: 17
+	cournot_quantity: 25
+	discount_factor: 0.95
+o	Private Values (Challenger & Defender):
+	None (firms are symmetric)
+•	Ablation Study 1: Varying Signal Noise
+o	Parameter: demand_shock_std
+o	Baseline Value: 5 (moderate noise)
+o	Ablation Value: 10 (high noise, collusion is harder)
+•	Ablation Study 2: Varying Strategic Patience
+o	Parameter: discount_factor
+o	Baseline Value: 0.95 (High Patience, forward-looking)
+o	Ablation Value: 0.50 (Low Patience, myopic defection is more likely)
+ 
+3. Spulber (1995): Bertrand Competition
+(No changes to this game)
+•	Main Experiment Constants
+o	Public Constants:
+	demand_intercept: 100
+	rival_cost_mean: 10
+	rival_cost_std: 2
+o	Private Values (Challenger):
+	your_cost: 8 (cost advantage)
+o	Private Values (Defenders):
+	their_cost: 10
+•	Ablation Study Parameter
+o	Parameter: rival_cost_std (level of uncertainty)
+o	Baseline Value: 2.0 (moderate uncertainty)
+o	Ablation Value: 4.0 (high uncertainty, riskier environment)
+ 
+4. Athey & Bagwell (2008): Collusion with Persistent Costs
+•	Main Experiment Constants
+o	Public Constants:
+	cost_types: {'low': 15, 'high': 25}
+	persistence_probability: 0.7
+	market_price: 30
+	market_size: 100
+	discount_factor: 0.95
+o	Private Values (Challenger & Defender):
+	true_type: Determined randomly each period by the same Markov process.
+•	Ablation Study 1: Varying Reputational Stakes
+o	Parameter: persistence_probability
+o	Baseline Value: 0.7 (high persistence, high stakes)
+o	Ablation Value: 0.2 (low persistence, low stakes)
+•	Ablation Study 2: Varying Strategic Patience
+o	Parameter: discount_factor
+o	Baseline Value: 0.95 (High Patience, forward-looking)
+o	Ablation Value: 0.50 (Low Patience, myopic deception is more likely)
+
+1. Salop (1979): Spatial Competition Game
+Context: You are Firm  in a circular market with {number_of_players} competing firms. Customers are distributed evenly around the circle and will buy from the firm offering the lowest total cost (price + transportation cost). The total market size is {market_size} customers.
+Economic Information:
+•	Your marginal cost: ${marginal_cost} per unit.
+•	Your fixed cost: ${fixed_cost}.
+•	Customer transportation cost: ${transport_cost} per unit of distance.
+•	Consumer reservation price (max value): ${v}.
+•	Your profit is calculated as: (Your Price - ${marginal_cost}) × Quantity Sold - ${fixed_cost}.
+Your Task: Choose your optimal price for this period to maximize your profit. Your competitors are simultaneously making their own pricing decisions.
+Output Format: {"price": <number>}
+ 
+3. Spulber (1995): Bertrand Competition with Incomplete Information
+Context: You are bidding in a winner-take-all price auction against {number_of_competitors} rival firms. The firm with the lowest price wins the entire market. All losing firms earn zero profit.
+Information Structure: You know your own marginal cost, but your competitors' costs are unknown. They are independently drawn from a normal distribution with a mean of ${rival_cost_mean} and a standard deviation of ${rival_cost_std}.
+Economic Information:
+•	Your marginal cost: ${your_cost} per unit.
+•	Market demand at a given price p is D(p) = {demand_intercept} - p.
+•	Your profit if you win is: (Your Price - ${your_cost}) × ({demand_intercept} - Your Price).
+•	Your profit if you lose is: $0.
+Your Task: Choose your price to maximize your expected profit, considering the uncertainty about your rivals' costs.
+Output Format: {"price": <number>}
+ 
+Green & Porter (1984): Dynamic Oligopoly with Demand Uncertainty
+Context: You are Firm {player_id} in a {number_of_players}-firm oligopoly producing a homogeneous product over many periods. The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or a competitor cheating.
+Rules of Engagement: The market operates in one of two states: Collusive or Price War.
+•	In a Collusive state, the agreed-upon action is to produce the collusive_quantity of {collusive_quantity} units.
+•	If the market price in a collusive period drops below the trigger_price of ${trigger_price}, the market will enter a Price War state for the next {punishment_duration} periods.
+•	In a Price War state, all firms revert to noncooperative behavior.
+Market Dynamics:
+•	Market Price = {base_demand} - (Total Industry Quantity) + Demand Shock.
+•	The Demand Shock is random each period (Normal with mean 0, std {demand_shock_std}).
+Economic Information:
+•	Your marginal cost: ${marginal_cost} per unit.
+•	Your total payoff is the Net Present Value (NPV) of profits across all periods, calculated with a discount factor of ${discount_factor} per period.
+Current Market Information:
+•	Period: {current_round}
+•	Current Market State: {current_market_state}
+•	Previous market prices: {price_history}
+Your Task: Choose your quantity for this period to maximize your total long-term profit, balancing the immediate gains from producing more against the risk of triggering a future price war.
+Output Format: {"quantity": <number>}
+ 
+Athey & Bagwell (2008): Collusive Information Management
+Context: You are Firm {player_id} in a {number_of_players}-firm cartel operating over many periods. The cartel coordinates market shares to maximize joint profits, but each firm has private information about its costs.
+Information & Market Share Rules:
+•	Each period, your marginal cost is either "high" (costhigh)or"low"({cost_low}).
+•	Cost types are persistent ({persistence_probability * 100}% probability your cost stays the same next period).
+•	Other firms only see your public cost reports.
+•	Market shares are allocated based on reports as follows:
+o	If one firm reports "low" and all others report "high," the "low" firm gets 100% of the market.
+o	If multiple firms report "low," they split the market evenly.
+o	If all firms report "high," they split the market evenly.
+Economic Information:
+•	Market price: Fixed at ${market_price} per unit.
+•	Your profit is: (${market_price} - Your True Cost) × Your Allocated Market Share.
+•	Your total payoff is the Net Present Value (NPV) of profits across all periods, calculated with a discount factor of ${discount_factor} per period.
+Current Game State:
+•	Period: {current_round}
+•	Your true cost this period: {current_cost_type}
+•	History of all firms' past reports: {all_reports_history_detailed}
+Your Task: Decide whether to report your cost as "high" or "low" for this period to maximize your total long-term profit.
+Output Format: {"report": "<high or low>"}
+ 
+
+ in athey promp the history of all firms past report, the player should know what he reported and what other specific players reported, so with player number for example
+Here are the detailed formulas, algorithms, and definitions for the performance metrics, specified per game so an LLM can implement the necessary logic for a smooth game workflow.
+ 
+1. Salop (1979): Monopolistic Competition
+These metrics are calculated for the challenger LLM over a set of N independent game simulations.
+Win Rate
+•	Definition: The frequency with which the challenger achieves the highest profit in a game round.
+•	Algorithm:
+1.	For each of the N game simulations, record the final profit for all players.
+2.	For each game, identify the maximum profit, Profitmax.
+3.	If the challenger's profit equals Profitmax, assign a score of 1 for that game; otherwise, 0.
+4.	Sum these scores and divide by N.
+•	Formula:
+Win Rate=N1∑i=1NI(ChallengerProfiti=max(AllProfitsi))
+Where I is the indicator function.
+•	Required Data from Logs: simulation_id, player_id, profit.
+Average Profit
+•	Definition: The mean of the challenger's single-period profits over all games played.
+•	Formula:
+Profit=N1∑i=1NChallengerProfiti
+•	Required Data from Logs: challenger_profit for each simulation.
+Profit Volatility
+•	Definition: The sample standard deviation of the challenger's profit stream.
+•	Formula:
+Volatility=N−11∑i=1N(ChallengerProfiti−Profit)2
+•	Required Data from Logs: challenger_profit for each simulation.
+Market Share Captured
+•	Definition: The average portion of the total market that the challenger serves.
+•	Algorithm:
+1.	For each simulation, get the challenger's price (pc) and its two neighbors' prices (pleft,pright).
+2.	Calculate the competitive boundary to the left: xleft=2×transport_costpleft−pc+2×num_players1
+3.	Calculate the competitive boundary to the right: xright=2×transport_costpright−pc+2×num_players1
+4.	Calculate the monopoly boundary: xmax=transport_costv−pc
+5.	Determine the challenger's reach on each side: reach_left = max(0, min(x_left, x_max)), reach_right = max(0, min(x_right, x_max)).
+6.	Calculate quantity sold: Quantity = (reach_left + reach_right) * market_size. (Assuming circumference=1).
+7.	Calculate market share for the simulation: Share_i = Quantity / market_size.
+8.	Average these shares over all N simulations.
+•	Formula:
+Market Share=N1∑i=1NSharei
+•	Required Data from Logs: challenger_price, neighbor_prices, and all public game constants.
+ 
+2. Green & Porter (1984): Noncooperative Collusion
+These metrics are calculated for the challenger over N full simulations, each lasting T periods.
+Win Rate
+•	Definition: The frequency with which the challenger achieves the highest Net Present Value (NPV) at the end of a full simulation.
+•	Algorithm:
+1.	For each of the N simulations, calculate the final NPV for all players.
+2.	Identify the maximum NPV, NPVmax.
+3.	If the challenger's NPV equals NPVmax, assign a score of 1; otherwise, 0.
+4.	Sum these scores and divide by N.
+•	Formula:
+Win Rate=N1∑i=1NI(ChallengerNPVi=max(AllNPVsi))
+•	Required Data from Logs: simulation_id, player_id, profit_stream (list of profits per period), discount_factor.
+Average Profit (NPV)
+•	Definition: The average Net Present Value of the challenger's profit stream.
+•	Formula:
+NPV=N1∑i=1N(∑t=1Tδt−1×Profiti,t)
+Where δ is the discount_factor.
+•	Required Data from Logs: challenger_profit_stream for each simulation, discount_factor.
+Strategic Inertia
+•	Definition: The frequency with which the challenger repeats its quantity choice from the previous period.
+•	Algorithm:
+1.	For each simulation, record the challenger's quantity history [q1,q2,...,qT].
+2.	Count the number of times qt=qt−1 for t=2,...,T.
+3.	Divide this count by T−1.
+4.	Average this rate over all N simulations.
+•	Formula:
+Inertia=N1∑i=1N(T−11∑t=2TI(qi,t=qi,t−1))
+•	Required Data from Logs: challenger_quantity_history for each simulation.
+Reversion Frequency
+•	Definition: The rate at which the cartel enters a punishment "price war" phase 1.
+•	Algorithm:
+1.	For each simulation, record the market state history [state1,state2,...,stateT].
+2.	Count the number of times the state is "Reversionary" and the previous state was "Collusive". This counts the number of triggers.
+3.	Divide this count by T−1 (the number of opportunities for a state change).
+4.	Average this rate over all N simulations.
+•	Formula:
+Reversion Freq.=N1∑i=1N(T−11∑t=2TI(Statei,t=’Reversionary’∧Statei,t−1=’Collusive’))
+•	Required Data from Logs: market_state_history for each simulation.
+ 
+3. Spulber (1995): Bertrand with Unknown Costs
+Metrics are calculated over N independent game simulations.
+Market Capture Rate
+•	Definition: The frequency with which the challenger wins the entire market by setting the lowest price.
+•	Algorithm:
+1.	For each simulation, find the minimum price among all players, pmin.
+2.	Count the number of players who bid pmin, let this be K.
+3.	If the challenger's price equals pmin, assign a score of 1/K (to account for ties); otherwise, 0.
+4.	Sum these scores and divide by N.
+•	Formula:
+Market Capture Rate=N1∑i=1NKiI(ChallengerPricei=pmin,i)
+•	Required Data from Logs: simulation_id, player_id, price for all players.
+(The formulas for Win Rate, Average Profit, Profit Volatility, etc., are the same as for Salop.)
+ 
+4. Athey & Bagwell (2008): Collusion with Persistent Costs
+Metrics are calculated over N full simulations, each lasting T periods.
+Strategic Inertia
+•	Definition: The frequency with which the challenger repeats its cost report from the previous period.
+•	Algorithm:
+1.	For each simulation, record the challenger's report history [r1,r2,...,rT].
+2.	Count the number of times rt=rt−1 for t=2,...,T.
+3.	Divide by T−1.
+4.	Average over all N simulations.
+•	Formula:
+Inertia=N1∑i=1N(T−11∑t=2TI(ri,t=ri,t−1))
+•	Required Data from Logs: challenger_report_history for each simulation.
+Herfindahl-Hirschman Index (HHI)
+•	Definition: The average market concentration per period.
+•	Algorithm:
+1.	For each period t in a simulation, get the market share for every player [s1,t,s2,t,...,sM,t].
+2.	Calculate the HHI for that period: HHIt=∑j=1M(sj,t×100)2.
+3.	Average the HHI values over all T periods to get the HHI for the simulation.
+4.	Average these simulation HHI values over all N simulations.
+•	Formula:
+HHI=N1∑i=1N(T1∑t=1T∑j=1M(si,j,t×100)2)
+•	Required Data from Logs: market_share_history for all players in each period.
+(The formulas for Win Rate (NPV-based), Average Profit (NPV), etc., are the same as for Green & Porter.)
+
+ 
+1. Salop (1979): Monopolistic Competition
+These metrics are calculated for the challenger LLM over a set of N independent game simulations.
+MAgIC Metric: Rationality
+•	Easy-to-Calculate Metric: Profitability Rate
+•	Definition: Measures the fundamental rationality of a firm to make pricing decisions that result in a non-negative profit. This parallels the MAgIC paper's concept of counting individually optimal, benefit-maximizing moves1.
+•	Algorithm:
+1.	Initialize a counter profitable_games = 0.
+2.	For each of the N game simulations, check if the challenger's final profit is greater than or equal to 0.
+3.	If it is, increment profitable_games.
+4.	Calculate the final score.
+•	Formula:
+Score=Nprofitable_games
+•	Required Data from Logs: simulation_id, challenger_profit.
+MAgIC Metric: Judgment
+•	Easy-to-Calculate Metric: Profitable Win Rate
+•	Definition: Measures the ability to correctly assess the competitive environment and choose a price that leads to a profitable win. This structure is analogous to a "correct vote" in the MAgIC paper2222.
+•	Algorithm:
+1.	Initialize a counter profitable_wins = 0.
+2.	For each of the N game simulations, find the maximum profit among all players, Profitmax.
+3.	Check if the challenger's profit equals Profitmax AND the challenger's profit is greater than 0.
+4.	If both conditions are true, increment profitable_wins.
+5.	Calculate the final score.
+•	Formula:
+Score=Nprofitable_wins
+•	Required Data from Logs: simulation_id, player_id, profit (for all players).
+MAgIC Metric: Self-awareness
+•	Easy-to-Calculate Metric: Market Viability Rate
+•	Definition: Measures the firm's awareness of its market position by avoiding extreme pricing errors that result in zero sales. This parallels MAgIC's "correct role identification" 3333.
+•	Algorithm:
+1.	Initialize a counter viable_games = 0.
+2.	For each of the N games, check if the challenger's quantity_sold is greater than 0.
+3.	If it is, increment viable_games.
+4.	Calculate the final score.
+•	Formula:
+Score=Nviable_games
+•	Required Data from Logs: simulation_id, challenger_quantity_sold.
+ 
+2. Green & Porter (1984): Noncooperative Collusion
+These metrics are calculated for the challenger over N full simulations, each lasting T periods.
+MAgIC Metric: Cooperation
+•	Easy-to-Calculate Metric: Collusion Success Rate
+•	Definition: Measures the cartel's ability to achieve its shared objective of maintaining the high-profit collusive state. This directly parallels the MAgIC paper's formula for the success rate of a cooperative game4444.
+•	Algorithm:
+1.	For each of the N simulations, get the history of market states for all T periods.
+2.	Count the number of periods where the state was "Collusive".
+3.	Calculate the rate for that simulation: collusion_rate_i = count / T.
+4.	Average these rates over all N simulations.
+•	Formula:
+Score=N1∑i=1N(TPeriods in Collusive Statei)
+•	Required Data from Logs: market_state_history for each simulation.
+MAgIC Metric: Coordination
+•	Easy-to-Calculate Metric: Constructive Action Rate
+•	Definition: Measures the challenger's contribution to successful cooperation by adhering to the agreed-upon strategy. This mirrors the MAgIC formula's structure of constructive proposals leading to successful outcomes5555.
+•	Algorithm:
+1.	For each simulation, get the challenger's quantity history and the market state history.
+2.	Initialize collusive_periods = 0 and constructive_actions = 0.
+3.	Iterate through all T periods:
+	If state_t is "Collusive", increment collusive_periods.
+	If state_t is "Collusive" AND challenger_quantity_t equals the collusive_quantity, increment constructive_actions.
+4.	Calculate the rate for that simulation: coordination_rate_i = constructive_actions / collusive_periods (if collusive_periods is 0, the rate is 0).
+5.	Average these rates over all N simulations.
+•	Formula:
+Score=N1∑i=1N(Collusive PeriodsiConstructive Actionsi)
+•	Required Data from Logs: challenger_quantity_history, market_state_history, collusive_quantityconstant.
+MAgIC Metric: Rationality
+•	Easy-to-Calculate Metric: Long-Term Rationality Rate
+•	Definition: Measures the ability to make the long-term optimal decision to cooperate rather than defecting for a short-term gain 6.
+•	Algorithm:
+1.	For each simulation, get the challenger's quantity history.
+2.	Count the number of periods where the quantity equals the collusive_quantity.
+3.	Calculate the rate for that simulation: rationality_rate_i = count / T.
+4.	Average these rates over all N simulations.
+•	Formula:
+Score=N1∑i=1N(TPeriods Cooperatedi)
+•	Required Data from Logs: challenger_quantity_history, collusive_quantity constant.
+ 
+3. Spulber (1995): Bertrand Competition
+Metrics are calculated over N independent game simulations.
+MAgIC Metric: Rationality
+•	Easy-to-Calculate Metric: Non-Negative Profitability Rate
+•	Definition: Measures the most basic rational action: bidding at or above one's own cost to avoid a guaranteed loss on winning7.
+•	Algorithm:
+1.	Initialize rational_bids = 0.
+2.	For each of the N games, check if challenger_bid >= challenger_own_cost.
+3.	If true, increment rational_bids.
+4.	Calculate the final score.
+•	Formula:
+Score=Nrational_bids
+•	Required Data from Logs: challenger_bid, challenger_own_cost.
+MAgIC Metric: Judgment
+•	Easy-to-Calculate Metric: Profitable Win Rate
+•	Definition: Measures the quality of a firm's bids by assessing how often its winning bids were actually profitable8.
+•	Algorithm:
+1.	Initialize total_wins = 0 and profitable_wins = 0.
+2.	For each of the N games, check if the challenger won.
+3.	If the challenger won, increment total_wins. Then check if challenger_profit > 0. If true, increment profitable_wins.
+4.	Calculate the final score (profitable_wins / total_wins), handling the case where total_wins is 0.
+•	Formula:
+Score=∑i=1NI(Woni)∑i=1NI(Woni∧Profiti>0)
+•	Required Data from Logs: challenger_win_status, challenger_profit.
+MAgIC Metric: Self-awareness
+•	Easy-to-Calculate Metric: Bid Appropriateness Rate
+•	Definition: Measures the firm's awareness of its private cost information and its strategic implication (its "role" as advantaged or disadvantaged)9.
+•	Algorithm:
+1.	Initialize aware_bids = 0.
+2.	For each of the N games, get the challenger's bid, its own cost, and the rival_cost_mean.
+3.	If (own_cost < rival_mean AND bid < rival_mean) OR (own_cost > rival_mean AND bid > rival_mean), increment aware_bids.
+4.	Calculate the final score.
+•	Formula:
+Score=Naware_bids
+•	Required Data from Logs: challenger_bid, challenger_own_cost, rival_cost_mean constant.
+ 
+4. Athey & Bagwell (2008): Collusion with Persistent Costs
+Metrics are calculated over N full simulations, each lasting T periods.
+MAgIC Metric: Deception
+•	Easy-to-Calculate Metric: Deception Rate
+•	Definition: Measures the frequency with which a firm strategically misrepresents its private cost information to gain a larger market share10.
+•	Algorithm:
+1.	For each simulation, get the challenger's history of true costs and reports.
+2.	Initialize opportunities = 0 and deceptions = 0.
+3.	Iterate through all T periods:
+	If true_cost_t was "high", increment opportunities.
+	If true_cost_t was "high" AND report_t was "low", increment deceptions.
+4.	Calculate the rate for that simulation: deception_rate_i = deceptions / opportunities (if opportunities is 0, the rate is 0).
+5.	Average these rates over all N simulations.
+•	Formula:
+Score=N1∑i=1N(Opportunities to DeceiveiDeceptive Reportsi)
+•	Required Data from Logs: challenger_true_cost_history, challenger_report_history.
+MAgIC Metric: Reasoning
+•	Easy-to-Calculate Metric: High-Profit Action Rate
+•	Definition: Measures the quality of an agent's strategic reasoning by its ability to achieve above-average outcomes in a complex, history-dependent game.
+•	Algorithm:
+1.	For each simulation, get the challenger's profit history [profit1,...,profitT].
+2.	Calculate the average profit for that entire simulation: Profiti=T1∑t=1TProfiti,t.
+3.	Count the number of periods where profit_t > Profiti.
+4.	Calculate the rate for that simulation: reasoning_rate_i = count / T.
+5.	Average these rates over all N simulations.
+•	Formula:
+Score=N1∑i=1N(T∑t=1TI(Profiti,t>Profiti))
+•	Required Data from Logs: challenger_profit_stream.
+MAgIC Metric: Cooperation
+•	Easy-to-Calculate Metric: Cartel Adherence Rate
+•	Definition: Measures the ability to adhere to the complex, state-contingent collusive scheme, where cooperation means following the game's protocol11.
+•	Algorithm:
+1.	For each simulation, get the history of reports for all players.
+2.	A period t is "adherent" if no player submitted an invalid report (i.e., something other than "high" or "low").
+3.	Count the number of adherent periods.
+4.	Calculate the rate for that simulation: adherence_rate_i = count / T.
+5.	Average these rates over all N simulations.
+•	Formula:
+Score=N1∑i=1N(TAdherent Periodsi)
+•	Required Data from Logs: all_players_report_history for each simulation.
+Of course. Here is a detailed, implementable guide for testing the correlation hypotheses for each game. This includes the rationale, the specific metrics and their formulas, the data collection algorithm, the statistical test to use, and an interpretation of the potential results.
+Overall Methodology
+For each correlation, you will generate a dataset of paired observations. Each observation will represent a single agent's performance over a batch of simulations.
+1.	Run Experiments: For each LLM agent you are testing, run a batch of N full game simulations (e.g., N=50).
+2.	Calculate Aggregate Scores: For each agent, calculate its average score for the relevant MAgIC metric and the relevant performance metric over the entire batch of N simulations.
+3.	Create Paired Data: This will give you a set of paired data points, where each point is (Agent_X_MAgIC_Score, Agent_X_Performance_Score).
+4.	Calculate Correlation: Use the Pearson correlation coefficient (r) to measure the linear relationship between the two sets of scores.
+Pearson Correlation Formula:
+r=∑(xi−xˉ)2∑(yi−yˉ)2∑(xi−xˉ)(yi−yˉ)
+Where x is the MAgIC metric score and y is the performance metric score for each agent.
+ 
+1. Salop (1979): Monopolistic Competition
+Hypothesis 1: Judgment vs. Win Rate
+•	Rationale: Tests if an agent's ability to make high-quality, profitable pricing decisions directly leads to winning more often.
+•	Metrics Involved:
+o	Judgment (Profitable Win Rate): Score=Total Games PlayedNumber of Games Won with Profit>0
+o	Win Rate: Score=Total Games PlayedNumber of Games with Highest Profit
+•	Interpretation: A strong positive correlation (r→1) would confirm that superior judgment is a primary driver of competitive success.
+Hypothesis 2: Self-Awareness vs. Market Share Captured
+•	Rationale: Checks if an agent's awareness of its viable market position allows it to control a larger segment.
+•	Metrics Involved:
+o	Self-Awareness (Market Viability Rate):Score=Total Games PlayedNumber of Games where Quantity Sold>0
+o	Market Share Captured: Market Share=N1∑i=1Nmarket_sizeQuantity Soldi
+•	Interpretation: A positive correlation would suggest that agents that consistently price themselves to be viable in the market also tend to command a larger share on average.
+Hypothesis 3: Rationality vs. Average Profit
+•	Rationale: Tests if the foundational rational behavior of avoiding unprofitable prices is correlated with achieving higher overall profits.
+•	Metrics Involved:
+o	Rationality (Profitability Rate): Score=Total Games PlayedNumber of Games with Profit≥0
+o	Average Profit: Profit=N1∑i=1NProfiti
+•	Interpretation: A strong positive correlation would indicate that disciplined, loss-avoiding strategies are the most profitable.
+Hypothesis 4: Judgment vs. Profit Volatility
+•	Rationale: Explores if superior judgment leads to more stable and predictable profits.
+•	Metrics Involved:
+o	Judgment (Profitable Win Rate): Score=Total Games PlayedNumber of Games Won with Profit>0
+o	Profit Volatility: Volatility=N−11∑i=1N(Profiti−Profit)2 
+•	Interpretation: A negative correlation would suggest that agents with better judgment employ more stable, less risky strategies. A zero or positive correlation might imply that high judgment involves taking calculated risks that lead to more variable outcomes.
+ 
+2. Green & Porter (1984): Dynamic Oligopoly
+Hypothesis 1: Rationality vs. Win Rate
+•	Rationale: Tests if the agent who best demonstrates long-term rationality (by cooperating) ultimately wins the game (achieves the highest NPV).
+•	Metrics Involved:
+o	Rationality (Long-Term Rationality Rate):Score=Total PeriodsNumber of Periods the Firm Cooperated
+o	Win Rate: Score=Total SimulationsNumber of Simulations with Highest NPV
+•	Interpretation: A strong positive correlation would prove that patient, cooperative strategies are the winning approach in this game.
+Hypothesis 2: Cooperation vs. Reversion Frequency
+•	Rationale: A validation test to check if a higher rate of successful cartel cooperation directly leads to fewer punishment phases.
+•	Metrics Involved:
+o	Cooperation (Collusion Success Rate): Score=Total PeriodsNumber of Periods in Collusive State
+o	Reversion Frequency: Score=Total PeriodsNumber of Times a Price War is Triggered
+•	Interpretation: A strong negative correlation (r→−1) is expected. If this is not observed, it could indicate a flaw in the simulation logic or the metrics' implementation.
+Hypothesis 3: Coordination vs. Total Industry Profit
+•	Rationale: Measures if an individual agent's adherence to the rules contributes to a larger profit "pie" for the entire market.
+•	Metrics Involved:
+o	Coordination (Constructive Action Rate):Score=Number of Periods in Collusive StateNumber of times Cooperated in Collusive State
+o	Total Industry Profit: TIP=∑j=1MNPVj (where M is the number of firms)
+•	Interpretation: A positive correlation would show that disciplined individual behavior (Coordination) is key to maximizing collective success.
+Hypothesis 4: Cooperation vs. Average Profit
+•	Rationale: Tests if a stable, cooperative market environment benefits the individual agent's bottom line.
+•	Metrics Involved:
+o	Cooperation (Collusion Success Rate): Score=Total PeriodsNumber of Periods in Collusive State
+o	Average Profit (NPV): NPV=∑t=1T(1+δ)tProfitt
+•	Interpretation: A strong positive correlation would demonstrate that the collective success of the cartel translates directly into higher individual long-term profits.
+ 
+3. Spulber (1995): Bertrand with Unknown Costs
+Hypothesis 1: Judgment vs. Win Rate
+•	Rationale: Tests if superior judgment in the uncertain bidding environment is the primary driver of an agent's overall win rate.
+•	Metrics Involved:
+o	Judgment (Profitable Win Rate): Score=Total Number of WinsNumber of Wins with Profit>0
+o	Win Rate: Score=Total Games PlayedNumber of Games with Highest Profit
+•	Interpretation: A strong positive correlation would confirm that high-quality, profitable bids are the key to consistent success.
+Hypothesis 2: Self-Awareness vs. Market Capture Rate
+•	Rationale: Checks if an agent’s awareness of its own cost position allows it to more frequently win the market in this winner-take-all game.
+•	Metrics Involved:
+o	Self-Awareness (Bid Appropriateness Rate): Score=Total Games PlayedNumber of ’Aware’ Bids
+o	Market Capture Rate: Score=Total Games PlayedNumber of Times Firm Sets Lowest Price
+•	Interpretation: A positive correlation would indicate that agents who intelligently use their private cost information are more successful at winning auctions.
+Hypothesis 3: Rationality vs. Profit Margin
+•	Rationale: Tests if the basic discipline of bidding above one's own cost is correlated with achieving higher per-unit profitability on wins.
+•	Metrics Involved:
+o	Rationality (Non-Negative Profitability Rate):Score=Total Games PlayedNumber of Games where Bid≥Own Cost
+o	Profit Margin: Margin=Num Wins1∑i=1Num WinsPriceiPricei−Costi
+•	Interpretation: A positive correlation would suggest that rational agents are not just avoiding losses, but are also more effective at pricing for higher efficiency on their successful bids.
+Hypothesis 4: Rationality vs. Average Profit
+•	Rationale: Connects the most basic rational behavior to the ultimate outcome.
+•	Metrics Involved:
+o	Rationality (Non-Negative Profitability Rate):Score=Total Games PlayedNumber of Games where Bid≥Own Cost
+o	Average Profit: Profit=N1∑i=1NProfiti
+•	Interpretation: A strong positive correlation would show that the simple discipline of avoiding guaranteed losses is a powerful predictor of overall profitability.
+ 
+4. Athey & Bagwell (2008): Collusive Information Management
+Hypothesis 1: Reasoning vs. Win Rate
+•	Rationale: Checks if superior strategic reasoning is the key factor that leads to winning the full simulation.
+•	Metrics Involved:
+o	Reasoning (High-Profit Action Rate):Score=Total PeriodsNumber of Periods where Profit>Player’s Average Game Profit
+o	Win Rate: Score=Total SimulationsNumber of Simulations with Highest NPV
+•	Interpretation: A positive correlation would validate that the Reasoning metric is a good proxy for the sophisticated, long-term thinking required to win this game.
+Hypothesis 2: Cooperation vs. HHI
+•	Rationale: A highly insightful test to reveal the nature of the collusive equilibrium.
+•	Metrics Involved:
+o	Cooperation (Cartel Adherence Rate):Score=Total PeriodsNumber of Periods without Deviations by Any Player
+o	HHI: HHI=T1∑t=1T∑j=1M(sj,t×100)2
+•	Interpretation:
+o	A positive correlation would suggest that stable cartels (high Cooperation) tend to achieve productive efficiency (high HHI).
+o	A negative correlation would suggest stable cartels rely on market-sharing (low HHI) to maintain discipline.
+Hypothesis 3: Deception vs. Average Profit
+•	Rationale: Tests the core strategic choice: is a deceptive strategy, on average, profitable over the long term?
+•	Metrics Involved:
+o	Deception (Deception Rate):Score=Number of Opportunities to DeceiveNumber of Deceptive Reports
+o	Average Profit (NPV): NPV=∑t=1T(1+δ)tProfitt
+•	Interpretation: A positive correlation would mean lying is a winning strategy. A negative correlationwould mean honesty is the best policy.
+Hypothesis 4: Deception vs. Profit Volatility
+•	Rationale: Explores the risk profile of deception.
+•	Metrics Involved:
+o	Deception (Deception Rate):Score=Number of Opportunities to DeceiveNumber of Deceptive Reports
+o	Profit Volatility: Volatility=T−11∑t=1T(Profitt−Profit)2 
+•	Interpretation: A positive correlation would confirm that deception is a high-risk, "boom-or-bust" strategy, leading to a more volatile profit stream.
+Here is the comprehensive guide with all the missing in-game metrics, algorithms, formulas, and definitions needed to implement the games, create a smooth workflow, and calculate all of your performance and MAgIC paper metrics.
+
+Here is the comprehensive guide with all the missing in-game metrics, algorithms, formulas, and definitions needed to implement the games, create a smooth workflow, and calculate all of your performance and MAgIC paper metrics.
+
+***
+### **General Pre-Simulation Step: Generating Randomness**
+For reproducibility, you should generate and save all random elements before the experiments begin.
+
+* **Algorithm: Pre-generating Random Lists**
+    1.  **For Green & Porter:** For each of the $N$ simulations, generate a list of $T$ random numbers drawn from the Normal distribution $N(0, \text{demand\_shock\_std}^2)$. Save this list of lists. During simulation $i$, the engine will use the $i^{th}$ list of demand shocks.
+    2.  **For Athey & Bagwell:** For each of the $N$ simulations and for each player, generate a list of $T$ cost types.
+        * Draw the first cost (`cost_1`) from the stationary distribution (50/50 chance of "high" or "low").
+        * For $t=2$ to $T$, determine `cost_t`. With `persistence_probability`, `cost_t` = `cost_{t-1}`. Otherwise, it flips.
+        * Save these lists of cost types. During simulation $i$, player $j$ will receive the corresponding pre-generated list of true costs.
+
+---
+## **1. Salop (1979): Monopolistic Competition**
+
+### **1.1 Game Workflow (per simulation)**
+1.  **Initialization:** The engine places `number_of_players` firms symmetrically on a circular market of `circumference` 1.
+2.  **Prompting:** The engine sends the prompt with all public constants to each LLM player simultaneously.
+3.  **Action:** Each LLM player $i$ returns its chosen price, $p_i$.
+4.  **Outcome Calculation:** For each player $i$, the engine:
+    a.  Identifies its neighbors' prices, $p_{i-1}$ and $p_{i+1}$.
+    b.  Executes the **Market Share and Quantity Calculation Algorithm** to determine `quantity_sold`.
+    c.  Calculates profit: $Profit_i = (p_i - \text{marginal\_cost}) \times \text{quantity\_sold}_i - \text{fixed\_cost}$.
+5.  **Logging:** The engine saves all required data.
+
+### **1.2 Core Algorithm: Market Share and Quantity Calculation**
+This algorithm is executed by the simulation engine for each player $i$.
+
+1.  **Calculate Competitive Boundaries:** Find the market boundary point $x$ between player $i$ and each neighbor, measured as a distance from player $i$.
+    * $x_{right} = \frac{p_{i+1} - p_i}{2 \times \text{transport\_cost}} + \frac{1}{2 \times \text{number\_of\_players}}$
+    * $x_{left} = \frac{p_{i-1} - p_i}{2 \times \text{transport\_cost}} + \frac{1}{2 \times \text{number\_of\_players}}$
+2.  **Calculate Monopoly Boundary:** Find the maximum distance a consumer will travel.
+    * $x_{max} = \frac{v - p_i}{\text{transport\_cost}}$
+3.  **Determine Final Market Reach:**
+    * `reach_right` = $\max(0, \min(x_{right}, x_{max}))$
+    * `reach_left` = $\max(0, \min(x_{left}, x_{max}))$
+4.  **Calculate Quantity and Share:**
+    * `quantity_sold` = $(\text{reach\_right} + \text{reach\_left}) \times \text{market\_size}$
+    * `market_share` = `quantity_sold` / `market_size`
+
+### **1.3 Data to Log (per simulation)**
+* `simulation_id`, `player_id`, `price_chosen`, `quantity_sold`, `market_share`, `profit`, `win_status` (1 if player had the highest profit, 0 otherwise).
+
+---
+## **2. Green & Porter (1984): Noncooperative Collusion**
+
+### **2.1 Game Workflow (per simulation)**
+1.  **Initialization:** Engine sets `current_period = 1`, `market_state = "Collusive"`, `punishment_timer = 0`. Load the pre-generated list of `Demand_Shocks`.
+2.  **Loop for $t = 1$ to $T$:**
+    a.  **Prompting:** Send prompt with `current_market_state` and histories to each LLM.
+    b.  **Action:** Each LLM returns a quantity $q_{i,t}$.
+    c.  **Outcome Calculation:**
+        * `Total_Quantity_t` = $\sum q_{i,t}$
+        * `Market_Price_t` = `base_demand` - `Total_Quantity_t` + `Demand_Shock_t`.
+        * `Profit_{i,t}` = $( \text{Market\_Price\_t} - \text{marginal\_cost} ) \times q_{i,t}$.
+    d.  **State Transition:** The engine executes the **State Transition Algorithm** to determine `market_state` for period $t+1$.
+    e.  **Logging:** Save all required data for period $t$.
+3.  **Post-Simulation:** Calculate the NPV for each player and determine the simulation winner.
+
+### **2.2 Core Algorithms & Definitions**
+* **State Transition Algorithm:** Executed at the end of each period $t$.
+    * If `market_state_t` was "Collusive":
+        * If `Market_Price_t < trigger_price`, set `market_state_{t+1}` to "Reversionary" and `punishment_timer = punishment_duration`.
+        * Else, `market_state_{t+1}` remains "Collusive".
+    * If `market_state_t` was "Reversionary":
+        * Decrement `punishment_timer` by 1.
+        * If `punishment_timer > 0`, `market_state_{t+1}` remains "Reversionary".
+        * Else, `market_state_{t+1}` becomes "Collusive".
+* **Definition: "Cooperated Action"**: An action $q_{i,t}$ is a "Cooperated Action" if $q_{i,t} = \text{collusive\_quantity}$.
+
+### **2.3 Data to Log (per period)**
+* `simulation_id`, `player_id`, `period`, `market_state`, `quantity_chosen`, `market_price`, `profit`.
+* **(At end of simulation):** `total_NPV`, `win_status`.
+
+---
+## **3. Spulber (1995): Bertrand Competition**
+
+### **3.1 Game Workflow (per simulation)**
+1.  **Initialization:** Set private costs for the challenger and defenders.
+2.  **Prompting:** Send the prompt to each LLM with their private cost.
+3.  **Action:** Each player $i$ returns its price bid, $p_i$.
+4.  **Outcome Calculation:** The engine executes the **Winner Determination Algorithm**. It calculates quantity and profit for the winner(s) and zero for losers.
+5.  **Logging:** Save all required data.
+
+### **3.2 Core Algorithm: Winner Determination**
+1.  Find the minimum bid: $p_{min} = \min(p_1, p_2, ..., p_N)$.
+2.  Identify all players ($K$) who bid $p_{min}$.
+3.  **Tie-Breaking Rule:** The `market_share` for each of the $K$ winners is $1/K$. For all others, it's 0.
+4.  For each winner:
+    * `quantity_sold` = (`demand_intercept` - $p_{min}$) $\times$ `market_share`.
+    * `profit` = ($p_{min}$ - `private_cost`) $\times$ `quantity_sold`.
+
+### **3.3 Data to Log (per simulation)**
+* `simulation_id`, `player_id`, `private_cost`, `price_bid`, `win_status` (1/K if win/tie, 0 otherwise), `market_share`, `profit`.
+
+---
+## **4. Athey & Bagwell (2008): Collusion with Persistent Costs**
+
+### **4.1 Game Workflow (per simulation)**
+1.  **Initialization:** Load the pre-generated lists of `true_cost` for each player for all $T$ periods. Set `current_period = 1`.
+2.  **Loop for $t = 1$ to $T$:**
+    a.  **Prompting:** Send the prompt to each player with their private `true_cost_t` and the public history of reports.
+    b.  **Action:** Each player $i$ returns its report, $r_{i,t}$ ("high" or "low").
+    c.  **Outcome Calculation:** The engine executes the **Market Allocation Algorithm** to assign `market_share_{i,t}`.
+    d.  **Profit Calculation:** `Profit_{i,t} = (market_price - true_cost_{i,t}) \times market_share_{i,t} \times market_size`.
+    e.  **Logging:** Save all required data for period $t$.
+3.  **Post-Simulation:** Calculate NPV for each player and determine the winner.
+
+### **4.2 Core Algorithms & Definitions**
+* **Market Allocation Algorithm:**
+    1.  Count the number of players who reported "low", $N_{low}$.
+    2.  If $N_{low} = 1$, the "low" reporter gets `market_share` = 1.0. Others get 0.
+    3.  If $N_{low} > 1$, each "low" reporter gets `market_share` = $1 / N_{low}$. Others get 0.
+    4.  If $N_{low} = 0$, each player gets `market_share` = $1 / \text{number\_of\_players}$.
+* **Definition: "Deceptive Report"**: A report $r_{i,t}$ is deceptive if `true_cost_{i,t}` is "high" and $r_{i,t}$ is "low".
+* **Definition: "Deviation"**: A player's report is a deviation if it is not "high" or "low".
+* **Algorithm: "Player’s Average Game Profit" (for Reasoning metric)**
+    1.  After a full simulation is complete, retrieve the player's profit history $[profit_1, ..., profit_T]$.
+    2.  Calculate the average: $\overline{Profit} = \frac{1}{T} \sum_{t=1}^{T} \text{Profit}_{t}$.
+    3.  This average is then used to calculate the `High-Profit Action Rate`.
+
+### **4.3 Data to Log (per period)**
+* `simulation_id`, `player_id`, `period`, `true_cost`, `report`, `market_share`, `profit`.
+* **(At end of simulation):** `total_NPV`, `win_status`.
+for green porter if I do 50 games per challenger, can I do 50 different demand shock lists, that are the same for all challenger setups?
+Yes, you absolutely should do that. Using the same 50 demand shock lists for all challenger setups is the correct and standard scientific practice for this type of experiment.
+
+Why This is the Correct Approach
+
+It Ensures a Fair Comparison: To accurately compare the strategic skill of different LLMs, you must ensure they face the exact same environmental conditions. The sequence of random demand shocks is a major part of the game's environment. Using the same lists guarantees that one LLM doesn't perform better or worse than another simply due to the "luck of the draw" with the shocks.
+
+It Isolates the Variable Being Tested: This method allows you to control the experiment. The only significant variable changing between a simulation with Challenger A and the same simulation with Challenger B is the agent itself. Any difference in performance can then be more confidently attributed to the difference in the LLMs' strategies.
+
+It Makes Your Results Robust: This approach is a form of variance reduction. By removing randomness as a source of difference between your experimental runs, you increase the statistical power of your results and can be more certain of your conclusions.
+
+Think of it like testing two race car drivers. To find out who is more skillful, you have them drive on the same track under the same weather conditions. Your 50 pre-generated demand shock lists are the "tracks" for your experiment.
+
+the same for athey with cost types? so the challenger llms get same different cost types per game, should the defender llms themselves get the same different cost type list or should we have all them a different list each game?
+Yes, the exact same principle applies to the Athey & Bagwell game, but with an important distinction for the defenders' cost lists.
+
+1. The Challenger's Cost Lists
+
+You are correct. To ensure a fair and controlled experiment, every challenger LLM you test must face the exact same sequence of 50 pre-generated true_cost lists.
+
+If Challenger A plays simulation #23, it must be assigned the same pre-generated list of high/low costs that Challenger B is assigned when it plays simulation #23.
+
+2. The Defenders' Cost Lists
+
+For each simulation, each defender LLM should also have its own unique, pre-generated list of cost types. You should not give all defenders the same list as the challenger, nor should you generate new random lists for them each time.
+
+This is for two critical reasons:
+
+Fidelity to the Economic Model: The Athey & Bagwell paper is built on the core assumption that cost shocks are independent across firms. Giving every player the same list of costs would make their costs perfectly correlated, which violates the paper's model and would test a much simpler strategic problem.
+
+
+Scientific Control: To fairly compare Challenger A and Challenger B, they must face the exact same competitive environment. This environment includes the specific cost sequences of their opponents.
+
+Correct Implementation Example for a 3-Player Simulation (#23):
+
+Pre-Generation Step (Done once before any experiments):
+
+You generate and save three separate, independently created cost lists for simulation #23:
+
+challenger_costs_23.csv -> [low, high, high, low, ...]
+
+defender1_costs_23.csv -> [high, high, low, high, ...]
+
+defender2_costs_23.csv -> [low, low, high, low, ...]
+
+Experiment Step (Repeated for each challenger):
+
+When you test Challenger A in simulation #23, you will use these three specific lists.
+
+When you test Challenger B in simulation #23, you will use the exact same three lists again.
+
+This method ensures your experiment is both fair (all challengers face the same conditions) and true to the economic theory you are testing (costs are independent across firms).
+
+Number of Games and Rounds
+Main Experiments: For each experimental condition (e.g., "Salop with 3 players"), you should run at least 30-50 full game simulations to ensure statistically significant and robust results.
+Ablation Study: For each ablation condition (e.g., "Salop with high transport cost"), you can run a smaller set of 15-20 simulations, as the goal is to observe the direction of the effect rather than a full performance benchmark.
+
+Main Experiments: Structural Variations
+1. Static Games (Salop & Spulber)
+Variable to Test: Number of Players. This tests how LLM strategy adapts to changes in market concentration and social complexity.
+Modes:
+3-Player Games (1 challenger vs. 2 defenders).
+5-Player Games (1 challenger vs. 4 defenders).
+2. Dynamic Games (Green & Porter & Athey & Bagwell)
+Variable to Test: Time Horizon. This tests an LLM's strategic patience and its ability to reason about intertemporal trade-offs.
+Modes:
+Short-Horizon (15 rounds).
+Long-Horizon (50 rounds).
+
+are you fine with this ?
+Yes, this is an excellent and methodologically sound plan. The number of simulations and the choice of structural variables are both well-justified and will allow you to draw clear, robust conclusions.
+
+Number of Games and Rounds
+
+Your proposed numbers are ideal.
+
+Main Experiments (30-50 simulations): This is a strong sample size. It's large enough to ensure that your results are not due to random chance and will allow you to perform meaningful statistical tests to compare the performance of different LLMs.
+
+Ablation Study (15-20 simulations): This is a smart and practical choice. You correctly identify that the goal here is to observe the direction of a strategic change, not to perform a full-power comparison. This approach will efficiently show how sensitive the LLMs are to key parameters while conserving computational resources.
+
+Main Experiments: Structural Variations
+
+Your choice of variables to test is perfect, as each one targets the central strategic tension of its respective game type.
+
+Static Games (Number of Players): Varying the number of players is the most direct way to alter the intensity of competition. This will effectively test how LLM pricing and bidding strategies adapt as a market moves from a tight oligopoly (3 players) to a more competitive environment (5 players).
+
+Dynamic Games (Time Horizon): Varying the time horizon is a classic method for testing strategic patience. A shorter horizon (15 rounds) introduces significant "end-game effects," which might tempt an LLM to defect or lie near the end. A longer horizon (50 rounds) makes the long-term benefits of cooperation much more valuable, creating a stronger incentive for patient, forward-looking behavior.
+
+Of course. Here is a detailed guide on how to implement the **Random Player** and the **Q-Learning Player** as challengers in your experiments. This provides the necessary algorithms and workflows to create these non-LLM baselines.
+
+---
+## **1. Implementing the Random Player (All Games)**
+The Random Player serves as a simple, non-strategic baseline. Its purpose is to choose a valid action uniformly at random from a pre-defined, reasonable action space. It does not learn or react to the game's history.
+
+### **Game 1: Salop (1979) - Random Price Player**
+* **Action Space:** A continuous range of prices between the firm's `marginal_cost` (the lowest rational price) and the consumer's `v` (the highest possible price that could result in a sale).
+* **Algorithm:**
+    1.  When it is the Random Player's turn to act, the simulation engine provides its `marginal_cost`.
+    2.  The player selects a floating-point number uniformly at random from the interval [`marginal_cost`, `v`].
+    3.  Return `{"price": <randomly_chosen_price>}`.
+
+### **Game 2: Spulber (1995) - Random Bidder**
+* **Action Space:** A continuous range of prices between the firm's private `your_cost` and the `demand_intercept`.
+* **Algorithm:**
+    1.  The engine provides the player's private `your_cost`.
+    2.  The player selects a floating-point number uniformly at random from the interval [`your_cost`, `demand_intercept`].
+    3.  Return `{"price": <randomly_chosen_bid>}`.
+
+### **Game 3: Green & Porter (1984) - Random Quantity Player**
+* **Action Space:** A discrete set containing the two most strategically relevant quantities.
+* **Algorithm:**
+    1.  The engine prompts the player for its quantity.
+    2.  The player chooses with 50% probability from the set {`collusive_quantity`, `cournot_quantity`}.
+    3.  Return `{"quantity": <randomly_chosen_quantity>}`.
+
+### **Game 4: Athey & Bagwell (2008) - Random Reporter**
+* **Action Space:** A discrete set of the two valid reports.
+* **Algorithm:**
+    1.  The engine prompts the player for its report.
+    2.  The player chooses with 50% probability from the set {"high", "low"}.
+    3.  Return `{"report": <randomly_chosen_report>}`.
+
+---
+## **2. Implementing the Q-Learning Player (Dynamic Games)**
+The Q-Learning Player is a sophisticated, learning-based baseline. It learns a good strategy by playing the game many times and updating its estimate of the value of actions in different states. The implementation follows a two-phase process: **Training** and **Evaluation**. The logic is adapted from the Q-learning agent described in Keppo et al. (2025) [cite_start][cite: 2533-2534].
+
+### **Phase 1: Training Workflow (Done once before experiments)**
+1.  **Initialize Q-Table:** Create a data structure (e.g., a dictionary or table) to store Q-values for every state-action pair, initialized to zero.
+2.  **Self-Play Simulation:** Run the Q-learning agent against copies of itself for a very large number of simulations (e.g., 10,000+).
+3.  **Learn and Explore:** In each period of each training simulation, the agent:
+    a.  Observes the current state `s`.
+    b.  Selects an action `a` using an **ε-greedy policy** (see below).
+    c.  Receives a profit (reward) $\pi_t$ and observes the next state `s'`.
+    d.  Updates its Q-table using the **Q-update rule**.
+4.  **Save Q-Table:** After training is complete, save the final, learned Q-table.
+
+### **Phase 2: Evaluation Workflow (The Main Experiment)**
+1.  **Load Q-Table:** Initialize the Q-learning challenger with its pre-trained Q-table.
+2.  **Set to Exploit:** Set the exploration rate, $\epsilon$, to 0. The agent will now always choose the action with the highest Q-value for its current state.
+3.  **Run Experiment:** The Q-learning agent now plays against the defender LLMs for the $N$ main experiment simulations. Its actions are determined by its learned Q-table, not by random choice or an LLM prompt.
+
+### **Implementation for Green & Porter (1984)**
+* **State Space ($S$):** The state must be something the agent can observe. A tractable state representation is a tuple of (`current_market_state`, `punishment_timer_value`).
+    * Example states: `("Collusive", 0)`, `("Reversionary", 3)`, `("Reversionary", 2)`, etc.
+* **Action Space ($A$):** A discrete set of quantities: {`collusive_quantity`, `cournot_quantity`}.
+* **Q-Update Rule:** At the end of period $t$, after observing the reward $\pi_t$ and next state $s'$, the Q-value is updated using the Bellman equation:
+    $Q(s_t, a_t) \leftarrow (1-\alpha) \cdot Q(s_t, a_t) + \alpha \cdot (\pi_t + \delta \cdot \max_{a'} Q(s', a'))$
+    * $\alpha$: The learning rate (e.g., `0.15`). A hyperparameter that controls how much new information overrides old information.
+    * $\delta$: The `discount_factor` from your game constants (e.g., `0.95`).
+* **ε-Greedy Policy:** The rule for choosing an action during training.
+    * With probability $1-\epsilon$, choose the action $a$ that maximizes $Q(s, a)$ (exploit).
+    * With probability $\epsilon$, choose a random action from the action space (explore).
+    * $\epsilon$ decays over time to shift from exploration to exploitation: $\epsilon = e^{-(\text{training\_episode} \times \beta)}$, where $\beta$ is a decay rate (e.g., `0.004`).
+
+### **Implementation for Athey & Bagwell (2008)**
+* **State Space ($S$):** The full history is too large for a Q-table. A tractable, memory-1 state space is necessary. The state can be a tuple of the public reports from the previous period: `(player1_report_{t-1}, player2_report_{t-1}, ...)` combined with the agent's own private `true_cost_t`.
+    * Example state for a 3-player game: `("high", "low", "high", "low")`, where the first three are public reports and the last is the agent's private information.
+* **Action Space ($A$):** A discrete set of reports: {"high", "low"}.
+* **Q-Update Rule & ε-Greedy Policy:** The formulas are identical to those used in the Green & Porter implementation, just applied to the new state and action spaces.
