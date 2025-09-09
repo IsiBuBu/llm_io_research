@@ -1,80 +1,116 @@
 {
   "models": {
-    "gemini-2.0-flash": {
-      "model_name": "gemini-2.0-flash",
-      "display_name": "Gemini 2.0 Flash",
+    "gemini_2_5_pro": {
+      "model_name": "gemini-2.5-pro",
       "thinking_available": true,
-      "thinking_enabled": true,
-      "max_retries": 3,
-      "timeout": 30
+      "display_name": "Gemini 2.5 Pro",
+      "timeout": 45
     },
-    "gemini-2.0-flash-lite": {
-      "model_name": "gemini-2.0-flash-lite",
-      "display_name": "Gemini 2.0 Flash Lite", 
-      "thinking_available": true,
-      "thinking_enabled": true,
-      "max_retries": 3,
-      "timeout": 30
-    },
-    "gemini-2.5-flash": {
+    "gemini_2_5_flash": {
       "model_name": "gemini-2.5-flash",
-      "display_name": "Gemini 2.5 Flash",
       "thinking_available": true,
-      "thinking_enabled": true,
-      "max_retries": 3,
+      "display_name": "Gemini 2.5 Flash",
       "timeout": 30
     },
-    "gemini-1.5-pro": {
-      "model_name": "gemini-1.5-pro",
-      "display_name": "Gemini 1.5 Pro",
+    "gemini_2_5_flash_lite": {
+      "model_name": "gemini-2.5-flash-lite",
       "thinking_available": true,
-      "thinking_enabled": false,
-      "max_retries": 3,
+      "display_name": "Gemini 2.5 Flash-Lite",
       "timeout": 30
     }
   },
   "api": {
     "gemini_api_key_env": "GEMINI_API_KEY",
-    "rate_limit_delay": 1.0
+    "max_retries": 3
   },
-  "game_constants": {
+  "experiment_config": {
+    "challenger_models": [
+      "gemini_2_5_pro",
+      "gemini_2_5_flash",
+      "gemini_2_5_flash_lite"
+    ],
+    "defender_model": "gemini_2_5_flash_lite",
+    "simulations_per_condition": 50,
+    "ablation_simulations_per_condition": 20
+  },
+  "game_configs": {
     "salop": {
-      "base_market_size": 300,
-      "marginal_cost": 8.0,
-      "fixed_cost": 100.0,
-      "transport_cost": 0.5
-    },
-    "spulber": {
-      "base_market_size": 1000,
-      "marginal_cost": 10.0,
-      "market_value": 100.0,
-      "rival_cost_mean": 12.0,
-      "rival_cost_std": 3.0
+      "baseline": {
+        "number_of_players": 3,
+        "marginal_cost": 8,
+        "fixed_cost": 100,
+        "transport_cost": 1.5,
+        "v": 30,
+        "market_size": 1000
+      },
+      "structural_variations": {
+        "five_players": { "number_of_players": 5 }
+      },
+      "ablation_studies": {
+        "low_differentiation": { "transport_cost": 0.5 }
+      }
     },
     "green_porter": {
-      "base_demand_intercept": 100,
-      "marginal_cost": 10.0,
-      "collusive_quantity": 22.5,
-      "discount_rate": 0.05,
-      "demand_shock_std": 5.0
+      "baseline": {
+        "number_of_players": 3,
+        "time_horizon": 50,
+        "base_demand": 120,
+        "marginal_cost": 20,
+        "demand_shock_std": 5,
+        "trigger_price": 55,
+        "punishment_duration": 3,
+        "collusive_quantity": 17,
+        "cournot_quantity": 25,
+        "discount_factor": 0.95
+      },
+      "structural_variations": {
+        "short_horizon": { "time_horizon": 15 }
+      },
+      "ablation_studies": {
+        "high_noise": { "demand_shock_std": 10 },
+        "low_patience": { "discount_factor": 0.50 }
+      }
+    },
+    "spulber": {
+      "baseline": {
+        "number_of_players": 3,
+        "demand_intercept": 100,
+        "rival_cost_mean": 10,
+        "rival_cost_std": 2.0,
+        "private_values": {
+          "challenger_cost": 8,
+          "defender_cost": 10
+        }
+      },
+      "structural_variations": {
+        "five_players": { "number_of_players": 5 }
+      },
+      "ablation_studies": {
+        "high_uncertainty": { "rival_cost_std": 4.0 }
+      }
     },
     "athey_bagwell": {
-      "high_cost": 15.0,
-      "low_cost": 5.0,
-      "market_price": 50.0,
-      "discount_factor": 0.95,
-      "market_size": 1000,
-      "cost_persistence": 0.8
+      "baseline": {
+        "number_of_players": 3,
+        "time_horizon": 50,
+        "cost_types": { "low": 15, "high": 25 },
+        "persistence_probability": 0.7,
+        "market_price": 30,
+        "market_size": 100,
+        "discount_factor": 0.95
+      },
+      "structural_variations": {
+        "short_horizon": { "time_horizon": 15 }
+      },
+      "ablation_studies": {
+        "low_persistence": { "persistence_probability": 0.2 },
+        "low_patience": { "discount_factor": 0.50 }
+      }
     }
   },
   "logging": {
     "level": "INFO",
-    "verbose_logging": true
-  },
-  "metrics": {
-    "comprehensive_analysis": {
-      "enabled": true,
-      "behavioral_metrics": true
-    }
+    "save_detailed_logs": true,
+    "output_format": ["json"]
   }
 }
