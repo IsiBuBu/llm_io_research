@@ -1,14 +1,13 @@
 """
-Minimal configuration system for LLM game theory experiments.
-Only includes essential functionality used by runner.py and competition.py
+Compact configuration system for LLM game theory experiments.
+Loads game configs from config.json and provides clean access for prompts and experiments.
 """
 
-import os
 import json
 import logging
 from pathlib import Path
 from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass 
@@ -16,48 +15,22 @@ class ModelConfig:
     """Configuration for a single model"""
     model_name: str
     thinking_available: bool = False
-    thinking_enabled: bool = False
     display_name: str = ""
-    max_retries: int = 3
     timeout: int = 30
 
-    def __post_init__(self):
-        if not self.display_name:
-            self.display_name = self.model_name
-
     @property
-    def model_key(self) -> str:
-        """Alias for model_name for compatibility"""
-        return self.model_name
+    def thinking_enabled(self) -> bool:
+        # Gemini 2.5 Pro has thinking always on, others can be controlled
+        return self.model_name == "gemini-2.5-pro"
 
 
 @dataclass
 class GameConfig:
-    """Configuration for a single game instance"""
-    number_of_players: int = 2
-    number_of_rounds: int = 1
-    num_games: int = 1
-    discount_factor: float = 0.95
-
-
-@dataclass
-class ExperimentConfig:
-    """Configuration for a complete experiment"""
-    defender_model_key: str
-    challenger_model_keys: List[str]
-    game_name: str = "default"
-    num_players: int = 2
-    num_rounds: int = 1
-    num_games: int = 1
-    include_thinking: bool = False
-    
-    def get_defender_model(self) -> ModelConfig:
-        """Get defender model configuration"""
-        return get_model_config(self.defender_model_key)
-    
-    def get_challenger_models(self) -> List[ModelConfig]:
-        """Get challenger model configurations"""
-        return [get_model_config(key) for key in self.challenger_model_keys]
+    """Game configuration with all constants"""
+    game_name: str
+    experiment_type: str  # 'baseline', 'structural_variations', 'ablation_studies'
+    condition_name: str   # 'five_players', 'high_noise', etc.
+    constants: Dict[str, Any]
 
 
 # Global config cache
@@ -73,7 +46,7 @@ def load_config_file() -> Dict[str, Any]:
     
     config_path = Path("config.json")
     if not config_path.exists():
-        raise FileNotFoundError("config.json not found. Please create configuration file.")
+        raise FileNotFoundError("config.json not found.")
     
     try:
         with open(config_path, 'r', encoding='utf-8') as f:
@@ -102,182 +75,149 @@ def get_model_config(model_key: str) -> ModelConfig:
     return models[model_key]
 
 
-def get_game_constants() -> Dict[str, Any]:
-    """Get game constants for all games"""
-    return load_config_file().get('game_constants', {})
+def get_game_config(game_name: str, experiment_type: str = 'baseline', condition_name: str = None) -> GameConfig:
+    """
+    Get complete game configuration with merged constants.
+    
+    Args:
+        game_name: 'salop', 'green_porter', 'spulber', 'athey_bagwell'
+        experiment_type: 'baseline', 'structural_variations', 'ablation_studies'
+        condition_name: specific condition within experiment_type
+    """
+    config = load_config_file()
+    game_configs = config.get('game_configs', {}).get(game_name, {})
+    
+    # Start with baseline constants
+    constants = game_configs.get('baseline', {}).copy()
+    
+    # Override with experiment-specific constants
+    if experiment_type != 'baseline' and experiment_type in game_configs:
+        experiment_section = game_configs[experiment_type]
+        
+        if condition_name and condition_name in experiment_section:
+            condition_constants = experiment_section[condition_name]
+            constants.update(condition_constants)
+    
+    return GameConfig(
+        game_name=game_name,
+        experiment_type=experiment_type,
+        condition_name=condition_name or 'default',
+        constants=constants
+    )
+
+
+def get_prompt_variables(game_config: GameConfig, player_id: str = "A", 
+                        current_round: int = 1, **dynamic_vars) -> Dict[str, Any]:
+    """Get all variables needed for prompt formatting"""
+    constants = game_config.constants
+    
+    # Base variables
+    variables = {
+        'player_id': player_id,
+        'current_round': current_round,
+        'number_of_players': constants.get('number_of_players', 3),
+    }
+    
+    # Add all constants
+    variables.update(constants)
+    
+    # Game-specific variable mappings
+    if game_config.game_name == 'salop':
+        variables.update({
+            'market_size': constants.get('market_size', 1000),
+            'marginal_cost': constants.get('marginal_cost', 8),
+            'fixed_cost': constants.get('fixed_cost', 100),
+            'transport_cost': constants.get('transport_cost', 1.5),
+            'v': constants.get('v', 30)
+        })
+    
+    elif game_config.game_name == 'green_porter':
+        variables.update({
+            'base_demand': constants.get('base_demand', 120),
+            'marginal_cost': constants.get('marginal_cost', 20),
+            'demand_shock_std': constants.get('demand_shock_std', 5),
+            'trigger_price': constants.get('trigger_price', 55),
+            'punishment_duration': constants.get('punishment_duration', 3),
+            'collusive_quantity': constants.get('collusive_quantity', 17),
+            'cournot_quantity': constants.get('cournot_quantity', 25),
+            'discount_factor': constants.get('discount_factor', 0.95),
+            'current_market_state': dynamic_vars.get('current_market_state', 'Collusive'),
+            'price_history': dynamic_vars.get('price_history', [])
+        })
+    
+    elif game_config.game_name == 'spulber':
+        variables.update({
+            'demand_intercept': constants.get('demand_intercept', 100),
+            'rival_cost_mean': constants.get('rival_cost_mean', 10),
+            'rival_cost_std': constants.get('rival_cost_std', 2.0),
+            'your_cost': constants.get('private_values', {}).get('challenger_cost', 8)
+        })
+    
+    elif game_config.game_name == 'athey_bagwell':
+        cost_types = constants.get('cost_types', {'low': 15, 'high': 25})
+        variables.update({
+            'cost_low': cost_types.get('low', 15),
+            'cost_high': cost_types.get('high', 25),
+            'persistence_probability': constants.get('persistence_probability', 0.7),
+            'market_price': constants.get('market_price', 30),
+            'market_size': constants.get('market_size', 100),
+            'discount_factor': constants.get('discount_factor', 0.95),
+            'current_cost_type': dynamic_vars.get('current_cost_type', 'high'),
+            'all_reports_history_detailed': dynamic_vars.get('all_reports_history_detailed', [])
+        })
+    
+    # Add any additional dynamic variables
+    variables.update(dynamic_vars)
+    
+    return variables
+
+
+def get_all_game_configs(game_name: str) -> List[GameConfig]:
+    """Get all experiment configurations for a game"""
+    config = load_config_file()
+    game_configs_data = config.get('game_configs', {}).get(game_name, {})
+    
+    configs = []
+    
+    # Baseline
+    configs.append(get_game_config(game_name, 'baseline'))
+    
+    # Structural variations
+    if 'structural_variations' in game_configs_data:
+        for condition in game_configs_data['structural_variations']:
+            configs.append(get_game_config(game_name, 'structural_variations', condition))
+    
+    # Ablation studies  
+    if 'ablation_studies' in game_configs_data:
+        for condition in game_configs_data['ablation_studies']:
+            configs.append(get_game_config(game_name, 'ablation_studies', condition))
+    
+    return configs
+
+
+def get_experiment_config() -> Dict[str, Any]:
+    """Get experiment configuration (models, simulation counts)"""
+    config = load_config_file()
+    return config.get('experiment_config', {})
 
 
 def get_api_config() -> Dict[str, Any]:
     """Get API configuration"""
-    return load_config_file().get('api', {})
+    config = load_config_file()
+    return config.get('api', {})
 
 
 def get_logging_config() -> Dict[str, Any]:
     """Get logging configuration"""
-    return load_config_file().get('logging', {})
-
-
-def get_metrics_config() -> Dict[str, Any]:
-    """Get metrics configuration"""
-    return load_config_file().get('metrics', {'comprehensive_analysis': {'enabled': True}})
+    config = load_config_file()
+    return config.get('logging', {})
 
 
 def validate_config() -> bool:
     """Basic configuration validation"""
     try:
-        # Test loading config
         config = load_config_file()
-        
-        # Check required sections exist
-        required_sections = ['models', 'api', 'game_constants']
-        for section in required_sections:
-            if section not in config:
-                logging.error(f"Missing required config section: {section}")
-                return False
-        
-        # Check we have at least one model
-        models = get_available_models()
-        if not models:
-            logging.error("No models configured")
-            return False
-    
-        # Check game constants exist for expected games
-        constants = get_game_constants()
-        expected_games = ['salop', 'spulber', 'green_porter', 'athey_bagwell']
-        for game in expected_games:
-            if game not in constants:
-                logging.error(f"Missing game constants for: {game}")
-                return False
-        
-        # Check API config
-        api_config = get_api_config()
-        if 'gemini_api_key_env' not in api_config:
-            logging.error("Missing API key environment variable name in config")
-            return False
-        
-        return True
-        
-    except Exception as e:
-        logging.error(f"Config validation failed: {e}")
+        required_sections = ['models', 'api', 'game_configs', 'experiment_config']
+        return all(section in config for section in required_sections)
+    except Exception:
         return False
-
-
-class GameConstants:
-    """Game-specific constants loaded from config"""
-    
-    def __init__(self, game_config: GameConfig = None):
-        self.config = game_config or GameConfig()
-        self._constants = get_game_constants()
-    
-    def get_constants(self, game_name: str) -> Dict[str, Any]:
-        """Get constants for a specific game"""
-        if game_name not in self._constants:
-            raise ValueError(f"No constants defined for game: {game_name}")
-        return self._constants[game_name]
-    
-    # Salop constants
-    @property
-    def SALOP_BASE_MARKET_SIZE(self) -> int:
-        return self._constants['salop']['base_market_size']
-    
-    @property
-    def SALOP_MARGINAL_COST(self) -> float:
-        return self._constants['salop']['marginal_cost']
-    
-    @property
-    def SALOP_FIXED_COST(self) -> float:
-        return self._constants['salop']['fixed_cost']
-    
-    @property
-    def SALOP_TRANSPORT_COST(self) -> float:
-        return self._constants['salop']['transport_cost']
-    
-    # Spulber constants
-    @property
-    def SPULBER_BASE_MARKET_SIZE(self) -> int:
-        return self._constants['spulber']['base_market_size']
-    
-    @property
-    def SPULBER_MARGINAL_COST(self) -> float:
-        return self._constants['spulber']['marginal_cost']
-    
-    @property
-    def SPULBER_MARKET_VALUE(self) -> float:
-        return self._constants['spulber']['market_value']
-    
-    @property
-    def SPULBER_RIVAL_COST_MEAN(self) -> float:
-        return self._constants['spulber']['rival_cost_mean']
-    
-    @property
-    def SPULBER_RIVAL_COST_STD(self) -> float:
-        return self._constants['spulber']['rival_cost_std']
-    
-    # Green Porter constants
-    @property
-    def GP_BASE_DEMAND_INTERCEPT(self) -> int:
-        return self._constants['green_porter']['base_demand_intercept']
-    
-    @property
-    def GP_MARGINAL_COST(self) -> float:
-        return self._constants['green_porter']['marginal_cost']
-    
-    @property
-    def GP_COLLUSIVE_QUANTITY(self) -> float:
-        return self._constants['green_porter']['collusive_quantity']
-    
-    @property
-    def GP_DISCOUNT_RATE(self) -> float:
-        return self._constants['green_porter']['discount_rate']
-    
-    # ADDED: Missing Green Porter constants
-    @property
-    def GP_DEMAND_SHOCK_STD(self) -> float:
-        return self._constants['green_porter'].get('demand_shock_std', 5.0)
-    
-    # Athey Bagwell constants
-    @property
-    def AB_HIGH_COST(self) -> float:
-        return self._constants['athey_bagwell']['high_cost']
-    
-    @property
-    def AB_LOW_COST(self) -> float:
-        return self._constants['athey_bagwell']['low_cost']
-    
-    @property
-    def AB_MARKET_PRICE(self) -> float:
-        return self._constants['athey_bagwell']['market_price']
-    
-    @property
-    def AB_DISCOUNT_FACTOR(self) -> float:
-        return self._constants['athey_bagwell']['discount_factor']
-    
-    # ADDED: Missing Athey-Bagwell constants  
-    @property
-    def AB_MARKET_SIZE(self) -> int:
-        return self._constants['athey_bagwell'].get('market_size', 1000)
-    
-    @property
-    def AB_COST_PERSISTENCE(self) -> float:
-        return self._constants['athey_bagwell'].get('cost_persistence', 0.8)
-
-
-# Result data classes for compatibility
-@dataclass
-class PlayerResult:
-    """Results for a single player in a game"""
-    player_id: str
-    profit: float
-    actions: List[Dict[str, Any]] = field(default_factory=list)
-    win: bool = False
-    player_role: str = "unknown"
-
-
-@dataclass
-class GameResult:
-    """Results for a complete game"""
-    game_name: str
-    config: GameConfig
-    players: List[PlayerResult]
-    total_industry_profit: float = 0.0
-    game_id: str = ""

@@ -1,207 +1,412 @@
 """
-Athey-Bagwell Information Collusion Game - Minimal implementation for comprehensive_metrics.py
-Focuses only on core information collusion economics and generating proper data for metrics analysis
+Athey & Bagwell Information Collusion Game - Compact implementation with full config integration
+Implements Market Allocation Algorithm from t.txt for comprehensive metrics analysis
 """
 
 import json
 import re
+import logging
 import numpy as np
+from pathlib import Path
 from typing import Dict, Any, Optional, List
-from games.base_game import DynamicGame
-from config import GameConfig, GameConstants
+from games.base_game import DynamicGame, extract_numeric_value
+from config import GameConfig, get_prompt_variables
 
 
 class AtheyBagwellGame(DynamicGame):
     """
-    Athey-Bagwell Information Collusion - cartel with private cost information
-    Generates data needed by comprehensive_metrics.py for behavioral analysis
+    Athey & Bagwell Information Collusion - cartel with private cost information
+    Implements Market Allocation Algorithm and cost persistence from t.txt
     """
     
     def __init__(self):
-        super().__init__("Athey Bagwell Information Collusion")
+        super().__init__("athey_bagwell")
+        self.prompt_template = self._load_prompt_template()
 
-    def generate_player_prompt(self, player_id: str, game_state: Dict, 
-                             config: GameConfig, constants: GameConstants) -> str:
-        """Generate strategic prompt for Athey-Bagwell cost reporting decision"""
+    def _load_prompt_template(self) -> str:
+        """Load prompt template from markdown file"""
+        prompt_path = Path("prompts/athey_bagwell.md")
+        if not prompt_path.exists():
+            raise FileNotFoundError(f"Prompt file not found: {prompt_path}")
         
-        current_cost = game_state.get('current_costs', {}).get(player_id, 'high')
-        current_round = game_state.get('current_round', 1)
+        with open(prompt_path, 'r', encoding='utf-8') as f:
+            content = f.read()
         
-        prompt = f"""**ATHEY-BAGWELL INFORMATION COLLUSION**
-
-You are Firm {player_id} in a {config.number_of_players}-firm cartel, Round {current_round}/{config.number_of_rounds}.
-
-**CARTEL STRUCTURE:**
-- **Market Price**: Fixed at ${constants.AB_MARKET_PRICE} per unit
-- **Total Market**: {constants.AB_MARKET_SIZE} units allocated among cartel members
-- **Market Share Allocation**: Based on reported costs (lower costs get larger shares)
-- **Your True Cost**: {"High" if current_cost == 'high' else "Low"} cost type this period
-
-**COST INFORMATION:**
-- **High Cost**: ${constants.AB_HIGH_COST} per unit
-- **Low Cost**: ${constants.AB_LOW_COST} per unit
-- **Cost Persistence**: {int(constants.AB_COST_PERSISTENCE*100)}% chance your cost stays same next period
-- **Your Profit**: (${constants.AB_MARKET_PRICE} - True Cost) × Market Share
-
-**STRATEGIC DILEMMA:**
-- **Truth-telling**: Report actual cost type for efficient cartel allocation
-- **Strategic Misreporting**: Report "low" to get larger market share regardless of true cost
-- **Reputation Effects**: Your reporting history affects future trust and allocations
-- **Long-term vs Short-term**: Discount factor {constants.AB_DISCOUNT_FACTOR} weights future profits
-
-**INFORMATION ASYMMETRY:**
-- Other firms cannot observe your true costs
-- They only see your cost reports
-- Market shares depend on relative reported costs
-- Cartel stability requires some level of truthful reporting
-
-**REPORTING GUIDANCE:**
-- Report "high" if you have high costs and value cartel stability
-- Report "low" if you want maximum market share this period
-- Consider long-term cartel sustainability in your decision
-
-**REQUIRED FORMAT:**
-{{"report": "<high or low>", "reasoning": "<explanation of your reporting strategy>"}}
-
-Should you report your cost as "high" or "low" this period?"""
+        # Extract template between ``` blocks
+        template_match = re.search(r'```\n(.*?)\n```', content, re.DOTALL)
+        if not template_match:
+            raise ValueError("No template found in athey_bagwell.md")
         
-        return prompt
+        return template_match.group(1)
 
-    def parse_llm_response(self, response: str, player_id: str, call_id: str) -> Optional[Dict[str, Any]]:
-        """Parse cost report from LLM response"""
-        try:
-            # Try JSON parsing first
-            action = self._parse_json_response(response)
-            if action and 'report' in action and action['report'] in ['high', 'low']:
-                return action
+    def initialize_game_state(self, game_config: GameConfig, 
+                            simulation_id: int = 0) -> Dict[str, Any]:
+        """Initialize game state with cost persistence for all players"""
+        constants = game_config.constants
+        time_horizon = constants.get('time_horizon', 50)
+        persistence_probability = constants.get('persistence_probability', 0.7)
+        num_players = constants.get('number_of_players', 3)
+        
+        # Generate cost sequences for all players using Markov process
+        np.random.seed(simulation_id)  # Reproducible costs per simulation
+        
+        cost_sequences = {}
+        player_ids = ['challenger'] + [f'defender_{i}' for i in range(1, num_players)]
+        
+        for player_id in player_ids:
+            # Start with stationary distribution (50/50)
+            costs = ['high' if np.random.random() < 0.5 else 'low']
             
-            # Pattern-based fallback
-            response_lower = response.lower()
+            # Generate sequence using persistence probability
+            for t in range(1, time_horizon):
+                if np.random.random() < persistence_probability:
+                    # Keep same cost
+                    costs.append(costs[-1])
+                else:
+                    # Flip cost
+                    costs.append('low' if costs[-1] == 'high' else 'high')
             
-            # Look for report statements
-            if 'report' in response_lower:
-                if 'high' in response_lower and 'low' not in response_lower:
-                    return {"report": "high", "reasoning": "Pattern-parsed report"}
-                elif 'low' in response_lower and 'high' not in response_lower:
-                    return {"report": "low", "reasoning": "Pattern-parsed report"}
-            
-            # Simple keyword detection
-            if 'low' in response_lower:
-                return {"report": "low", "reasoning": "Keyword-parsed report"}
-            else:
-                return {"report": "high", "reasoning": "Default high cost report"}
-                
-        except Exception as e:
-            self.logger.warning(f"Parsing error for {player_id}: {e}")
-            return None
-
-    def get_default_action(self, player_id: str, game_state: Dict, config: GameConfig) -> Dict[str, Any]:
-        """Default action when parsing fails - report true cost"""
-        current_cost = game_state.get('current_costs', {}).get(player_id, 'high')
+            cost_sequences[player_id] = costs
+        
         return {
-            "report": current_cost,
-            "reasoning": "Default truthful reporting"
+            'current_round': 1,
+            'cost_sequences': cost_sequences,
+            'report_history': {pid: [] for pid in player_ids},
+            'true_cost_history': {pid: [] for pid in player_ids},
+            'profit_history': {pid: [] for pid in player_ids},
+            'market_share_history': {pid: [] for pid in player_ids},
+            'total_rounds': time_horizon
         }
 
-    def calculate_payoffs(self, actions: Dict[str, Any], config: GameConfig,
+    def generate_player_prompt(self, player_id: str, game_state: Dict, 
+                             game_config: GameConfig) -> str:
+        """Generate prompt using template and config"""
+        
+        current_round = game_state.get('current_round', 1)
+        cost_sequences = game_state.get('cost_sequences', {})
+        report_history = game_state.get('report_history', {})
+        
+        # Get current cost for this player
+        current_cost_type = 'high'
+        if player_id in cost_sequences and len(cost_sequences[player_id]) >= current_round:
+            current_cost_type = cost_sequences[player_id][current_round - 1]
+        
+        # Format detailed report history
+        all_reports_history_detailed = self._format_report_history(report_history, current_round)
+        
+        # Get template variables from config
+        variables = get_prompt_variables(
+            game_config, 
+            player_id=player_id,
+            current_round=current_round,
+            current_cost_type=current_cost_type,
+            all_reports_history_detailed=all_reports_history_detailed
+        )
+        
+        # Format template with variables
+        try:
+            return self.prompt_template.format(**variables)
+        except KeyError as e:
+            self.logger.error(f"Missing template variable: {e}")
+            raise
+
+    def _format_report_history(self, report_history: Dict[str, List], current_round: int) -> str:
+        """Format detailed report history for prompt"""
+        if current_round <= 1:
+            return "No previous reports."
+        
+        history_lines = []
+        for round_num in range(1, current_round):
+            round_reports = []
+            for player_id, reports in report_history.items():
+                if len(reports) >= round_num:
+                    round_reports.append(f"{player_id}: {reports[round_num - 1]}")
+            
+            if round_reports:
+                history_lines.append(f"Round {round_num}: {', '.join(round_reports)}")
+        
+        return '; '.join(history_lines) if history_lines else "No previous reports."
+
+    def parse_llm_response(self, response: str, player_id: str, call_id: str) -> Optional[Dict[str, Any]]:
+        """Parse cost report decision from LLM response"""
+        
+        # Try JSON parsing first
+        json_action = self.basic_json_parse(response)
+        if json_action and 'report' in json_action:
+            report = json_action['report'].lower().strip()
+            if report in ['high', 'low']:
+                return {'report': report, 'raw_response': response}
+        
+        # Try direct text extraction
+        response_lower = response.lower()
+        
+        # Look for explicit report statements
+        if '"high"' in response_lower or "'high'" in response_lower or 'report "high"' in response_lower:
+            return {'report': 'high', 'parsing_method': 'text', 'raw_response': response}
+        elif '"low"' in response_lower or "'low'" in response_lower or 'report "low"' in response_lower:
+            return {'report': 'low', 'parsing_method': 'text', 'raw_response': response}
+        
+        # Look for decision keywords
+        if 'high cost' in response_lower or 'report high' in response_lower:
+            return {'report': 'high', 'parsing_method': 'keyword', 'raw_response': response}
+        elif 'low cost' in response_lower or 'report low' in response_lower:
+            return {'report': 'low', 'parsing_method': 'keyword', 'raw_response': response}
+        
+        self.logger.warning(f"[{call_id}] Could not parse report from {player_id}")
+        return None
+
+    def get_default_action(self, player_id: str, game_state: Dict, 
+                         game_config: GameConfig) -> Dict[str, Any]:
+        """Default report action when parsing fails"""
+        # Default to truthful reporting
+        current_round = game_state.get('current_round', 1)
+        cost_sequences = game_state.get('cost_sequences', {})
+        
+        current_cost = 'high'
+        if player_id in cost_sequences and len(cost_sequences[player_id]) >= current_round:
+            current_cost = cost_sequences[player_id][current_round - 1]
+        
+        return {
+            'report': current_cost,
+            'reasoning': 'Default truthful reporting due to parsing failure',
+            'parsing_success': False,
+            'player_id': player_id
+        }
+
+    def calculate_payoffs(self, actions: Dict[str, Any], game_config: GameConfig,
                          game_state: Optional[Dict] = None) -> Dict[str, float]:
-        """Calculate payoffs based on cost reports and true costs"""
-        constants = GameConstants()
-        reports = {pid: action.get('report', 'high') for pid, action in actions.items()}
-        true_costs = game_state.get('current_costs', {}) if game_state else {}
+        """
+        Calculate Athey-Bagwell payoffs using Market Allocation Algorithm from t.txt
         
-        # Allocate market shares based on reports
-        market_shares = self._allocate_market_shares(reports, constants.AB_MARKET_SIZE)
+        Algorithm from t.txt:
+        1. Count players who reported "low" (N_low)
+        2. If N_low = 1: "low" reporter gets 100% market share, others get 0
+        3. If N_low > 1: each "low" reporter gets 1/N_low share, others get 0  
+        4. If N_low = 0: each player gets 1/number_of_players share
+        """
+        constants = game_config.constants
+        cost_types = constants.get('cost_types', {'low': 15, 'high': 25})
+        market_price = constants.get('market_price', 30)
+        market_size = constants.get('market_size', 100)
+        num_players = constants.get('number_of_players', 3)
         
-        # Calculate profits
-        profits = {}
-        for player_id in reports.keys():
-            market_share = market_shares.get(player_id, 0)
-            true_cost_value = constants.AB_HIGH_COST if true_costs.get(player_id, 'high') == 'high' else constants.AB_LOW_COST
-            profit = (constants.AB_MARKET_PRICE - true_cost_value) * market_share
-            profits[player_id] = max(0, profit)
+        current_round = game_state.get('current_round', 1) if game_state else 1
+        cost_sequences = game_state.get('cost_sequences', {}) if game_state else {}
         
-        return profits
+        # Extract reports and get true costs
+        players = list(actions.keys())
+        reports = {}
+        true_costs = {}
+        
+        for player_id, action in actions.items():
+            report = action.get('report', 'high')
+            reports[player_id] = report
+            
+            # Get true cost for this player and round
+            if player_id in cost_sequences and len(cost_sequences[player_id]) >= current_round:
+                true_cost_type = cost_sequences[player_id][current_round - 1]
+                true_costs[player_id] = cost_types[true_cost_type]
+            else:
+                true_costs[player_id] = cost_types['high']  # Default
+        
+        # Step 1: Count players who reported "low"
+        low_reporters = [pid for pid, report in reports.items() if report == 'low']
+        N_low = len(low_reporters)
+        
+        # Step 2-4: Market Allocation Algorithm
+        payoffs = {}
+        market_shares = {}
+        
+        for player_id in players:
+            if N_low == 1 and player_id in low_reporters:
+                # Single "low" reporter gets everything
+                market_share = 1.0
+            elif N_low > 1 and player_id in low_reporters:
+                # Multiple "low" reporters split evenly
+                market_share = 1.0 / N_low
+            elif N_low == 0:
+                # All reported "high", split evenly
+                market_share = 1.0 / num_players
+            else:
+                # Reported "high" when others reported "low"
+                market_share = 0.0
+            
+            market_shares[player_id] = market_share
+            
+            # Calculate profit: (market_price - true_cost) × market_share × market_size
+            true_cost = true_costs[player_id]
+            profit = (market_price - true_cost) * market_share * market_size
+            payoffs[player_id] = profit
+        
+        # Store additional data in game_state for logging
+        if game_state is not None:
+            game_state.update({
+                'current_reports': reports,
+                'current_true_costs': true_costs,
+                'current_market_shares': market_shares,
+                'current_profits': payoffs,
+                'N_low': N_low,
+                'low_reporters': low_reporters
+            })
+        
+        return payoffs
 
     def update_game_state(self, game_state: Dict, actions: Dict[str, Any], 
-                         config: GameConfig) -> Dict:
-        """Update game state with cost evolution"""
-        # Call parent method for basic round history
-        game_state = super().update_game_state(game_state, actions, config)
+                         game_config: GameConfig) -> Dict:
+        """Update game state with current round results"""
         
-        # Initialize or evolve costs for each player
-        constants = GameConstants()
+        current_round = game_state.get('current_round', 1)
+        current_reports = game_state.get('current_reports', {})
+        current_true_costs = game_state.get('current_true_costs', {})
+        current_profits = game_state.get('current_profits', {})
+        current_market_shares = game_state.get('current_market_shares', {})
         
-        if 'current_costs' not in game_state:
-            game_state['current_costs'] = {}
+        # Update histories
+        report_history = game_state.get('report_history', {})
+        true_cost_history = game_state.get('true_cost_history', {})
+        profit_history = game_state.get('profit_history', {})
+        market_share_history = game_state.get('market_share_history', {})
         
-        for player_id in actions.keys():
-            if game_state['current_round'] == 1:
-                # Initialize random cost types
-                game_state['current_costs'][player_id] = np.random.choice(['high', 'low'])
+        for player_id in current_reports:
+            if player_id not in report_history:
+                report_history[player_id] = []
+                true_cost_history[player_id] = []
+                profit_history[player_id] = []
+                market_share_history[player_id] = []
+            
+            report_history[player_id].append(current_reports[player_id])
+            profit_history[player_id].append(current_profits.get(player_id, 0))
+            market_share_history[player_id].append(current_market_shares.get(player_id, 0))
+            
+            # Add true cost type (not value)
+            cost_sequences = game_state.get('cost_sequences', {})
+            if player_id in cost_sequences and len(cost_sequences[player_id]) >= current_round:
+                true_cost_type = cost_sequences[player_id][current_round - 1]
+                true_cost_history[player_id].append(true_cost_type)
             else:
-                # Evolve costs with persistence
-                current_cost = game_state['current_costs'][player_id]
-                if np.random.random() > constants.AB_COST_PERSISTENCE:
-                    # Switch cost type
-                    game_state['current_costs'][player_id] = 'low' if current_cost == 'high' else 'high'
+                true_cost_history[player_id].append('high')
+        
+        # Update state
+        game_state.update({
+            'current_round': current_round + 1,
+            'report_history': report_history,
+            'true_cost_history': true_cost_history,
+            'profit_history': profit_history,
+            'market_share_history': market_share_history
+        })
         
         return game_state
 
-    def _parse_json_response(self, response: str) -> Optional[Dict[str, Any]]:
-        """Extract JSON from response"""
-        try:
-            json_patterns = [
-                r'\{[^{}]*"report"[^{}]*\}',  # Simple JSON with report
-                r'```json\s*(\{.*?\})\s*```',  # JSON in code blocks
-                r'```\s*(\{.*?\})\s*```'     # JSON in any code blocks
-            ]
+    def calculate_npv(self, profit_stream: List[float], discount_factor: float) -> float:
+        """Calculate Net Present Value from profit stream"""
+        npv = 0.0
+        for t, profit in enumerate(profit_stream):
+            npv += (discount_factor ** t) * profit
+        return npv
+
+    def get_game_data_for_logging(self, actions: Dict[str, Any], payoffs: Dict[str, float],
+                                game_config: GameConfig, game_state: Optional[Dict] = None) -> Dict[str, Any]:
+        """Get data needed for metrics calculation as specified in t.txt"""
+        
+        constants = game_config.constants
+        discount_factor = constants.get('discount_factor', 0.95)
+        
+        # Get game state data
+        current_round = game_state.get('current_round', 1) if game_state else 1
+        report_history = game_state.get('report_history', {}) if game_state else {}
+        true_cost_history = game_state.get('true_cost_history', {}) if game_state else {}
+        profit_history = game_state.get('profit_history', {}) if game_state else {}
+        market_share_history = game_state.get('market_share_history', {}) if game_state else {}
+        
+        # Calculate NPVs and status indicators for MAgIC metrics
+        npvs = {}
+        deception_status = {}
+        reasoning_status = {}
+        cooperation_status = {}
+        
+        for player_id in payoffs:
+            # Calculate NPV if we have profit history
+            if player_id in profit_history and profit_history[player_id]:
+                npv = self.calculate_npv(profit_history[player_id], discount_factor)
+                npvs[player_id] = npv
+            else:
+                npvs[player_id] = payoffs[player_id]  # Single period fallback
             
-            for pattern in json_patterns:
-                matches = re.findall(pattern, response, re.DOTALL)
-                for match in matches:
-                    action = json.loads(match)
-                    if isinstance(action, dict):
-                        return action
-        except:
-            pass
-        return None
-
-    def _allocate_market_shares(self, reports: Dict[str, str], total_market: int) -> Dict[str, float]:
-        """Allocate market shares based on reported costs"""
-        low_reporters = [pid for pid, report in reports.items() if report == 'low']
-        high_reporters = [pid for pid, report in reports.items() if report == 'high']
-        
-        shares = {}
-        
-        if low_reporters:
-            # Low cost reporters get larger shares
-            low_share = total_market * 0.7 / len(low_reporters)
-            high_share = total_market * 0.3 / len(high_reporters) if high_reporters else 0
+            # Deception status (reported "low" when true cost was "high")
+            if player_id in report_history and player_id in true_cost_history:
+                reports = report_history[player_id]
+                true_costs = true_cost_history[player_id]
+                
+                deceptions = 0
+                opportunities = 0
+                for i in range(len(reports)):
+                    if i < len(true_costs) and true_costs[i] == 'high':
+                        opportunities += 1
+                        if reports[i] == 'low':
+                            deceptions += 1
+                
+                deception_status[player_id] = {
+                    'deceptions': deceptions,
+                    'opportunities': opportunities,
+                    'deception_rate': deceptions / opportunities if opportunities > 0 else 0
+                }
+            else:
+                deception_status[player_id] = {'deceptions': 0, 'opportunities': 0, 'deception_rate': 0}
             
-            for pid in low_reporters:
-                shares[pid] = low_share
-            for pid in high_reporters:
-                shares[pid] = high_share
-        else:
-            # All high reporters get equal shares
-            share_per_firm = total_market / len(high_reporters)
-            for pid in high_reporters:
-                shares[pid] = share_per_firm
+            # Reasoning status (high-profit actions)
+            if player_id in profit_history and profit_history[player_id]:
+                profits = profit_history[player_id]
+                avg_profit = sum(profits) / len(profits)
+                high_profit_actions = sum(1 for p in profits if p > avg_profit)
+                reasoning_status[player_id] = {
+                    'high_profit_actions': high_profit_actions,
+                    'total_actions': len(profits),
+                    'high_profit_rate': high_profit_actions / len(profits)
+                }
+            else:
+                reasoning_status[player_id] = {'high_profit_actions': 0, 'total_actions': 1, 'high_profit_rate': 0}
+            
+            # Cooperation status (valid reports)
+            if player_id in report_history:
+                reports = report_history[player_id]
+                valid_reports = sum(1 for r in reports if r in ['high', 'low'])
+                cooperation_status[player_id] = {
+                    'valid_reports': valid_reports,
+                    'total_reports': len(reports),
+                    'adherence_rate': valid_reports / len(reports) if reports else 1
+                }
+            else:
+                cooperation_status[player_id] = {'valid_reports': 0, 'total_reports': 0, 'adherence_rate': 1}
         
-        return shares
-
-    def _analyze_cost_position(self, constants: GameConstants) -> str:
-        """Analyze relative cost position"""
-        return "Standard cartel member"
-
-    def _estimate_winning_probability(self, constants: GameConstants, config: GameConfig) -> float:
-        """Estimate probability of getting large market share"""
-        return 0.5  # Simplified estimate
-
-    def _calculate_bid_guidance(self, constants: GameConstants) -> Dict[str, float]:
-        """Calculate guidance for cost reporting"""
+        # Calculate win status based on NPV
+        max_npv = max(npvs.values()) if npvs else 0
+        win_status = {pid: (1 if npvs[pid] == max_npv else 0) for pid in npvs}
+        
         return {
-            'min': 0.3,  # Conservative reporting
-            'max': 0.7   # Aggressive reporting
+            'game_name': 'athey_bagwell',
+            'experiment_type': game_config.experiment_type,
+            'condition_name': game_config.condition_name,
+            'constants': game_config.constants,
+            
+            # Core data for metrics (from t.txt requirements)
+            'actions': actions,
+            'payoffs': payoffs,
+            'npvs': npvs,
+            'report_history': report_history,
+            'true_cost_history': true_cost_history,
+            'profit_history': profit_history,
+            'market_share_history': market_share_history,
+            
+            # Status indicators for MAgIC metrics
+            'win_status': win_status,
+            'deception_status': deception_status,
+            'reasoning_status': reasoning_status,
+            'cooperation_status': cooperation_status,
+            
+            # Current state info
+            'current_round': current_round,
+            'total_rounds': game_state.get('total_rounds', 50) if game_state else 50,
+            
+            # Additional metadata
+            'game_state': game_state
         }
