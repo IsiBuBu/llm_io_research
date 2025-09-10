@@ -12,5 +12,5 @@ You are Firm in a circular market with total of {number_of_players} competing fi
 Choose your optimal price for this period to maximize your profit. Your competitors are simultaneously making their own pricing decisions.
 
 ## Output Format
-```json
-{"price": <number>}
+Respond with valid JSON only:
+{{"price": <number>}}

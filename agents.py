@@ -63,7 +63,8 @@ class GeminiAgent(BaseLLMAgent):
     def _setup_client(self):
         """Setup Google Gemini client"""
         try:
-            import google.generativeai as genai
+            # Import the newer Google Genai SDK
+            from google import genai
             
             # Get API key from environment
             import os
@@ -72,8 +73,8 @@ class GeminiAgent(BaseLLMAgent):
             if not api_key:
                 raise ValueError(f"{api_key_env} environment variable not set")
             
-            genai.configure(api_key=api_key)
-            self.client = genai.GenerativeModel(self.actual_model_name)
+            # Create client with the newer SDK
+            self.client = genai.Client(api_key=api_key)
             
             # Log setup info
             thinking_info = ""
@@ -90,8 +91,9 @@ class GeminiAgent(BaseLLMAgent):
             
             self.logger.info(f"Initialized {self.actual_model_name}{thinking_info}")
             
-        except ImportError:
-            self.logger.error("Google AI package not installed. Run: pip install google-generativeai")
+        except ImportError as e:
+            self.logger.error(f"Google AI package not installed. Error: {e}")
+            self.logger.error("Run: pip install google-genai")
             raise
         except Exception as e:
             self.logger.error(f"Failed to setup Gemini client: {e}")
@@ -104,40 +106,64 @@ class GeminiAgent(BaseLLMAgent):
         
         for attempt in range(max_retries):
             try:
-                # Prepare generation config
-                generation_config = {
-                    'temperature': self.model_config.get('temperature', 0.1)
-                }
-                
                 # Create generation function based on thinking availability
-                if self.thinking_config and self.model_config.get('thinking_available', False):
-                    # Use thinking-enabled generation
-                    def sync_generate():
-                        try:
-                            from google.generativeai import types
+                def sync_generate():
+                    try:
+                        from google.genai import types
+                        
+                        # Check if thinking is enabled and available
+                        if (self.thinking_config and 
+                            self.model_config.get('thinking_available', False) and
+                            self.thinking_config.get('thinking_budget', 0) != 0):
                             
-                            return self.client.generate_content(
-                                prompt,
-                                generation_config=generation_config,
-                                thinking_config=types.ThinkingConfig(
-                                    thinking_budget=self.thinking_config.get('thinking_budget', -1),
-                                    include_thoughts=self.thinking_config.get('include_thoughts', False)
+                            # Use thinking-enabled generation
+                            thinking_budget = self.thinking_config.get('thinking_budget', -1)
+                            include_thoughts = self.thinking_config.get('include_thoughts', False)
+                            
+                            self.logger.debug(f"[{call_id}] Using thinking mode: budget={thinking_budget}, include_thoughts={include_thoughts}")
+                            
+                            response = self.client.models.generate_content(
+                                model=self.actual_model_name,
+                                contents=prompt,
+                                config=types.GenerateContentConfig(
+                                    temperature=self.model_config.get('temperature', 0.1),
+                                    thinking_config=types.ThinkingConfig(
+                                        thinking_budget=thinking_budget,
+                                        include_thoughts=include_thoughts
+                                    )
                                 )
                             )
-                        except Exception as e:
-                            # Fallback to standard generation if thinking fails
-                            self.logger.warning(f"[{call_id}] Thinking generation failed, using standard: {e}")
-                            return self.client.generate_content(
-                                prompt,
-                                generation_config=generation_config
+                        else:
+                            # Standard generation without thinking
+                            self.logger.debug(f"[{call_id}] Using standard mode")
+                            
+                            response = self.client.models.generate_content(
+                                model=self.actual_model_name,
+                                contents=prompt,
+                                config=types.GenerateContentConfig(
+                                    temperature=self.model_config.get('temperature', 0.1)
+                                )
                             )
-                else:
-                    # Standard generation without thinking
-                    def sync_generate():
-                        return self.client.generate_content(
-                            prompt,
-                            generation_config=generation_config
-                        )
+                        
+                        return response
+                        
+                    except Exception as e:
+                        # Fallback to standard generation if thinking fails
+                        self.logger.warning(f"[{call_id}] Thinking generation failed, using standard: {e}")
+                        
+                        try:
+                            from google.genai import types
+                            response = self.client.models.generate_content(
+                                model=self.actual_model_name,
+                                contents=prompt,
+                                config=types.GenerateContentConfig(
+                                    temperature=self.model_config.get('temperature', 0.1)
+                                )
+                            )
+                            return response
+                        except Exception as fallback_e:
+                            self.logger.error(f"[{call_id}] Fallback generation also failed: {fallback_e}")
+                            raise fallback_e
                 
                 # Run in executor since Google API is synchronous
                 loop = asyncio.get_event_loop()
@@ -145,8 +171,18 @@ class GeminiAgent(BaseLLMAgent):
                 with concurrent.futures.ThreadPoolExecutor() as executor:
                     response = await loop.run_in_executor(executor, sync_generate)
                 
-                # Extract content
-                content = response.text if hasattr(response, 'text') else str(response)
+                # Extract content from the response
+                content = ""
+                if response.candidates and len(response.candidates) > 0:
+                    candidate = response.candidates[0]
+                    if candidate.content and candidate.content.parts:
+                        for part in candidate.content.parts:
+                            if part.text:
+                                content += part.text
+                
+                if not content:
+                    content = str(response)
+                
                 response_time = time.time() - start_time
                 
                 # Get token counts if available
@@ -155,8 +191,12 @@ class GeminiAgent(BaseLLMAgent):
                 
                 if hasattr(response, 'usage_metadata'):
                     usage = response.usage_metadata
-                    tokens_used = getattr(usage, 'total_token_count', 0)
-                    thinking_tokens = getattr(usage, 'thoughts_token_count', 0)
+                    tokens_used = getattr(usage, 'total_token_count', 0) or 0
+                    thinking_tokens = getattr(usage, 'thoughts_token_count', 0) or 0
+                
+                # Ensure token counts are integers
+                tokens_used = int(tokens_used) if tokens_used is not None else 0
+                thinking_tokens = int(thinking_tokens) if thinking_tokens is not None else 0
                 
                 # Log token usage for thinking models
                 if thinking_tokens > 0:
@@ -174,111 +214,24 @@ class GeminiAgent(BaseLLMAgent):
             except Exception as e:
                 self.logger.warning(f"[{call_id}] Gemini attempt {attempt + 1} failed: {e}")
                 if attempt < max_retries - 1:
-                    # Exponential backoff
-                    await asyncio.sleep((2 ** attempt) + (0.1 * attempt))
+                    wait_time = 2 ** attempt  # Exponential backoff
+                    await asyncio.sleep(wait_time)
                 else:
+                    response_time = time.time() - start_time
                     return AgentResponse(
                         content="",
                         model=self.model_name,
                         success=False,
                         error=str(e),
-                        response_time=time.time() - start_time
+                        response_time=response_time
                     )
-
-
-class RandomAgent(BaseLLMAgent):
-    """Random baseline agent for testing and debugging"""
-    
-    async def get_response(self, prompt: str, call_id: str) -> AgentResponse:
-        """Generate random responses for testing"""
-        import random
-        
-        # Simple random responses based on prompt type
-        if "price" in prompt.lower():
-            price = round(random.uniform(8, 30), 2)
-            content = f'{{"price": {price}, "reasoning": "Random pricing strategy"}}'
-        elif "quantity" in prompt.lower():
-            quantity = random.randint(15, 30)
-            content = f'{{"quantity": {quantity}, "reasoning": "Random quantity selection"}}'
-        elif "report" in prompt.lower():
-            report = random.choice(["high", "low"])
-            content = f'{{"report": "{report}", "reasoning": "Random cost report"}}'
-        else:
-            content = f'{{"action": "default", "reasoning": "Random default action"}}'
-        
-        # Simulate API delay
-        await asyncio.sleep(0.05)
-        
-        return AgentResponse(
-            content=content,
-            model="random",
-            success=True,
-            tokens_used=50,
-            response_time=0.05
-        )
 
 
 def create_agent(model_name: str, player_id: str) -> BaseLLMAgent:
     """Factory function to create appropriate agent based on model name"""
-    
-    if model_name == "random":
-        return RandomAgent(model_name, player_id)
-    
-    # Validate model exists in config
-    try:
-        model_config = get_model_config(model_name)
-    except ValueError as e:
-        raise ValueError(f"Model {model_name} not found in config.json: {e}")
-    
-    # All non-random models are now Gemini models
     return GeminiAgent(model_name, player_id)
 
 
-# Rate limiting utilities
-class RateLimiter:
-    """Simple rate limiter for API calls"""
-    
-    def __init__(self, calls_per_minute: int = 60):
-        self.calls_per_minute = calls_per_minute
-        self.calls = []
-        self.lock = asyncio.Lock()
-    
-    async def wait_if_needed(self):
-        """Wait if rate limit would be exceeded"""
-        async with self.lock:
-            now = time.time()
-            
-            # Remove calls older than 1 minute
-            self.calls = [call_time for call_time in self.calls if now - call_time < 60]
-            
-            # Check if we need to wait
-            if len(self.calls) >= self.calls_per_minute:
-                wait_time = 60 - (now - self.calls[0]) + 0.1  # Small buffer
-                if wait_time > 0:
-                    await asyncio.sleep(wait_time)
-                    # Clean up old calls again after waiting
-                    now = time.time()
-                    self.calls = [call_time for call_time in self.calls if now - call_time < 60]
-            
-            # Record this call
-            self.calls.append(now)
-
-
-# Global rate limiter for Gemini API
-GEMINI_RATE_LIMITER = RateLimiter(calls_per_minute=60)
-
-
-async def get_rate_limited_response(agent: BaseLLMAgent, prompt: str, call_id: str) -> AgentResponse:
-    """Get response with rate limiting applied"""
-    
-    # Apply rate limiting for Gemini agents
-    if isinstance(agent, GeminiAgent):
-        await GEMINI_RATE_LIMITER.wait_if_needed()
-    
-    return await agent.get_response(prompt, call_id)
-
-
-# Utility functions for agent management
 def get_agent_info(model_name: str) -> Dict[str, Any]:
     """Get information about an agent configuration"""
     try:
@@ -321,9 +274,9 @@ def validate_agent_setup(model_name: str) -> bool:
         
         # Check if required packages are available
         try:
-            import google.generativeai
+            from google import genai
         except ImportError:
-            logging.getLogger(__name__).error("google-generativeai package not installed")
+            logging.getLogger(__name__).error("google-genai package not installed")
             return False
         
         return True
@@ -335,19 +288,16 @@ def validate_agent_setup(model_name: str) -> bool:
 
 async def test_agent(model_name: str) -> Dict[str, Any]:
     """Test an agent with a simple prompt"""
-    test_prompt = "What is 2 + 2? Respond with a JSON format: {\"answer\": your_answer}"
+    test_prompt = "What is 2 + 2?"
     
     try:
-        agent = create_agent(model_name, "test_player")
-        
-        start_time = time.time()
+        agent = create_agent(model_name, "test")
         response = await agent.get_response(test_prompt, "test_call")
-        end_time = time.time()
         
         return {
             'model_name': model_name,
             'success': response.success,
-            'response_time': end_time - start_time,
+            'response_time': response.response_time,
             'content': response.content[:100] + "..." if len(response.content) > 100 else response.content,
             'tokens_used': response.tokens_used,
             'thinking_tokens': response.thinking_tokens,
@@ -360,27 +310,3 @@ async def test_agent(model_name: str) -> Dict[str, Any]:
             'success': False,
             'error': str(e)
         }
-
-
-# Batch testing function
-async def test_all_agents() -> Dict[str, Any]:
-    """Test all configured agents"""
-    config = load_config_file()
-    challenger_models = config.get('models', {}).get('challenger_models', [])
-    defender_model = config.get('models', {}).get('defender_model')
-    
-    all_models = challenger_models + ([defender_model] if defender_model else [])
-    
-    results = {}
-    
-    for model in all_models:
-        print(f"Testing {model}...")
-        result = await test_agent(model)
-        results[model] = result
-        
-        if result['success']:
-            print(f"  ✅ Success in {result['response_time']:.2f}s")
-        else:
-            print(f"  ❌ Failed: {result['error']}")
-    
-    return results

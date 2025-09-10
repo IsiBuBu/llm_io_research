@@ -24,5 +24,5 @@ The market operates in one of two states: **Collusive** or **Price War**.
 Choose your quantity for this period to maximize your total long-term profit, balancing the immediate gains from producing more against the risk of triggering a future price war.
 
 ## Output Format
-```json
-{"quantity": <number>}
+Respond with valid JSON only:
+{{"quantity": <number>}}

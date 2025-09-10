@@ -1,0 +1,105 @@
+2025-09-10 12:06:01,604 | INFO     | __main__                       | Gemini Thinking Experiment started. Log file: logs/gemini_thinking_experiment_20250910_120601.log
+2025-09-10 12:06:01,604 | INFO     | __main__                       | 🧠 Gemini Thinking LLM Game Theory Experiment Runner
+2025-09-10 12:06:01,606 | INFO     | __main__                       | ====================================================================================================
+2025-09-10 12:06:01,606 | INFO     | __main__                       | 🧠 GEMINI THINKING EXPERIMENT OVERVIEW
+2025-09-10 12:06:01,606 | INFO     | __main__                       | ====================================================================================================
+2025-09-10 12:06:01,606 | INFO     | __main__                       | 📱 MODELS (8 total):
+2025-09-10 12:06:01,606 | INFO     | __main__                       |   🏆 CHALLENGERS:
+2025-09-10 12:06:01,606 | INFO     | __main__                       |     • Gemini 2.5 Pro (Thinking On - Default) (Thinking: 🧠 ON)
+2025-09-10 12:06:01,606 | INFO     | __main__                       |     • Gemini 2.5 Flash (Thinking On - Dynamic) (Thinking: 🧠 ON)
+2025-09-10 12:06:01,606 | INFO     | __main__                       |     • Gemini 2.5 Flash (Thinking Off) (Thinking: ⚡ OFF)
+2025-09-10 12:06:01,606 | INFO     | __main__                       |     • Gemini 2.5 Flash-Lite (Thinking On - Dynamic) (Thinking: 🧠 ON)
+2025-09-10 12:06:01,606 | INFO     | __main__                       |     • Gemini 2.5 Flash-Lite (Thinking Off - Default) (Thinking: ⚡ OFF)
+2025-09-10 12:06:01,606 | INFO     | __main__                       |     • Gemini 2.0 Flash (No Thinking) (Thinking: ⚡ OFF)
+2025-09-10 12:06:01,606 | INFO     | __main__                       |     • Gemini 2.0 Flash-Lite (No Thinking) (Thinking: ⚡ OFF)
+2025-09-10 12:06:01,606 | INFO     | __main__                       |   🛡️ DEFENDER: Gemini 2.0 Flash-Lite (No Thinking) (Thinking: ⚡ OFF)
+2025-09-10 12:06:01,606 | INFO     | __main__                       | 🎮 GAMES (4):
+2025-09-10 12:06:01,606 | INFO     | __main__                       |     • SALOP: 3 conditions
+2025-09-10 12:06:01,606 | INFO     | __main__                       |     • GREEN_PORTER: 4 conditions
+2025-09-10 12:06:01,606 | INFO     | __main__                       |     • SPULBER: 3 conditions
+2025-09-10 12:06:01,606 | INFO     | __main__                       |     • ATHEY_BAGWELL: 4 conditions
+2025-09-10 12:06:01,606 | INFO     | __main__                       | ⚙️ EXPERIMENT SCOPE:
+2025-09-10 12:06:01,606 | INFO     | __main__                       |     • Total configurations: 14
+2025-09-10 12:06:01,606 | INFO     | __main__                       |     • Total competitions: 98
+2025-09-10 12:06:01,606 | INFO     | __main__                       |     • Estimated simulations: 224
+2025-09-10 12:06:01,606 | INFO     | __main__                       | 🧠 THINKING ANALYSIS:
+2025-09-10 12:06:01,607 | INFO     | __main__                       |     • Models with thinking: 3
+2025-09-10 12:06:01,607 | INFO     | __main__                       |     • Thinking vs non-thinking comparisons available
+2025-09-10 12:06:01,607 | INFO     | __main__                       |     • Strategic reasoning depth analysis enabled
+2025-09-10 12:06:01,607 | INFO     | __main__                       | ====================================================================================================
+2025-09-10 12:06:01,607 | INFO     | __main__                       | Validating system setup...
+2025-09-10 12:06:01,607 | INFO     | config                         | Configuration validation passed
+2025-09-10 12:06:02,150 | INFO     | __main__                       | ✅ System setup validation passed
+2025-09-10 12:06:02,150 | INFO     | __main__                       | Testing API connectivity with all models...
+2025-09-10 12:06:02,257 | INFO     | agents.gemini_2_5_pro          | Initialized gemini-2.5-pro (Dynamic Thinking)
+2025-09-10 12:06:02,260 | INFO     | google_genai.models            | AFC is enabled with max remote calls: 10.
+2025-09-10 12:06:05,382 | INFO     | httpx                          | HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent "HTTP/1.1 200 OK"
+2025-09-10 12:06:05,386 | INFO     | google_genai.models            | AFC remote call 1 is done.
+2025-09-10 12:06:05,464 | INFO     | agents.gemini_2_5_flash_thinking_on | Initialized gemini-2.5-flash (Dynamic Thinking)
+2025-09-10 12:06:05,464 | INFO     | google_genai.models            | AFC is enabled with max remote calls: 10.
+2025-09-10 12:06:06,407 | INFO     | httpx                          | HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2025-09-10 12:06:06,409 | INFO     | google_genai.models            | AFC remote call 1 is done.
+2025-09-10 12:06:06,482 | INFO     | agents.gemini_2_5_flash_thinking_off | Initialized gemini-2.5-flash (Thinking Off)
+2025-09-10 12:06:06,482 | INFO     | google_genai.models            | AFC is enabled with max remote calls: 10.
+2025-09-10 12:06:07,635 | INFO     | httpx                          | HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2025-09-10 12:06:07,638 | INFO     | google_genai.models            | AFC remote call 1 is done.
+2025-09-10 12:06:07,716 | INFO     | agents.gemini_2_5_flash_lite_thinking_on | Initialized gemini-2.5-flash-lite (Dynamic Thinking)
+2025-09-10 12:06:07,717 | INFO     | google_genai.models            | AFC is enabled with max remote calls: 10.
+2025-09-10 12:06:08,249 | INFO     | httpx                          | HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent "HTTP/1.1 200 OK"
+2025-09-10 12:06:08,252 | INFO     | google_genai.models            | AFC remote call 1 is done.
+2025-09-10 12:06:08,328 | INFO     | agents.gemini_2_5_flash_lite_thinking_off | Initialized gemini-2.5-flash-lite (Thinking Off)
+2025-09-10 12:06:08,328 | INFO     | google_genai.models            | AFC is enabled with max remote calls: 10.
+2025-09-10 12:06:08,697 | INFO     | httpx                          | HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent "HTTP/1.1 200 OK"
+2025-09-10 12:06:08,698 | INFO     | google_genai.models            | AFC remote call 1 is done.
+2025-09-10 12:06:08,698 | WARNING  | agents.gemini_2_5_flash_lite_thinking_off | [test_call] Gemini attempt 1 failed: '>' not supported between instances of 'NoneType' and 'int'
+2025-09-10 12:06:09,700 | INFO     | google_genai.models            | AFC is enabled with max remote calls: 10.
+2025-09-10 12:06:10,093 | INFO     | httpx                          | HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent "HTTP/1.1 200 OK"
+2025-09-10 12:06:10,096 | INFO     | google_genai.models            | AFC remote call 1 is done.
+2025-09-10 12:06:10,097 | WARNING  | agents.gemini_2_5_flash_lite_thinking_off | [test_call] Gemini attempt 2 failed: '>' not supported between instances of 'NoneType' and 'int'
+2025-09-10 12:06:12,099 | INFO     | google_genai.models            | AFC is enabled with max remote calls: 10.
+2025-09-10 12:06:12,318 | INFO     | httpx                          | HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent "HTTP/1.1 200 OK"
+2025-09-10 12:06:12,320 | INFO     | google_genai.models            | AFC remote call 1 is done.
+2025-09-10 12:06:12,321 | WARNING  | agents.gemini_2_5_flash_lite_thinking_off | [test_call] Gemini attempt 3 failed: '>' not supported between instances of 'NoneType' and 'int'
+2025-09-10 12:06:12,388 | INFO     | agents.gemini_2_0_flash        | Initialized gemini-2.0-flash (No Thinking)
+2025-09-10 12:06:12,388 | INFO     | google_genai.models            | AFC is enabled with max remote calls: 10.
+2025-09-10 12:06:12,748 | INFO     | httpx                          | HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
+2025-09-10 12:06:12,749 | INFO     | google_genai.models            | AFC remote call 1 is done.
+2025-09-10 12:06:12,750 | WARNING  | agents.gemini_2_0_flash        | [test_call] Gemini attempt 1 failed: '>' not supported between instances of 'NoneType' and 'int'
+2025-09-10 12:06:13,752 | INFO     | google_genai.models            | AFC is enabled with max remote calls: 10.
+2025-09-10 12:06:14,393 | INFO     | httpx                          | HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
+2025-09-10 12:06:14,396 | INFO     | google_genai.models            | AFC remote call 1 is done.
+2025-09-10 12:06:14,397 | WARNING  | agents.gemini_2_0_flash        | [test_call] Gemini attempt 2 failed: '>' not supported between instances of 'NoneType' and 'int'
+2025-09-10 12:06:16,399 | INFO     | google_genai.models            | AFC is enabled with max remote calls: 10.
+2025-09-10 12:06:16,850 | INFO     | httpx                          | HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent "HTTP/1.1 200 OK"
+2025-09-10 12:06:16,854 | INFO     | google_genai.models            | AFC remote call 1 is done.
+2025-09-10 12:06:16,854 | WARNING  | agents.gemini_2_0_flash        | [test_call] Gemini attempt 3 failed: '>' not supported between instances of 'NoneType' and 'int'
+2025-09-10 12:06:16,927 | INFO     | agents.gemini_2_0_flash_lite   | Initialized gemini-2.0-flash-lite (No Thinking)
+2025-09-10 12:06:16,928 | INFO     | google_genai.models            | AFC is enabled with max remote calls: 10.
+2025-09-10 12:06:17,466 | INFO     | httpx                          | HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent "HTTP/1.1 200 OK"
+2025-09-10 12:06:17,472 | INFO     | google_genai.models            | AFC remote call 1 is done.
+2025-09-10 12:06:17,479 | WARNING  | agents.gemini_2_0_flash_lite   | [test_call] Gemini attempt 1 failed: '>' not supported between instances of 'NoneType' and 'int'
+2025-09-10 12:06:18,481 | INFO     | google_genai.models            | AFC is enabled with max remote calls: 10.
+2025-09-10 12:06:19,104 | INFO     | httpx                          | HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent "HTTP/1.1 200 OK"
+2025-09-10 12:06:19,108 | INFO     | google_genai.models            | AFC remote call 1 is done.
+2025-09-10 12:06:19,109 | WARNING  | agents.gemini_2_0_flash_lite   | [test_call] Gemini attempt 2 failed: '>' not supported between instances of 'NoneType' and 'int'
+2025-09-10 12:06:21,111 | INFO     | google_genai.models            | AFC is enabled with max remote calls: 10.
+2025-09-10 12:06:21,766 | INFO     | httpx                          | HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent "HTTP/1.1 200 OK"
+2025-09-10 12:06:21,769 | INFO     | google_genai.models            | AFC remote call 1 is done.
+2025-09-10 12:06:21,770 | WARNING  | agents.gemini_2_0_flash_lite   | [test_call] Gemini attempt 3 failed: '>' not supported between instances of 'NoneType' and 'int'
+2025-09-10 12:06:21,847 | INFO     | agents.gemini_2_0_flash_lite   | Initialized gemini-2.0-flash-lite (No Thinking)
+2025-09-10 12:06:21,847 | INFO     | google_genai.models            | AFC is enabled with max remote calls: 10.
+2025-09-10 12:06:22,585 | INFO     | httpx                          | HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent "HTTP/1.1 200 OK"
+2025-09-10 12:06:22,588 | INFO     | google_genai.models            | AFC remote call 1 is done.
+2025-09-10 12:06:22,589 | WARNING  | agents.gemini_2_0_flash_lite   | [test_call] Gemini attempt 1 failed: '>' not supported between instances of 'NoneType' and 'int'
+2025-09-10 12:06:23,591 | INFO     | google_genai.models            | AFC is enabled with max remote calls: 10.
+2025-09-10 12:06:24,216 | INFO     | httpx                          | HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent "HTTP/1.1 200 OK"
+2025-09-10 12:06:24,219 | INFO     | google_genai.models            | AFC remote call 1 is done.
+2025-09-10 12:06:24,220 | WARNING  | agents.gemini_2_0_flash_lite   | [test_call] Gemini attempt 2 failed: '>' not supported between instances of 'NoneType' and 'int'
+2025-09-10 12:06:26,222 | INFO     | google_genai.models            | AFC is enabled with max remote calls: 10.
+2025-09-10 12:06:26,886 | INFO     | httpx                          | HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent "HTTP/1.1 200 OK"
+2025-09-10 12:06:26,889 | INFO     | google_genai.models            | AFC remote call 1 is done.
+2025-09-10 12:06:26,890 | WARNING  | agents.gemini_2_0_flash_lite   | [test_call] Gemini attempt 3 failed: '>' not supported between instances of 'NoneType' and 'int'
+2025-09-10 12:06:26,896 | WARNING  | __main__                       | ⚠️ API test failed for models: ['gemini_2_5_flash_lite_thinking_off', 'gemini_2_0_flash', 'gemini_2_0_flash_lite']
+2025-09-10 12:06:26,896 | WARNING  | __main__                       | Proceeding anyway - errors may occur during experiments
+2025-09-10 12:06:26,897 | INFO     | __main__                       | ⏱️ ESTIMATED EXPERIMENT TIME: ~0.0 hours
+2025-09-10 12:06:26,897 | INFO     | __main__                       | 🚀 Starting experiments in 5 seconds... (Press Ctrl+C to abort)

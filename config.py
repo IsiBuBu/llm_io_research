@@ -66,38 +66,65 @@ def get_game_config(game_name: str, experiment_type: str,
         experiment_section = game_configs[experiment_type]
         
         if condition_name and condition_name in experiment_section:
+            # Specific condition overrides
             condition_constants = experiment_section[condition_name]
             constants.update(condition_constants)
+        elif isinstance(experiment_section, dict) and len(experiment_section) == 1:
+            # Single condition in experiment_type
+            single_condition = list(experiment_section.values())[0]
+            constants.update(single_condition)
+            condition_name = list(experiment_section.keys())[0]
+        else:
+            # Use first condition if multiple available
+            if experiment_section:
+                first_condition = list(experiment_section.keys())[0]
+                constants.update(experiment_section[first_condition])
+                condition_name = first_condition
+    
+    # Set default condition name if not specified
+    if not condition_name:
+        condition_name = 'baseline' if experiment_type == 'baseline' else 'default'
     
     return GameConfig(
         game_name=game_name,
         experiment_type=experiment_type,
-        condition_name=condition_name or 'baseline',
+        condition_name=condition_name,
         constants=constants
     )
 
 
 def get_all_game_configs(game_name: str) -> List[GameConfig]:
-    """Get all experiment configurations for a game"""
+    """Get all configurations for a specific game"""
     config = load_config_file()
-    game_configs_data = config.get('game_configs', {}).get(game_name, {})
+    game_config = config.get('game_configs', {}).get(game_name, {})
     
     configs = []
     
-    # Baseline
+    # Add baseline
     configs.append(get_game_config(game_name, 'baseline'))
     
-    # Structural variations
-    if 'structural_variations' in game_configs_data:
-        for condition in game_configs_data['structural_variations']:
-            configs.append(get_game_config(game_name, 'structural_variations', condition))
+    # Add structural variations
+    structural_variations = game_config.get('structural_variations', {})
+    for condition_name in structural_variations:
+        configs.append(get_game_config(game_name, 'structural_variations', condition_name))
     
-    # Ablation studies  
-    if 'ablation_studies' in game_configs_data:
-        for condition in game_configs_data['ablation_studies']:
-            configs.append(get_game_config(game_name, 'ablation_studies', condition))
+    # Add ablation studies
+    ablation_studies = game_config.get('ablation_studies', {})
+    for condition_name in ablation_studies:
+        configs.append(get_game_config(game_name, 'ablation_studies', condition_name))
     
     return configs
+
+
+def get_all_experimental_configs() -> List[GameConfig]:
+    """Get all experimental configurations across all games"""
+    all_configs = []
+    games = ['salop', 'green_porter', 'spulber', 'athey_bagwell']
+    
+    for game_name in games:
+        all_configs.extend(get_all_game_configs(game_name))
+    
+    return all_configs
 
 
 def get_prompt_variables(game_config: GameConfig, player_id: str = "A", 
@@ -135,7 +162,9 @@ def get_prompt_variables(game_config: GameConfig, player_id: str = "A",
             'punishment_duration': constants.get('punishment_duration', 3),
             'collusive_quantity': constants.get('collusive_quantity', 17),
             'cournot_quantity': constants.get('cournot_quantity', 25),
-            'discount_factor': constants.get('discount_factor', 0.95)
+            'discount_factor': constants.get('discount_factor', 0.95),
+            'current_market_state': dynamic_vars.get('current_market_state', 'Collusive'),
+            'price_history': dynamic_vars.get('price_history', [])
         })
     
     elif game_config.game_name == 'spulber':
@@ -148,9 +177,10 @@ def get_prompt_variables(game_config: GameConfig, player_id: str = "A",
         })
     
     elif game_config.game_name == 'athey_bagwell':
+        cost_types = constants.get('cost_types', {'low': 15, 'high': 25})
         variables.update({
             'time_horizon': constants.get('time_horizon', 50),
-            'cost_types': constants.get('cost_types', {'low': 15, 'high': 25}),
+            'cost_types': cost_types,  # Keep as dict for template access like {cost_types[high]}
             'persistence_probability': constants.get('persistence_probability', 0.7),
             'market_price': constants.get('market_price', 30),
             'market_size': constants.get('market_size', 100),
@@ -163,6 +193,15 @@ def get_prompt_variables(game_config: GameConfig, player_id: str = "A",
     variables.update(dynamic_vars)
     
     return variables
+
+
+# Backward compatibility alias
+def generate_prompt_variables(game_config: GameConfig, 
+                            dynamic_vars: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Backward compatibility wrapper for get_prompt_variables"""
+    if dynamic_vars is None:
+        dynamic_vars = {}
+    return get_prompt_variables(game_config, **dynamic_vars)
 
 
 def get_model_config(model_name: str) -> Dict[str, Any]:
@@ -379,3 +418,62 @@ def create_experiment_summary() -> Dict[str, Any]:
             if is_thinking_enabled(model)
         ]
     }
+
+
+def validate_agent_setup(model_name: str) -> bool:
+    """Validate that an agent can be properly created"""
+    try:
+        # Check if model config exists
+        model_config = get_model_config(model_name)
+        
+        # Check if API key is available
+        config = load_config_file()
+        api_config = config.get('api', {}).get('google', {})
+        api_key_env = api_config.get('api_key_env', 'GEMINI_API_KEY')
+        
+        import os
+        api_key = os.getenv(api_key_env)
+        if not api_key:
+            logging.getLogger(__name__).error(f"Missing API key: {api_key_env}")
+            return False
+        
+        # Check if required packages are available (updated for new SDK)
+        try:
+            from google import genai
+        except ImportError:
+            logging.getLogger(__name__).error("google-genai package not installed")
+            logging.getLogger(__name__).error("Run: pip install google-genai")
+            return False
+        
+        return True
+        
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Agent setup validation failed: {e}")
+        return False
+
+
+async def test_agent(model_name: str) -> Dict[str, Any]:
+    """Test an agent with a simple prompt"""
+    test_prompt = "What is 2 + 2?"
+    
+    try:
+        from agents import create_agent
+        agent = create_agent(model_name, "test")
+        response = await agent.get_response(test_prompt, "test_call")
+        
+        return {
+            'model_name': model_name,
+            'success': response.success,
+            'response_time': response.response_time,
+            'content': response.content[:100] + "..." if len(response.content) > 100 else response.content,
+            'tokens_used': response.tokens_used,
+            'thinking_tokens': response.thinking_tokens,
+            'error': response.error
+        }
+        
+    except Exception as e:
+        return {
+            'model_name': model_name,
+            'success': False,
+            'error': str(e)
+        }

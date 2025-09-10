@@ -14,11 +14,11 @@ from datetime import datetime
 from config import (
     load_config_file, validate_config, get_challenger_models, get_defender_model,
     get_experiment_config, create_experiment_summary, get_model_display_name,
-    is_thinking_enabled
+    is_thinking_enabled, get_model_config
 )
 from competition import Competition
 from analysis.results_analyzer import ResultsAnalyzer
-from agents import test_all_agents, validate_agent_setup
+from agents import create_agent
 
 
 def setup_logging() -> None:
@@ -57,6 +57,90 @@ def setup_logging() -> None:
     
     logger = logging.getLogger(__name__)
     logger.info(f"Gemini Thinking Experiment started. Log file: {log_file}")
+
+
+def validate_agent_setup(model_name: str) -> bool:
+    """Validate that an agent can be properly created"""
+    try:
+        # Check if model config exists
+        model_config = get_model_config(model_name)
+        
+        # Check if API key is available
+        config = load_config_file()
+        api_config = config.get('api', {}).get('google', {})
+        api_key_env = api_config.get('api_key_env', 'GEMINI_API_KEY')
+        
+        import os
+        api_key = os.getenv(api_key_env)
+        if not api_key:
+            logging.getLogger(__name__).error(f"Missing API key: {api_key_env}")
+            return False
+        
+        # Check if required packages are available
+        try:
+            from google import genai
+        except ImportError:
+            logging.getLogger(__name__).error("google-genai package not installed")
+            logging.getLogger(__name__).error("Run: pip install google-genai")
+            return False
+        
+        return True
+        
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Agent setup validation failed: {e}")
+        return False
+
+
+async def test_agent(model_name: str) -> dict:
+    """Test an agent with a simple prompt"""
+    test_prompt = "What is 2 + 2? Respond with a JSON format: {\"answer\": your_answer}"
+    
+    try:
+        agent = create_agent(model_name, "test_player")
+        
+        start_time = time.time()
+        response = await agent.get_response(test_prompt, "test_call")
+        end_time = time.time()
+        
+        return {
+            'model_name': model_name,
+            'success': response.success,
+            'response_time': end_time - start_time,
+            'content': response.content[:100] + "..." if len(response.content) > 100 else response.content,
+            'tokens_used': response.tokens_used,
+            'thinking_tokens': response.thinking_tokens,
+            'error': response.error
+        }
+        
+    except Exception as e:
+        return {
+            'model_name': model_name,
+            'success': False,
+            'error': str(e)
+        }
+
+
+async def test_all_agents() -> dict:
+    """Test all configured agents"""
+    config = load_config_file()
+    challenger_models = config.get('models', {}).get('challenger_models', [])
+    defender_model = config.get('models', {}).get('defender_model')
+    
+    all_models = challenger_models + ([defender_model] if defender_model else [])
+    
+    results = {}
+    
+    for model in all_models:
+        print(f"Testing {model}...")
+        result = await test_agent(model)
+        results[model] = result
+        
+        if result['success']:
+            print(f"  ✅ Success in {result['response_time']:.2f}s")
+        else:
+            print(f"  ❌ Failed: {result['error']}")
+    
+    return results
 
 
 async def validate_system_setup() -> bool:
@@ -122,145 +206,84 @@ def display_experiment_overview():
         thinking_status = "🧠 ON" if is_thinking_enabled(model) else "⚡ OFF"
         logger.info(f"    • {display_name} (Thinking: {thinking_status})")
     
-    defender_display = get_model_display_name(summary['defender_model'])
-    defender_thinking = "🧠 ON" if is_thinking_enabled(summary['defender_model']) else "⚡ OFF"
-    logger.info(f"  🛡️ DEFENDER: {defender_display} (Thinking: {defender_thinking})")
+    defender_display_name = get_model_display_name(summary['defender_model'])
+    defender_thinking_status = "🧠 ON" if is_thinking_enabled(summary['defender_model']) else "⚡ OFF"
+    logger.info(f"  🛡️ DEFENDER: {defender_display_name} (Thinking: {defender_thinking_status})")
     
     # Games overview
-    logger.info(f"🎮 GAMES ({len(summary['games_tested'])}):")
-    for game, config_count in summary['configs_per_game'].items():
-        logger.info(f"    • {game.upper()}: {config_count} conditions")
+    logger.info("🎮 GAMES (4):")
+    for game_name, config_count in summary['configs_per_game'].items():
+        logger.info(f"    • {game_name.upper()}: {config_count} conditions")
     
     # Experiment scope
-    logger.info(f"⚙️ EXPERIMENT SCOPE:")
+    logger.info("⚙️ EXPERIMENT SCOPE:")
     logger.info(f"    • Total configurations: {summary['total_configurations']}")
     logger.info(f"    • Total competitions: {summary['total_competitions']}")
-    logger.info(f"    • Estimated simulations: {summary['estimated_total_simulations']:,}")
+    logger.info(f"    • Estimated simulations: {summary['estimated_total_simulations']}")
     
     # Thinking analysis focus
-    thinking_models = summary['thinking_enabled_models']
-    logger.info(f"🧠 THINKING ANALYSIS:")
+    logger.info("🧠 THINKING ANALYSIS:")
+    thinking_models = summary.get('thinking_enabled_models', [])
     logger.info(f"    • Models with thinking: {len(thinking_models)}")
-    logger.info(f"    • Thinking vs non-thinking comparisons available")
-    logger.info(f"    • Strategic reasoning depth analysis enabled")
+    logger.info("    • Thinking vs non-thinking comparisons available")
+    logger.info("    • Strategic reasoning depth analysis enabled")
     
     logger.info("=" * 100)
 
 
 async def run_all_experiments() -> bool:
-    """Run all experiments and ablations defined in config.json"""
+    """Run all experiments across all games and conditions"""
     logger = logging.getLogger(__name__)
     
-    # Get configuration
-    challenger_models = get_challenger_models()
-    defender_model = get_defender_model()
-    experiment_config = get_experiment_config()
-    
-    logger.info("🚀 STARTING GEMINI THINKING EXPERIMENTS")
-    logger.info("=" * 80)
-    
-    start_time = time.time()
-    competition = Competition()
-    
-    # Generate all competition configurations from config.json
-    from config import get_all_game_configs
-    
-    all_competitions = []
-    
-    for game_name in ['salop', 'green_porter', 'spulber', 'athey_bagwell']:
-        # Get all configurations for this game (baseline + variations + ablations)
-        game_configs = get_all_game_configs(game_name)
-        
-        logger.info(f"📋 {game_name.upper()}: {len(game_configs)} conditions × {len(challenger_models)} challengers = {len(game_configs) * len(challenger_models)} competitions")
-        
-        for game_config in game_configs:
-            for challenger in challenger_models:
-                all_competitions.append({
-                    'game_name': game_name,
-                    'experiment_type': game_config.experiment_type,
-                    'condition_name': game_config.condition_name,
-                    'challenger_model': challenger,
-                    'defender_model': defender_model
-                })
-    
-    total_competitions = len(all_competitions)
-    logger.info("=" * 80)
-    logger.info(f"📊 TOTAL COMPETITIONS TO RUN: {total_competitions}")
-    logger.info("=" * 80)
-    
     try:
-        # Run all competitions with enhanced progress tracking
-        results = await competition.run_batch_competitions(all_competitions)
-        successful_competitions = len(results)
+        # Initialize competition engine
+        competition = Competition(output_dir="results")
         
-        duration = time.time() - start_time
+        # Run competitions for all games
+        logger.info("🎯 Starting game theory competitions...")
         
-        logger.info("=" * 100)
-        logger.info("🎉 EXPERIMENTS COMPLETED")
-        logger.info("=" * 100)
-        logger.info(f"✅ Success: {successful_competitions}/{total_competitions} competitions ({successful_competitions/total_competitions*100:.1f}%)")
-        logger.info(f"⏱️ Total duration: {duration:.2f} seconds ({duration/60:.1f} minutes)")
-        logger.info(f"⚡ Average per competition: {duration/max(total_competitions, 1):.1f} seconds")
+        success = await competition.run_all_competitions()
         
-        if successful_competitions == 0:
-            logger.error("❌ No experiments completed successfully!")
+        if not success:
+            logger.error("❌ Competitions failed!")
             return False
         
         # Run comprehensive analysis
-        logger.info("=" * 80)
-        logger.info("🔍 STARTING THINKING ANALYSIS")
-        logger.info("=" * 80)
-        
+        logger.info("📊 Starting comprehensive analysis...")
         analyzer = ResultsAnalyzer(output_dir="analysis_output")
+        
+        challenger_models = get_challenger_models()
+        defender_model = get_defender_model()
+        
         report = analyzer.analyze_complete_experiment(
             results_dir="results",
             challenger_models=challenger_models,
             defender_model=defender_model
         )
         
-        # Display key findings
-        display_analysis_summary(report)
+        logger.info("✅ Analysis completed successfully!")
+        
+        # Display final results summary
+        display_final_results_summary()
         
         return True
         
     except Exception as e:
-        logger.error(f"❌ Experiment suite failed: {e}", exc_info=True)
+        logger.error(f"💥 Experiment execution failed: {e}", exc_info=True)
         return False
 
 
-def display_analysis_summary(report):
-    """Display key findings from the analysis"""
+def display_final_results_summary():
+    """Display final summary of experiment results"""
     logger = logging.getLogger(__name__)
     
-    logger.info("=" * 100)
-    logger.info("📊 THINKING ANALYSIS RESULTS")
-    logger.info("=" * 100)
-    
-    # Correlation analysis summary
-    corr_summary = report.correlation_results.get('summary', {})
-    if corr_summary:
-        logger.info("🔗 CORRELATION ANALYSIS:")
-        logger.info(f"    • Hypotheses tested: {corr_summary.get('total_hypotheses_tested', 0)}")
-        logger.info(f"    • Significant correlations: {corr_summary.get('significant_correlations', 0)}")
-        logger.info(f"    • Strong correlations (|r| > 0.5): {corr_summary.get('strong_correlations', 0)}")
-        logger.info(f"    • Confirmed expectations: {corr_summary.get('confirmed_expectations', 0)}")
-        logger.info(f"    • Contradicted expectations: {corr_summary.get('contradicted_expectations', 0)}")
-    
-    # Games analyzed
-    games_analyzed = report.experiment_metadata.get('games_analyzed', [])
-    logger.info(f"🎮 GAMES ANALYZED: {', '.join([g.upper() for g in games_analyzed])}")
-    
-    # Models tested
-    models_tested = report.experiment_metadata.get('challenger_models', [])
-    logger.info(f"🤖 MODELS TESTED: {len(models_tested)}")
-    for model in models_tested:
-        display_name = get_model_display_name(model)
-        thinking_status = "🧠" if is_thinking_enabled(model) else "⚡"
-        logger.info(f"    • {thinking_status} {display_name}")
-    
     logger.info("=" * 60)
-    logger.info("📁 OUTPUTS GENERATED:")
-    logger.info("    • analysis_output/comprehensive_analysis_report.json")
+    logger.info("📊 EXPERIMENT RESULTS SUMMARY")
+    logger.info("=" * 60)
+    logger.info("📁 Results Location:")
+    logger.info("    • Raw results: results/")
+    logger.info("    • Analysis: analysis_output/")
+    logger.info("📈 Key Output Files:")
     logger.info("    • analysis_output/correlation_analysis.csv")
     logger.info("    • analysis_output/performance_metrics.csv") 
     logger.info("    • analysis_output/magic_behavioral_metrics.csv")

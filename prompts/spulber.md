@@ -14,5 +14,5 @@ You know your own marginal cost, but your competitors' costs are unknown. They a
 Choose your price to maximize your expected profit, considering the uncertainty about your rivals' costs.
 
 ## Output Format
-```json
-{"price": <number>}
+Respond with valid JSON only:
+{{"price": <number>}}
