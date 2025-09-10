@@ -1,27 +1,23 @@
 """
-Competition Engine - Core orchestration for LLM game theory experiments
-Updated for Gemini-only experiments with thinking support and error response filtering
-NOW SUPPORTS MOCK MODE for testing workflow and metrics
+Competition Framework - Fixed version with proper parameter handling
+Orchestrates economic game competitions between LLM agents with correct state management
 """
 
-import json
-import time
-import logging
 import asyncio
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass
-from pathlib import Path
+import logging
+import time
 from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Any
+from dataclasses import dataclass
 
 from config import (
-    GameConfig, get_game_config, get_experiment_config, get_challenger_models,
-    get_defender_model, get_simulation_count, is_thinking_enabled, 
-    get_model_display_name, get_all_game_configs
+    GameConfig, get_game_config, get_challenger_models, get_defender_model,
+    get_model_display_name, is_thinking_enabled, get_all_game_configs
 )
 from games import create_game
-from baselines.random_players import RandomPlayer
-from metrics.metric_utils import GameResult, create_game_result
 from agents import create_agent, BaseLLMAgent
+from metrics.metric_utils import GameResult, create_game_result
 
 
 @dataclass
@@ -43,290 +39,49 @@ class CompetitionResult:
     total_duration: float
 
 
+def get_simulation_count(experiment_type: str) -> int:
+    """Get number of simulations based on experiment type"""
+    counts = {
+        'baseline': 20,
+        'structural_variations': 15,
+        'ablation_studies': 10
+    }
+    return counts.get(experiment_type, 20)
+
+
 class Competition:
-    """
-    Core competition engine that orchestrates game experiments between LLM models
-    NOW SUPPORTS MOCK MODE for testing workflow without API calls
-    """
+    """Manages competitions between challenger and defender LLM agents"""
     
-    def __init__(self, challenger_models: list, defender_model: str, mock_mode: bool = False, output_dir: str = "results"):
-        """
-        Initialize competition system
-        
-        Args:
-            challenger_models: List of challenger model names
-            defender_model: Name of defender model
-            mock_mode: Whether to use mock agents instead of real ones
-            output_dir: Directory to save results
-        """
+    def __init__(self, challenger_models: List[str], defender_model: str, 
+                 mock_mode: bool = False, output_dir: Optional[Path] = None):
+        """Initialize competition framework"""
         self.challenger_models = challenger_models
         self.defender_model = defender_model
         self.mock_mode = mock_mode
-        self.output_dir = Path(output_dir)
-        self.output_dir.mkdir(exist_ok=True)
-        self.logger = logging.getLogger(f"{__name__}.Competition")
+        self.output_dir = output_dir or Path("results")
         
-        # Initialize game engines
+        # Setup logging
+        self.logger = logging.getLogger(__name__)
+        
+        # Initialize games
         self.games = {
             'salop': create_game('salop'),
-            'green_porter': create_game('green_porter'),
             'spulber': create_game('spulber'),
+            'green_porter': create_game('green_porter'),
             'athey_bagwell': create_game('athey_bagwell')
         }
         
-        # Load experiment configuration
-        self.experiment_config = get_experiment_config()
-        
-        # Log system overview
-        self._log_system_overview()
-    
-    def _log_system_overview(self):
-        """Log competition system setup"""
-        self.logger.info("=" * 60)
-        self.logger.info("LLM GAME THEORY COMPETITION SYSTEM")
-        self.logger.info("=" * 60)
-        
-        if self.mock_mode:
-            self.logger.info("🎭 MOCK MODE - Using simulated agents")
-        
-        self.logger.info(f"Challenger models: {len(self.challenger_models)}")
-        for model in self.challenger_models:
-            thinking_status = "ON" if is_thinking_enabled(model) else "OFF"
-            self.logger.info(f"  • {get_model_display_name(model)} (Thinking: {thinking_status})")
-        
-        thinking_status = "ON" if is_thinking_enabled(self.defender_model) else "OFF"
-        self.logger.info(f"Defender: {get_model_display_name(self.defender_model)} (Thinking: {thinking_status})")
-        self.logger.info("=" * 60)
-
-    async def _create_agents(self, challenger_model: str, defender_model: str, 
-                           num_of_players: int, call_id: str) -> Dict[str, Any]:
-        """Create agents for a single simulation"""
-        agents = {}
-        
-        try:
-            # Create challenger agent (always player 1)
-            challenger_agent = create_agent(
-                challenger_model, 
-                "challenger", 
-                mock_mode=self.mock_mode
-            )
-            agents["challenger"] = challenger_agent
-            
-            # Create defender agents for remaining players
-            for i in range(2, num_of_players + 1):
-                player_id = f"defender_{i}"
-                defender_agent = create_agent(
-                    defender_model, 
-                    player_id,
-                    mock_mode=self.mock_mode
-                )
-                agents[player_id] = defender_agent
-                
-        except Exception as e:
-            self.logger.error(f"[{call_id}] Failed to create agents: {e}")
-            raise
-        
-        return agents
-
-    async def _run_single_simulation(self, simulation_id: int, game_engine, game_config: GameConfig,
-                                   challenger_model: str, defender_model: str, call_id: str) -> GameResult:
-        """Run a single game simulation"""
-        
-        # Initialize game state
-        game_state = game_engine.initialize_game_state(game_config, simulation_id)
-        
-        # Create agents
-        num_of_players = game_config.constants.get('number_of_players', 2)
-        agents = await self._create_agents(challenger_model, defender_model, num_of_players, call_id)
-
-        # Determine if this is a dynamic or static game
-        if hasattr(game_engine, 'update_game_state'):
-            # Dynamic game (multi-round)
-            actions, payoffs, game_data = await self._run_dynamic_game(
-                game_engine, game_config, game_state, agents, call_id
-            )
-        else:
-            # Static game (single-round)
-            actions, payoffs, game_data = await self._run_static_game(
-                game_engine, game_config, game_state, agents, call_id
-            )
-        
-        # Create GameResult
-        player_ids = list(agents.keys())
-        
-        # FIXED: Pass game_data directly instead of unpacking it
-        result = create_game_result(
-            simulation_id=simulation_id,
-            game_name=game_config.game_name,
-            experiment_type=game_config.experiment_type,
-            condition_name=game_config.condition_name,
-            players=player_ids,
-            actions=actions,
-            payoffs=payoffs,
-            game_data=game_data  # Pass game_data as parameter, not unpacked
-        )
-        
-        return result
-
-    async def _run_dynamic_game(self, game_engine, game_config: GameConfig, game_state: Dict,
-                              agents: Dict[str, BaseLLMAgent], call_id: str) -> Tuple[Dict, Dict, Dict]:
-        """Run a dynamic (multi-round) game"""
-        
-        num_rounds = game_config.constants.get('time_horizon', 10)
-        all_round_actions = []
-        final_actions = {}
-        final_payoffs = {}
-        
-        for round_num in range(1, num_rounds + 1):
-            self.logger.debug(f"[{call_id}] Round {round_num}/{num_rounds}")
-            
-            # Get actions from all players for this round
-            round_actions = {}
-            
-            for player_id, agent in agents.items():
-                # Generate prompt for current round
-                prompt = game_engine.generate_player_prompt(player_id, game_state, game_config)
-                
-                # Get action from agent
-                action = await self._get_action_from_llm_agent(agent, player_id, prompt, game_engine, call_id)
-                round_actions[player_id] = action
-                
-                # Log action summary
-                action_summary = self._summarize_action(action)
-                self.logger.debug(f"[{call_id}] Round {round_num} - {player_id}: {action_summary}")
-            
-            # Calculate payoffs for this round
-            round_payoffs = game_engine.calculate_payoffs(round_actions, game_config, game_state)
-            
-            # Store round data
-            all_round_actions.append({
-                'round': round_num,
-                'actions': round_actions,
-                'payoffs': round_payoffs,
-                'game_state': dict(game_state)  # Copy current state
-            })
-            
-            # Update game state for next round
-            if round_num < num_rounds:
-                game_state = game_engine.update_game_state(game_state, round_actions, game_config)
-            
-            # Update final results (last round wins, or could be cumulative)
-            final_actions = round_actions
-            final_payoffs = round_payoffs
-        
-        # Get comprehensive game data for analysis
-        game_data = game_engine.get_game_data_for_logging(final_actions, final_payoffs, game_config, game_state)
-        game_data.update({
-            'round_data': all_round_actions,
-            'num_rounds_played': len(all_round_actions)
-        })
-        
-        return final_actions, final_payoffs, game_data
-
-    async def _run_static_game(self, game_engine, game_config: GameConfig, game_state: Dict,
-                            agents: Dict[str, BaseLLMAgent], call_id: str) -> Tuple[Dict, Dict, Dict]:
-        """Run a static (single-round) game"""
-        
-        # Get actions from all players
-        actions = {}
-        
-        for player_id, agent in agents.items():
-            # Generate prompt
-            prompt = game_engine.generate_player_prompt(player_id, game_state, game_config)
-            
-            # Get action from agent
-            action = await self._get_action_from_llm_agent(agent, player_id, prompt, game_engine, call_id)
-            actions[player_id] = action
-            
-            # Log action summary
-            action_summary = self._summarize_action(action)
-            self.logger.debug(f"[{call_id}] {player_id}: {action_summary}")
-        
-        # Calculate payoffs
-        payoffs = game_engine.calculate_payoffs(actions, game_config, game_state)
-        
-        # Get game data for analysis
-        game_data = game_engine.get_game_data_for_logging(actions, payoffs, game_config, game_state)
-        
-        return actions, payoffs, game_data
-
-    async def _get_action_from_llm_agent(self, agent, player_id: str, prompt: str, 
-                          game_engine, call_id: str) -> Dict[str, Any]:
-        """Get action from LLM agent with parsing and error handling"""
-        
-        # Get raw response from LLM
-        try:
-            raw_response = await agent.get_action(prompt, call_id)
-        except Exception as e:
-            self.logger.error(f"[{call_id}] Agent {player_id} API call failed: {e}")
-            return {
-                'error': f"API call failed: {str(e)}",
-                'player_id': player_id,
-                'raw_response': None,
-                'parsing_success': False
-            }
-        
-        # Parse response using game-specific parser
-        parsed_action = game_engine.parse_llm_response(raw_response, player_id, call_id)
-        
-        if parsed_action is None:
-            self.logger.warning(f"[{call_id}] Parsing failed for {player_id}, returning error action")
-            return {
-                'error': f"LLM response parsing failed",
-                'player_id': player_id,
-                'raw_response': raw_response,
-                'parsing_success': False
-            }
-        
-        # Add metadata for successful parsing
-        parsed_action.update({
-            'player_id': player_id,
-            'raw_response': raw_response,
-            'parsing_success': True
-        })
-        
-        return parsed_action
-    
-    def _summarize_action(self, action: Dict[str, Any]) -> str:
-        """Create brief summary of action for logging"""
-        if 'price' in action:
-            return f"Price: {action['price']:.2f}"
-        elif 'quantity' in action:
-            return f"Quantity: {action['quantity']:.1f}"
-        elif 'report' in action:
-            return f"Report: {action['report']}"
-        elif 'error' in action:
-            return f"Error: {action['error']}"
-        else:
-            return f"Action: {str(action)[:50]}..."
-
-    def _clean_error_responses(self, actions: Dict[str, Any]) -> Dict[str, Any]:
-        """Remove or mark error responses in actions to prevent JSON issues"""
-        cleaned_actions = {}
-        
-        for player_id, action in actions.items():
-            cleaned_action = dict(action)  # Copy the action
-            
-            # Check if this action contains an error
-            if 'error' in cleaned_action:
-                # Mark as error but clean the message
-                cleaned_action['error'] = "LLM response error (cleaned for export)"
-                cleaned_action['llm_error'] = True
-            else:
-                # Mark as successful
-                cleaned_action['llm_error'] = False
-            
-            cleaned_actions[player_id] = cleaned_action
-        
-        return cleaned_actions
+        self.logger.info(f"Competition initialized with {len(self.challenger_models)} challengers")
+        if mock_mode:
+            self.logger.info("🎭 MOCK MODE: Using simulated responses")
 
     async def run_competition(self, game_name: str, experiment_type: str, condition_name: str,
                             challenger_model: str, defender_model: Optional[str] = None) -> CompetitionResult:
         """
-        Run complete competition between challenger and defender models
+        Run a complete competition for a specific game configuration
         
         Args:
-            game_name: Name of game to play ('salop', 'green_porter', 'spulber', 'athey_bagwell')
+            game_name: Name of the game ('salop', 'green_porter', etc.)
             experiment_type: Type of experiment ('baseline', 'structural_variations', etc.)
             condition_name: Specific condition name
             challenger_model: Model name for challenger
@@ -353,7 +108,7 @@ class Competition:
         self.logger.info(f"Challenger: {challenger_display} (Thinking: {'ON' if challenger_thinking else 'OFF'})")
         self.logger.info(f"Defender: {defender_display} (Thinking: {'ON' if defender_thinking else 'OFF'})")
         
-        # CRITICAL FIX: Load game configuration with correct parameters
+        # Load game configuration
         game_config = get_game_config(game_name, experiment_type, condition_name)
         game_engine = self.games[game_name]
         
@@ -430,6 +185,223 @@ class Competition:
         
         return result
 
+    async def _run_single_simulation(self, simulation_id: int, game_engine, game_config: GameConfig,
+                                   challenger_model: str, defender_model: str, call_id: str) -> GameResult:
+        """Run a single game simulation"""
+        
+        # Initialize game state - CRITICAL: This returns a Dict
+        game_state = game_engine.initialize_game_state(game_config, simulation_id)
+        
+        # DEBUG: Verify types
+        self.logger.debug(f"[{call_id}] game_state type: {type(game_state)}")
+        self.logger.debug(f"[{call_id}] game_config type: {type(game_config)}")
+        
+        # Create agents
+        num_of_players = game_config.constants.get('number_of_players', 2)
+        agents = await self._create_agents(challenger_model, defender_model, num_of_players, call_id)
+
+        # Determine if this is a dynamic or static game
+        if hasattr(game_engine, 'update_game_state'):
+            # Dynamic game (multi-round) - FIXED: Correct parameter order
+            actions, payoffs, game_data = await self._run_dynamic_game(
+                game_engine, game_config, game_state, agents, call_id
+            )
+        else:
+            # Static game (single-round) - FIXED: Correct parameter order  
+            actions, payoffs, game_data = await self._run_static_game(
+                game_engine, game_config, game_state, agents, call_id
+            )
+        
+        # Create GameResult
+        player_ids = list(agents.keys())
+        
+        result = create_game_result(
+            simulation_id=simulation_id,
+            game_name=game_config.game_name,
+            experiment_type=game_config.experiment_type,
+            condition_name=game_config.condition_name,
+            players=player_ids,
+            actions=actions,
+            payoffs=payoffs,
+            game_data=game_data
+        )
+        
+        return result
+
+    async def _run_dynamic_game(self, game_engine, game_config: GameConfig, game_state: Dict,
+                              agents: Dict[str, BaseLLMAgent], call_id: str) -> Tuple[Dict, Dict, Dict]:
+        """Run a dynamic (multi-round) game - FIXED parameter handling"""
+        
+        # DEBUG: Verify we have correct types
+        self.logger.debug(f"[{call_id}] _run_dynamic_game: game_state type = {type(game_state)}")
+        self.logger.debug(f"[{call_id}] _run_dynamic_game: game_config type = {type(game_config)}")
+        
+        # FIXED: Ensure we're accessing constants correctly
+        num_rounds = game_config.constants.get('time_horizon', 10)
+        all_round_actions = []
+        final_actions = {}
+        final_payoffs = {}
+        
+        for round_num in range(1, num_rounds + 1):
+            self.logger.debug(f"[{call_id}] Round {round_num}/{num_rounds}")
+            
+            # Get actions from all players for this round
+            round_actions = {}
+            
+            for player_id, agent in agents.items():
+                # CRITICAL: Ensure correct parameter order (player_id, game_state, game_config)
+                prompt = game_engine.generate_player_prompt(player_id, game_state, game_config)
+                
+                # Get action from agent
+                action = await self._get_action_from_llm_agent(agent, player_id, prompt, game_engine, call_id)
+                round_actions[player_id] = action
+                
+                # Log action summary
+                action_summary = self._summarize_action(action)
+                self.logger.debug(f"[{call_id}] Round {round_num} - {player_id}: {action_summary}")
+            
+            # Calculate payoffs for this round
+            round_payoffs = game_engine.calculate_payoffs(round_actions, game_config, game_state)
+            
+            # Store round data
+            all_round_actions.append({
+                'round': round_num,
+                'actions': round_actions,
+                'payoffs': round_payoffs,
+                'game_state': dict(game_state)  # Copy current state
+            })
+            
+            # CRITICAL: Update game state for next round - ensure correct parameter order
+            if round_num < num_rounds:
+                # FIXED: Make sure update_game_state gets (game_state, actions, game_config)
+                updated_state = game_engine.update_game_state(game_state, round_actions, game_config)
+                
+                # DEBUG: Verify the updated state is still a Dict
+                self.logger.debug(f"[{call_id}] Updated game_state type: {type(updated_state)}")
+                
+                # CRITICAL: Ensure we're assigning the right type
+                if not isinstance(updated_state, dict):
+                    self.logger.error(f"[{call_id}] update_game_state returned {type(updated_state)}, expected dict")
+                    raise TypeError(f"update_game_state must return Dict, got {type(updated_state)}")
+                
+                game_state = updated_state
+            
+            # Update final results (last round wins, or could be cumulative)
+            final_actions = round_actions
+            final_payoffs = round_payoffs
+        
+        # Get comprehensive game data for analysis
+        game_data = game_engine.get_game_data_for_logging(final_actions, final_payoffs, game_config, game_state)
+        game_data.update({
+            'round_data': all_round_actions,
+            'num_rounds_played': len(all_round_actions)
+        })
+        
+        return final_actions, final_payoffs, game_data
+
+    async def _run_static_game(self, game_engine, game_config: GameConfig, game_state: Dict,
+                             agents: Dict[str, BaseLLMAgent], call_id: str) -> Tuple[Dict, Dict, Dict]:
+        """Run a static (single-round) game - FIXED parameter handling"""
+        
+        # DEBUG: Verify we have correct types
+        self.logger.debug(f"[{call_id}] _run_static_game: game_state type = {type(game_state)}")
+        self.logger.debug(f"[{call_id}] _run_static_game: game_config type = {type(game_config)}")
+        
+        # Get actions from all players
+        actions = {}
+        
+        for player_id, agent in agents.items():
+            # CRITICAL: Ensure correct parameter order (player_id, game_state, game_config)
+            prompt = game_engine.generate_player_prompt(player_id, game_state, game_config)
+            
+            # Get action from agent
+            action = await self._get_action_from_llm_agent(agent, player_id, prompt, game_engine, call_id)
+            actions[player_id] = action
+            
+            # Log action summary
+            action_summary = self._summarize_action(action)
+            self.logger.debug(f"[{call_id}] {player_id}: {action_summary}")
+        
+        # Calculate payoffs
+        payoffs = game_engine.calculate_payoffs(actions, game_config, game_state)
+        
+        # Get game data for analysis
+        game_data = game_engine.get_game_data_for_logging(actions, payoffs, game_config, game_state)
+        
+        return actions, payoffs, game_data
+
+    async def _get_action_from_llm_agent(self, agent, player_id: str, prompt: str, 
+                          game_engine, call_id: str) -> Dict[str, Any]:
+        """Get action from LLM agent with parsing and error handling"""
+        
+        # Get raw response from LLM
+        try:
+            raw_response = await agent.get_action(prompt, call_id)
+        except Exception as e:
+            self.logger.error(f"[{call_id}] Agent {player_id} API call failed: {e}")
+            return {
+                'error': f"API call failed: {str(e)}",
+                'player_id': player_id,
+                'raw_response': None,
+                'parsing_success': False
+            }
+        
+        # Parse response using game-specific parser
+        parsed_action = game_engine.parse_llm_response(raw_response, player_id, call_id)
+        
+        if parsed_action is None:
+            self.logger.warning(f"[{call_id}] Parsing failed for {player_id}, returning error action")
+            return {
+                'error': f"LLM response parsing failed",
+                'player_id': player_id,
+                'raw_response': raw_response,
+                'parsing_success': False
+            }
+        
+        # Add metadata
+        parsed_action.update({
+            'player_id': player_id,
+            'parsing_success': True
+        })
+        
+        return parsed_action
+
+    async def _create_agents(self, challenger_model: str, defender_model: str, 
+                           num_of_players: int, call_id: str) -> Dict[str, BaseLLMAgent]:
+        """Create agents for the game"""
+        
+        agents = {}
+        
+        try:
+            # Create challenger agent
+            challenger_agent = create_agent(challenger_model, 'challenger', mock_mode=self.mock_mode)
+            agents['challenger'] = challenger_agent
+            
+            # Create defender agents
+            for i in range(1, num_of_players):
+                player_id = f'defender_{i}'
+                defender_agent = create_agent(defender_model, player_id, mock_mode=self.mock_mode)
+                agents[player_id] = defender_agent
+                
+        except Exception as e:
+            self.logger.error(f"[{call_id}] Failed to create agents: {e}")
+            raise
+        
+        return agents
+
+    def _summarize_action(self, action: Dict[str, Any]) -> str:
+        """Create a summary string for an action"""
+        if 'error' in action:
+            return f"ERROR: {action['error']}"
+        
+        # Extract key action fields
+        summary_parts = []
+        for key in ['price', 'quantity', 'report', 'bid']:
+            if key in action:
+                summary_parts.append(f"{key}={action[key]}")
+        
+        return ", ".join(summary_parts) if summary_parts else "No action parsed"
+
     async def _save_competition_result(self, result: CompetitionResult) -> None:
         """Save competition result to JSON file with error filtering"""
         
@@ -441,52 +413,35 @@ class Competition:
         # Create filename
         safe_condition = result.condition_name.replace(" ", "_").replace("/", "_")
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        mock_suffix = "_mock" if self.mock_mode else ""
+        filename = f"{safe_condition}_competition_result{mock_suffix}_{timestamp}.json"
         
-        if self.mock_mode:
-            filename = f"{safe_condition}_competition_result_mock_{timestamp}.json"
-        else:
-            filename = f"{safe_condition}_competition_result.json"
+        filepath = challenger_dir / filename
         
-        output_path = challenger_dir
-        
-        # Clean simulation results to remove error responses
-        cleaned_simulation_results = []
-        for sim_result in result.simulation_results:
-            cleaned_sim = dict(sim_result.__dict__)
+        try:
+            # Filter out error simulations for cleaner results
+            filtered_results = [
+                sim for sim in result.simulation_results 
+                if not any('error' in action for action in sim.actions.values())
+            ]
             
-            # Clean actions to prevent JSON serialization issues
-            if 'actions' in cleaned_sim:
-                cleaned_sim['actions'] = self._clean_error_responses(cleaned_sim['actions'])
+            # Create filtered result
+            filtered_result = result.__class__(
+                **{**result.__dict__, 'simulation_results': filtered_results}
+            )
             
-            cleaned_simulation_results.append(cleaned_sim)
-        
-        # Create final result dictionary
-        result_dict = {
-            'game_name': result.game_name,
-            'experiment_type': result.experiment_type,
-            'condition_name': result.condition_name,
-            'challenger_model': result.challenger_model,
-            'challenger_display_name': result.challenger_display_name,
-            'defender_model': result.defender_model,
-            'defender_display_name': result.defender_display_name,
-            'challenger_thinking_enabled': result.challenger_thinking_enabled,
-            'defender_thinking_enabled': result.defender_thinking_enabled,
-            'simulation_results': cleaned_simulation_results,
-            'competition_metadata': result.competition_metadata,
-            'start_time': result.start_time,
-            'end_time': result.end_time,
-            'total_duration': result.total_duration
-        }
-        
-        # Save to file
-        filepath = output_path / filename
-        with open(filepath, 'w') as f:
-            json.dump(result_dict, f, indent=2, default=str)
-        
-        self.logger.info(f"Results saved (errors filtered): {filepath}")
+            # Save to file
+            with open(filepath, 'w') as f:
+                import json
+                json.dump(filtered_result.__dict__, f, indent=2, default=str)
+            
+            self.logger.info(f"Results saved (errors filtered): {filepath}")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to save results: {e}")
 
     async def run_batch_competitions(self, competitions: List[Dict[str, str]]) -> List[CompetitionResult]:
-        """Run multiple competitions in sequence"""
+        """Run multiple competitions in batch"""
         
         results = []
         total = len(competitions)
@@ -496,6 +451,9 @@ class Competition:
         
         for i, comp in enumerate(competitions):
             comp_start = time.time()
+            self.logger.info(f"🔄 Running competition {i+1}/{total}: "
+                           f"{comp['game_name']} - {comp['experiment_type']} - {comp['condition_name']}")
+            
             try:
                 result = await self.run_competition(**comp)
                 results.append(result)
