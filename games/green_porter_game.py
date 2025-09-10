@@ -78,24 +78,6 @@ class GreenPorterGame(DynamicGame, QuantityParsingMixin):
         self.logger.warning(f"[{call_id}] Could not parse quantity from {player_id}")
         return None
 
-    def get_default_action(self, player_id: str, game_state: Dict, 
-                         game_config: GameConfig) -> Dict[str, Any]:
-        """Default quantity action when parsing fails"""
-        constants = game_config.constants
-        
-        # Default to collusive quantity if in collusive state, otherwise competitive
-        if game_state.get('market_state') == 'Collusive':
-            default_quantity = constants.get('collusive_quantity', 17)
-        else:
-            default_quantity = constants.get('competitive_quantity', 25)
-        
-        return {
-            'quantity': default_quantity,
-            'reasoning': 'Default quantity due to parsing failure',
-            'parsing_success': False,
-            'player_id': player_id
-        }
-
     def calculate_payoffs(self, actions: Dict[str, Any], game_config: GameConfig,
                          game_state: Optional[Dict] = None) -> Dict[str, float]:
         """

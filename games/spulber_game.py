@@ -52,27 +52,6 @@ class SpulberGame(StaticGame, PriceParsingMixin):
         self.logger.warning(f"[{call_id}] Could not parse bid/price from {player_id}")
         return None
 
-    def get_default_action(self, player_id: str, game_state: Dict, 
-                         game_config: GameConfig) -> Dict[str, Any]:
-        """Default bidding action when parsing fails"""
-        # In Bertrand competition, default to cost-plus pricing strategy
-        constants = game_config.constants
-        private_values = constants.get('private_values', {})
-        
-        if player_id == 'challenger':
-            own_cost = private_values.get('challenger_cost', 8)
-        else:
-            own_cost = private_values.get('defender_cost', 10)
-        
-        default_price = own_cost + 2.0  # Small markup
-        
-        return {
-            'price': default_price,
-            'reasoning': 'Default cost-plus bidding due to parsing failure',
-            'parsing_success': False,
-            'player_id': player_id
-        }
-
     def calculate_payoffs(self, actions: Dict[str, Any], game_config: GameConfig,
                          game_state: Optional[Dict] = None) -> Dict[str, float]:
         """

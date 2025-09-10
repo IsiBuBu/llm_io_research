@@ -86,8 +86,8 @@
   },
 
   "experiment_config": {
-    "main_experiment_simulations": 1,
-    "ablation_experiment_simulations": 1,
+    "main_experiment_simulations": 10,
+    "ablation_experiment_simulations": 10,
     "parallel_workers": 4,
     "random_seed": 42,
     "checkpoint_frequency": 10

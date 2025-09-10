@@ -188,12 +188,6 @@ Respond with valid JSON only:
         pass
     
     @abstractmethod
-    def get_default_action(self, player_id: str, game_state: Dict, 
-                         game_config: GameConfig) -> Dict[str, Any]:
-        """Get default action when parsing fails"""
-        pass
-    
-    @abstractmethod
     def calculate_payoffs(self, actions: Dict[str, Any], game_config: GameConfig,
                          game_state: Optional[Dict] = None) -> Dict[str, float]:
         """Calculate payoffs for all players"""

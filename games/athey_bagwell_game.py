@@ -123,25 +123,6 @@ class AtheyBagwellGame(DynamicGame, ReportParsingMixin):
         self.logger.warning(f"[{call_id}] Could not parse report from {player_id}")
         return None
 
-    def get_default_action(self, player_id: str, game_state: Dict, 
-                         game_config: GameConfig) -> Dict[str, Any]:
-        """Default report action when parsing fails - truthful reporting"""
-        
-        # Default to truthful reporting (report true cost)
-        current_period = game_state.get('current_period', 1)
-        cost_sequences = game_state.get('cost_sequences', {})
-        
-        current_cost = 'high'
-        if player_id in cost_sequences and len(cost_sequences[player_id]) >= current_period:
-            current_cost = cost_sequences[player_id][current_period - 1]
-        
-        return {
-            'report': current_cost,
-            'reasoning': 'Default truthful reporting due to parsing failure',
-            'parsing_success': False,
-            'player_id': player_id
-        }
-
     def calculate_payoffs(self, actions: Dict[str, Any], game_config: GameConfig,
                          game_state: Optional[Dict] = None) -> Dict[str, float]:
         """

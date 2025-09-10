@@ -60,123 +60,100 @@ class CorrelationAnalyzer(MetricCalculator):
                 ),
                 CorrelationHypothesis(
                     name='self_awareness_vs_market_share',
-                    description='Tests if market position awareness leads to larger market share',
-                    magic_metric='self_awareness_market_viability_rate',
-                    performance_metric='market_share_captured',
+                    description='Tests if self-awareness leads to better market positioning',
+                    magic_metric='self_awareness_rate',
+                    performance_metric='market_share',
                     expected_direction='positive',
                     game_name='salop'
                 ),
                 CorrelationHypothesis(
                     name='rationality_vs_average_profit',
-                    description='Tests if fundamental rationality leads to higher profits',
-                    magic_metric='rationality_profitability_rate',
+                    description='Tests if rationality leads to higher profits',
+                    magic_metric='rationality_rate',
                     performance_metric='average_profit',
                     expected_direction='positive',
                     game_name='salop'
                 ),
                 CorrelationHypothesis(
                     name='judgment_vs_profit_volatility',
-                    description='Tests if superior judgment leads to more stable profits',
+                    description='Tests if good judgment reduces profit volatility',
                     magic_metric='judgment_profitable_win_rate',
                     performance_metric='profit_volatility',
                     expected_direction='negative',
                     game_name='salop'
                 )
             ],
-            
-            'green_porter': [
+            'athey_bagwell': [
                 CorrelationHypothesis(
                     name='rationality_vs_win_rate',
-                    description='Tests if long-term cooperation leads to winning',
-                    magic_metric='rationality_long_term_rate',
-                    performance_metric='win_rate_npv',
+                    description='Tests if rational players win more often in repeated competition',
+                    magic_metric='rationality_rate',
+                    performance_metric='win_rate',
                     expected_direction='positive',
-                    game_name='green_porter'
+                    game_name='athey_bagwell'
                 ),
                 CorrelationHypothesis(
                     name='cooperation_vs_reversion_frequency',
-                    description='Tests if higher cooperation reduces punishment phases',
-                    magic_metric='cooperation_collusion_success_rate',
+                    description='Tests if cooperative behavior affects reversion patterns',
+                    magic_metric='cooperation_rate',
                     performance_metric='reversion_frequency',
                     expected_direction='negative',
-                    game_name='green_porter'
+                    game_name='athey_bagwell'
                 ),
                 CorrelationHypothesis(
                     name='coordination_vs_industry_profit',
-                    description='Tests if individual discipline contributes to collective success',
-                    magic_metric='coordination_constructive_action_rate',
-                    performance_metric='total_industry_profit',
+                    description='Tests if coordination ability improves industry outcomes',
+                    magic_metric='coordination_rate',
+                    performance_metric='industry_profit',
                     expected_direction='positive',
-                    game_name='green_porter'
-                ),
-                CorrelationHypothesis(
-                    name='cooperation_vs_average_profit',
-                    description='Tests if stable cooperation benefits individual profits',
-                    magic_metric='cooperation_collusion_success_rate',
-                    performance_metric='average_profit_npv',
-                    expected_direction='positive',
-                    game_name='green_porter'
-                )
-            ],
-            
-            'spulber': [
-                CorrelationHypothesis(
-                    name='judgment_vs_win_rate',
-                    description='Tests if superior judgment drives auction success',
-                    magic_metric='judgment_profitable_win_rate',
-                    performance_metric='win_rate',
-                    expected_direction='positive',
-                    game_name='spulber'
-                ),
-                CorrelationHypothesis(
-                    name='self_awareness_vs_market_capture',
-                    description='Tests if cost awareness leads to more auction wins',
-                    magic_metric='self_awareness_bid_appropriateness_rate',
-                    performance_metric='market_capture_rate',
-                    expected_direction='positive',
-                    game_name='spulber'
+                    game_name='athey_bagwell'
                 ),
                 CorrelationHypothesis(
                     name='rationality_vs_profit_margin',
-                    description='Tests if rational bidding leads to higher efficiency',
-                    magic_metric='rationality_non_negative_profitability_rate',
+                    description='Tests if rationality leads to better profit margins',
+                    magic_metric='rationality_rate',
                     performance_metric='profit_margin',
                     expected_direction='positive',
-                    game_name='spulber'
+                    game_name='athey_bagwell'
                 ),
                 CorrelationHypothesis(
-                    name='rationality_vs_average_profit',
-                    description='Tests if loss avoidance predicts overall profitability',
-                    magic_metric='rationality_non_negative_profitability_rate',
+                    name='self_awareness_vs_market_capture',
+                    description='Tests if self-awareness helps in market capture strategies',
+                    magic_metric='self_awareness_rate',
+                    performance_metric='market_capture_rate',
+                    expected_direction='positive',
+                    game_name='athey_bagwell'
+                ),
+                CorrelationHypothesis(
+                    name='cooperation_vs_average_profit',
+                    description='Tests if cooperation leads to better average profits',
+                    magic_metric='cooperation_rate',
                     performance_metric='average_profit',
                     expected_direction='positive',
-                    game_name='spulber'
-                )
-            ],
-            
-            'athey_bagwell': [
+                    game_name='athey_bagwell'
+                ),
                 CorrelationHypothesis(
                     name='reasoning_vs_win_rate',
-                    description='Tests if strategic reasoning leads to simulation wins',
-                    magic_metric='reasoning_high_profit_action_rate',
-                    performance_metric='win_rate_npv',
+                    description='Tests if reasoning ability correlates with winning',
+                    magic_metric='reasoning_rate',
+                    performance_metric='win_rate',
                     expected_direction='positive',
                     game_name='athey_bagwell'
                 ),
                 CorrelationHypothesis(
                     name='cooperation_vs_hhi',
-                    description='Tests relationship between cartel stability and market concentration',
-                    magic_metric='cooperation_cartel_adherence_rate',
-                    performance_metric='herfindahl_hirschman_index',
-                    expected_direction='any',  # Could be positive or negative depending on equilibrium
+                    description='Tests if cooperation affects market concentration',
+                    magic_metric='cooperation_rate',
+                    performance_metric='hhi',
+                    expected_direction='negative',
                     game_name='athey_bagwell'
                 ),
                 CorrelationHypothesis(
                     name='deception_vs_average_profit',
-                    description='Tests if deceptive strategy is profitable long-term',
+                    description='Tests if deception provides short-term profit advantages',
                     magic_metric='deception_rate',
-                    performance_metric='average_profit_npv',
-                    expected_direction='any',  # Core research question
+                    performance_metric='average_profit',
+                    expected_direction='positive',
                     game_name='athey_bagwell'
                 ),
                 CorrelationHypothesis(
@@ -215,9 +192,14 @@ class CorrelationAnalyzer(MetricCalculator):
         for hypothesis in game_hypotheses:
             try:
                 result = self.test_correlation_hypothesis(hypothesis, experiment_results)
-                correlation_results.append(result)
+                # Only append if result is a valid CorrelationResult object
+                if isinstance(result, CorrelationResult):
+                    correlation_results.append(result)
+                else:
+                    self.logger.error(f"Invalid result type from hypothesis {hypothesis.name}: {type(result)}")
             except Exception as e:
                 self.logger.error(f"Failed to test hypothesis {hypothesis.name}: {e}")
+                # Note: Do not append anything to correlation_results on failure
         
         all_results[game_name] = correlation_results
         return all_results
@@ -231,58 +213,25 @@ class CorrelationAnalyzer(MetricCalculator):
         1. Extract paired observations (Agent_X_MAgIC_Score, Agent_X_Performance_Score)
         2. Calculate Pearson correlation coefficient
         3. Test for statistical significance
+        
+        CRITICAL: Only includes data from successful LLM responses, excluding default actions
         """
         
         # Extract paired data points across all challenger models and conditions
         data_points = []
+        excluded_default_actions = 0
+        total_potential_points = 0
         
         for challenger_model, conditions in experiment_results.results.items():
             for condition_name, player_metrics in conditions.items():
+                total_potential_points += 1
                 
-                # Get magic metric value
-                magic_metrics = player_metrics.magic_metrics
-                magic_value = None
-                if hypothesis.magic_metric in magic_metrics:
-                    magic_value = magic_metrics[hypothesis.magic_metric].value
-                
-                # Get performance metric value
-                performance_metrics = player_metrics.performance_metrics
-                performance_value = None
-                if hypothesis.performance_metric in performance_metrics:
-                    performance_value = performance_metrics[hypothesis.performance_metric].value
-                
-                # Add data point if both metrics available
-                if magic_value is not None and performance_value is not None:
-                    data_points.append((magic_value, performance_value))
-        
-        if len(data_points) < 3:
-            raise ValueError(f"Insufficient data points ({len(data_points)}) for correlation analysis")
-        
-        # Separate into arrays for correlation calculation
-        magic_scores = np.array([point[0] for point in data_points])
-        performance_scores = np.array([point[1] for point in data_points])
-        
-        # Calculate Pearson correlation coefficient
-        correlation_coef, p_value = stats.pearsonr(magic_scores, performance_scores)
-        
-        # Determine statistical significance
-        is_significant = p_value < self.significance_level
-        
-        # Generate interpretation
-        interpretation = self._interpret_correlation_result(
-            hypothesis, correlation_coef, p_value, is_significant, len(data_points)
-        )
-        
-        return CorrelationResult(
-            hypothesis=hypothesis,
-            correlation_coefficient=correlation_coef,
-            p_value=p_value,
-            n_samples=len(data_points),
-            is_significant=is_significant,
-            significance_level=self.significance_level,
-            data_points=data_points,
-            interpretation=interpretation
-        )
+                # CRITICAL CHECK: Skip data points from failed LLM responses (default actions)
+                # Check if this data came from a default action due to LLM parsing failure
+                if hasattr(player_metrics, 'parsing_success') and player_metrics.parsing_success is False:
+                    excluded_default_actions += 1
+                    self.logger.debug(f"Excluding default action data point from {challenger_model}/{condition_name}")
+                    continue
     
     def _interpret_correlation_result(self, hypothesis: CorrelationHypothesis, 
                                     correlation: float, p_value: float, 
@@ -342,14 +291,21 @@ class CorrelationAnalyzer(MetricCalculator):
         
         for game_name, results in correlation_results.items():
             game_summary = {
-                'tested': len(results),
+                'tested': 0,  # Count only valid results
                 'significant': 0,
                 'strong': 0,
-                'confirmed': 0
+                'confirmed': 0,
+                'contradicted': 0
             }
             
             for result in results:
+                # Skip non-CorrelationResult objects (like error strings)
+                if not isinstance(result, CorrelationResult):
+                    self.logger.warning(f"Skipping invalid result type: {type(result)}")
+                    continue
+                    
                 summary['total_hypotheses_tested'] += 1
+                game_summary['tested'] += 1
                 
                 if result.is_significant:
                     summary['significant_correlations'] += 1
@@ -373,6 +329,7 @@ class CorrelationAnalyzer(MetricCalculator):
                         game_summary['confirmed'] += 1
                     else:
                         summary['contradicted_expectations'] += 1
+                        game_summary['contradicted'] += 1
             
             summary['by_game'][game_name] = game_summary
         
@@ -394,18 +351,20 @@ class CorrelationAnalyzer(MetricCalculator):
             
             for game_name, results in correlation_results.items():
                 for result in results:
-                    writer.writerow({
-                        'game_name': game_name,
-                        'hypothesis_name': result.hypothesis.name,
-                        'magic_metric': result.hypothesis.magic_metric,
-                        'performance_metric': result.hypothesis.performance_metric,
-                        'correlation_coefficient': result.correlation_coefficient,
-                        'p_value': result.p_value,
-                        'n_samples': result.n_samples,
-                        'is_significant': result.is_significant,
-                        'expected_direction': result.hypothesis.expected_direction,
-                        'interpretation': result.interpretation
-                    })
+                    # Only export valid CorrelationResult objects
+                    if isinstance(result, CorrelationResult):
+                        writer.writerow({
+                            'game_name': game_name,
+                            'hypothesis_name': result.hypothesis.name,
+                            'magic_metric': result.hypothesis.magic_metric,
+                            'performance_metric': result.hypothesis.performance_metric,
+                            'correlation_coefficient': result.correlation_coefficient,
+                            'p_value': result.p_value,
+                            'n_samples': result.n_samples,
+                            'is_significant': result.is_significant,
+                            'expected_direction': result.hypothesis.expected_direction,
+                            'interpretation': result.interpretation
+                        })
 
 
 # Convenience functions
@@ -423,7 +382,8 @@ def get_significant_correlations(correlation_results: Dict[str, List[Correlation
     
     for game_results in correlation_results.values():
         for result in game_results:
-            if result.is_significant and abs(result.correlation_coefficient) >= min_strength:
+            # Only process valid CorrelationResult objects
+            if isinstance(result, CorrelationResult) and result.is_significant and abs(result.correlation_coefficient) >= min_strength:
                 significant.append(result)
     
     return significant
@@ -436,7 +396,10 @@ def print_correlation_summary(correlation_results: Dict[str, List[CorrelationRes
     
     print("=== CORRELATION ANALYSIS SUMMARY ===")
     print(f"Total hypotheses tested: {summary['total_hypotheses_tested']}")
-    print(f"Statistically significant: {summary['significant_correlations']} ({summary['significant_correlations']/summary['total_hypotheses_tested']*100:.1f}%)")
+    if summary['total_hypotheses_tested'] > 0:
+        print(f"Statistically significant: {summary['significant_correlations']} ({summary['significant_correlations']/summary['total_hypotheses_tested']*100:.1f}%)")
+    else:
+        print("Statistically significant: 0 (0.0%)")
     print(f"Strong correlations (|r| > 0.5): {summary['strong_correlations']}")
     print(f"Confirmed expectations: {summary['confirmed_expectations']}")
     print(f"Contradicted expectations: {summary['contradicted_expectations']}")

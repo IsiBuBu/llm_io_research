@@ -56,21 +56,6 @@ class SalopGame(StaticGame, PriceParsingMixin):
         self.logger.warning(f"[{call_id}] Could not parse price from {player_id}")
         return None
 
-    def get_default_action(self, player_id: str, game_state: Dict, 
-                         game_config: GameConfig) -> Dict[str, Any]:
-        """Default pricing action when parsing fails"""
-        # Use marginal cost + small markup as default
-        marginal_cost = game_config.constants.get('marginal_cost', 8)
-        default_markup = game_config.constants.get('default_markup', 2.0)
-        default_price = marginal_cost + default_markup
-        
-        return {
-            'price': default_price,
-            'reasoning': 'Default cost-plus pricing due to parsing failure',
-            'parsing_success': False,
-            'player_id': player_id
-        }
-
     def calculate_payoffs(self, actions: Dict[str, Any], game_config: GameConfig,
                          game_state: Optional[Dict] = None) -> Dict[str, float]:
         """
