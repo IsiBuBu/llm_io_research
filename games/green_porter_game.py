@@ -83,121 +83,115 @@ class GreenPorterGame(DynamicGame, QuantityParsingMixin):
         """
         Calculate Green & Porter payoffs using t.txt specification
         
-        From t.txt Outcome Calculation:
-        - Total_Quantity_t = Σq_i,t
-        - Market_Price_t = base_demand - Total_Quantity_t + Demand_Shock_t
-        - Profit_i,t = (Market_Price_t - marginal_cost) × q_i,t
+        Algorithm from t.txt:
+        1. Calculate Market Price: p = demand_intercept - demand_slope × total_quantity + demand_shock
+        2. For each player: profit = (price - marginal_cost) × player_quantity
+        3. Apply State Transition Algorithm to update market state
         """
         
+        # Extract game constants
         constants = game_config.constants
-        
-        # Extract constants from t.txt specification
-        base_demand = constants.get('base_demand', 100)
-        marginal_cost = constants.get('marginal_cost', 8)
+        demand_intercept = constants.get('demand_intercept', 100)
+        demand_slope = constants.get('demand_slope', 1)
+        marginal_cost = constants.get('marginal_cost', 10)
         
         # Get current period and demand shock
         current_period = game_state.get('current_period', 1) if game_state else 1
         demand_shocks = game_state.get('demand_shocks', []) if game_state else []
-        
-        # Get demand shock for current period (index is period - 1)
-        shock_index = min(current_period - 1, len(demand_shocks) - 1) if demand_shocks else 0
-        demand_shock = demand_shocks[shock_index] if demand_shocks else 0
+        demand_shock = demand_shocks[current_period - 1] if current_period <= len(demand_shocks) else 0
         
         # Extract quantities from actions
         quantities = {}
         for player_id, action in actions.items():
-            quantity = action.get('quantity', 0)
-            quantities[player_id] = max(0, quantity)  # Non-negative quantities
+            if isinstance(action, dict) and 'quantity' in action:
+                quantities[player_id] = action['quantity']
+            else:
+                self.logger.warning(f"Invalid action format for {player_id}: {action}")
+                quantities[player_id] = constants.get('cournot_quantity', 25)  # Default fallback
         
-        # Step 1: Calculate Total_Quantity_t = Σq_i,t (from t.txt)
+        # Calculate total quantity and market price
         total_quantity = sum(quantities.values())
+        market_price = demand_intercept - demand_slope * total_quantity + demand_shock
         
-        # Step 2: Calculate Market_Price_t = base_demand - Total_Quantity_t + Demand_Shock_t (from t.txt)
-        market_price = base_demand - total_quantity + demand_shock
-        market_price = max(0, market_price)  # Non-negative price
+        # Ensure non-negative price
+        market_price = max(0, market_price)
         
-        # Step 3: Calculate Profit_i,t = (Market_Price_t - marginal_cost) × q_i,t (from t.txt)
+        # Calculate individual payoffs
         payoffs = {}
         for player_id, quantity in quantities.items():
             profit = (market_price - marginal_cost) * quantity
             payoffs[player_id] = profit
             
-            self.logger.debug(f"Player {player_id}: quantity={quantity:.2f}, "
-                            f"market_price={market_price:.2f}, profit={profit:.2f}")
-        
-        # Store data needed for state transition and logging
-        if game_state is not None:
-            game_state.update({
-                'last_market_price': market_price,
-                'last_total_quantity': total_quantity,
-                'last_quantities': quantities.copy()
-            })
+            self.logger.debug(f"Player {player_id}: quantity={quantity:.1f}, price={market_price:.2f}, "
+                           f"profit={profit:.2f}")
         
         return payoffs
 
     def update_game_state(self, game_state: Dict, actions: Dict[str, Any], 
                          game_config: GameConfig) -> Dict:
-        """Update game state using State Transition Algorithm from t.txt"""
+        """Update game state using Green & Porter State Transition Algorithm from t.txt"""
         
         constants = game_config.constants
-        trigger_price = constants.get('trigger_price', 20)
-        punishment_duration = constants.get('punishment_duration', 5)
+        trigger_price = constants.get('trigger_price', 60)
+        punishment_periods = constants.get('punishment_periods', 5)
         
-        # Get market price from last calculation
-        market_price = game_state.get('last_market_price', trigger_price + 1)
+        # Calculate current market price for state transition
+        demand_intercept = constants.get('demand_intercept', 100)
+        demand_slope = constants.get('demand_slope', 1)
+        
+        current_period = game_state.get('current_period', 1)
+        demand_shocks = game_state.get('demand_shocks', [])
+        demand_shock = demand_shocks[current_period - 1] if current_period <= len(demand_shocks) else 0
+        
+        # Calculate total quantity and market price
+        total_quantity = sum(action.get('quantity', 0) for action in actions.values() if isinstance(action, dict))
+        market_price = max(0, demand_intercept - demand_slope * total_quantity + demand_shock)
+        
+        # Update histories
+        game_state.setdefault('price_history', []).append(market_price)
+        game_state.setdefault('state_history', []).append(game_state.get('market_state', 'Collusive'))
+        
+        for player_id, action in actions.items():
+            if isinstance(action, dict) and 'quantity' in action:
+                game_state.setdefault('quantity_history', {}).setdefault(player_id, []).append(action['quantity'])
+        
+        # State Transition Algorithm from t.txt
         current_state = game_state.get('market_state', 'Collusive')
         punishment_timer = game_state.get('punishment_timer', 0)
-        current_period = game_state.get('current_period', 1)
         
-        # Execute State Transition Algorithm (exactly from t.txt)
         if current_state == 'Collusive':
+            # Check if price fell below trigger (indicating deviation)
             if market_price < trigger_price:
-                # Trigger punishment phase
-                new_state = 'Reversionary'  # t.txt uses "Reversionary" for price war
-                new_punishment_timer = punishment_duration
-                self.logger.info(f"Period {current_period}: Price war triggered! "
-                               f"Price {market_price:.2f} < trigger {trigger_price}")
+                # Transition to Reversionary (punishment phase)
+                new_state = 'Reversionary'
+                new_timer = punishment_periods
+                self.logger.debug(f"Period {current_period}: Price {market_price:.2f} < trigger {trigger_price:.2f}, "
+                               f"switching to Reversionary for {punishment_periods} periods")
             else:
-                # Stay in collusive state
+                # Stay in Collusive
                 new_state = 'Collusive'
-                new_punishment_timer = 0
+                new_timer = 0
         else:  # current_state == 'Reversionary'
-            # Decrement punishment timer
-            new_punishment_timer = punishment_timer - 1
-            if new_punishment_timer > 0:
+            if punishment_timer > 1:
                 # Continue punishment
                 new_state = 'Reversionary'
+                new_timer = punishment_timer - 1
+                self.logger.debug(f"Period {current_period}: Continuing punishment, {new_timer} periods remaining")
             else:
-                # Return to collusive state
+                # End punishment, return to Collusive
                 new_state = 'Collusive'
-                new_punishment_timer = 0
-                self.logger.info(f"Period {current_period}: Returning to collusive state")
+                new_timer = 0
+                self.logger.debug(f"Period {current_period}: Punishment ended, returning to Collusive")
         
-        # Update histories for metrics calculation
-        game_state['price_history'].append(market_price)
-        game_state['state_history'].append(current_state)
-        
-        # Update quantity and profit histories
-        for player_id, action in actions.items():
-            if player_id not in game_state['quantity_history']:
-                game_state['quantity_history'][player_id] = []
-            if player_id not in game_state['profit_history']:
-                game_state['profit_history'][player_id] = []
-            
-            quantity = action.get('quantity', 0)
-            game_state['quantity_history'][player_id].append(quantity)
-        
-        # Update state for next period
-        game_state.update({
-            'current_period': current_period + 1,
-            'market_state': new_state,
-            'punishment_timer': new_punishment_timer
-        })
+        # Update state
+        game_state['market_state'] = new_state
+        game_state['punishment_timer'] = new_timer
+        game_state['current_period'] = current_period + 1
         
         return game_state
 
     def calculate_npv(self, profit_stream: List[float], discount_factor: float) -> float:
-        """Calculate Net Present Value as specified in t.txt"""
+        """Calculate Net Present Value of profit stream as specified in t.txt"""
         npv = 0.0
         for t, profit in enumerate(profit_stream):
             npv += (discount_factor ** t) * profit
@@ -208,7 +202,15 @@ class GreenPorterGame(DynamicGame, QuantityParsingMixin):
         """Get data needed for t.txt metrics calculation only"""
         
         if not game_state:
-            return {}
+            return {
+                'game_name': 'green_porter',
+                'experiment_type': game_config.experiment_type,
+                'condition_name': game_config.condition_name,
+                'actions': actions,
+                'payoffs': payoffs,
+                'constants': game_config.constants,
+                'game_state': {}
+            }
         
         constants = game_config.constants
         discount_factor = constants.get('discount_factor', 0.95)
@@ -240,41 +242,34 @@ class GreenPorterGame(DynamicGame, QuantityParsingMixin):
             if player_profits:
                 npvs[player_id] = self.calculate_npv(player_profits, discount_factor)
             else:
-                npvs[player_id] = payoffs[player_id]
+                npvs[player_id] = 0.0
             
-            # Calculate Strategic Inertia (t.txt metric)
+            # Calculate other t.txt metrics
             player_quantities = quantity_history.get(player_id, [])
-            if len(player_quantities) > 1:
-                repeats = sum(1 for i in range(1, len(player_quantities)) 
-                            if abs(player_quantities[i] - player_quantities[i-1]) < 0.1)
-                strategic_inertia[player_id] = repeats / (len(player_quantities) - 1)
+            if player_quantities:
+                # Strategic Inertia: Standard deviation of quantities
+                strategic_inertia[player_id] = np.std(player_quantities) if len(player_quantities) > 1 else 0.0
+                
+                # Cooperation Periods: Count of periods with collusive quantity
+                cooperation_periods[player_id] = sum(1 for q in player_quantities if abs(q - collusive_quantity) < 1.0)
+                
+                # Coordination Actions: Fraction of periods with coordinated behavior
+                coordination_actions[player_id] = cooperation_periods[player_id] / len(player_quantities)
+                
+                # Rationality Periods: Count of periods with quantity > 0 (basic rationality check)
+                rationality_periods[player_id] = sum(1 for q in player_quantities if q > 0)
             else:
-                strategic_inertia[player_id] = 0
-            
-            # Calculate cooperation periods (periods in collusive state)
-            cooperation_periods[player_id] = sum(1 for state in state_history if state == 'Collusive')
-            
-            # Calculate coordination (constructive actions in collusive periods)
-            constructive_actions = 0
-            collusive_opportunities = 0
-            
-            for i, state in enumerate(state_history):
-                if state == 'Collusive' and i < len(player_quantities):
-                    collusive_opportunities += 1
-                    if abs(player_quantities[i] - collusive_quantity) < 0.1:
-                        constructive_actions += 1
-            
-            coordination_actions[player_id] = constructive_actions
-            
-            # Calculate rationality (periods cooperating with collusive quantity)
-            rationality_periods[player_id] = sum(1 for q in player_quantities 
-                                               if abs(q - collusive_quantity) < 0.1)
+                strategic_inertia[player_id] = 0.0
+                cooperation_periods[player_id] = 0
+                coordination_actions[player_id] = 0.0
+                rationality_periods[player_id] = 0
         
-        # Calculate Reversion Frequency (t.txt metric)
+        # Calculate reversion frequency
         reversions = 0
-        for i in range(1, len(state_history)):
-            if state_history[i] == 'Reversionary' and state_history[i-1] == 'Collusive':
-                reversions += 1
+        if len(state_history) > 1:
+            for i in range(1, len(state_history)):
+                if state_history[i] == 'Reversionary' and state_history[i-1] == 'Collusive':
+                    reversions += 1
         
         reversion_frequency = reversions / max(1, len(state_history) - 1) if len(state_history) > 1 else 0
         
@@ -283,7 +278,7 @@ class GreenPorterGame(DynamicGame, QuantityParsingMixin):
         win_status = {pid: (1 if npvs[pid] == max_npv else 0) for pid in npvs}
         
         return {
-            # Core identifiers
+            # Core identifiers - REQUIRED for create_game_result
             'game_name': 'green_porter',
             'experiment_type': game_config.experiment_type,
             'condition_name': game_config.condition_name,

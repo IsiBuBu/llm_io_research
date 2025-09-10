@@ -21,6 +21,15 @@ class SpulberGame(StaticGame, PriceParsingMixin):
     def __init__(self):
         super().__init__("spulber")
 
+    def initialize_game_state(self, game_config: GameConfig, simulation_id: int = 0) -> Dict[str, Any]:
+        """Initialize game state for static Spulber game"""
+        return {
+            'game_type': 'static',
+            'current_round': 1,
+            'simulation_id': simulation_id,
+            'constants': game_config.constants
+        }
+
     def generate_player_prompt(self, player_id: str, game_state: Dict, 
                              game_config: GameConfig) -> str:
         """Generate prompt using template and config"""
@@ -62,94 +71,110 @@ class SpulberGame(StaticGame, PriceParsingMixin):
         2. Identify all players (K) who bid p_min
         3. Tie-Breaking Rule: market_share for each winner = 1/K, others = 0
         4. For each winner: quantity_sold = (demand_intercept - p_min) × market_share
-        5. Profit = (p_min - private_cost) × quantity_sold
+        5. For each winner: profit = (p_min - cost) × quantity_sold
+        6. All other players receive zero profit
         """
         
+        # Extract game constants
         constants = game_config.constants
-        
-        # Extract constants from t.txt specification
         demand_intercept = constants.get('demand_intercept', 100)
-        private_values = constants.get('private_values', {})
+        demand_slope = constants.get('demand_slope', 1)
         
         # Extract prices and costs from actions
-        player_ids = list(actions.keys())
         prices = {}
         costs = {}
         
         for player_id, action in actions.items():
-            price = action.get('price', 0)
-            prices[player_id] = max(0.0, price)  # Ensure non-negative bids
-            
-            # Get player's private cost from config
-            if player_id == 'challenger':
-                costs[player_id] = private_values.get('challenger_cost', 8)
+            if isinstance(action, dict):
+                # Extract price/bid
+                if 'price' in action:
+                    prices[player_id] = action['price']
+                elif 'bid' in action:
+                    prices[player_id] = action['bid']
+                else:
+                    self.logger.warning(f"No price/bid found for {player_id}: {action}")
+                    prices[player_id] = demand_intercept  # High fallback price (likely loses)
+                
+                # Extract cost (if available in action, otherwise from constants)
+                if 'cost' in action:
+                    costs[player_id] = action['cost']
+                else:
+                    # Use default cost from constants or player-specific cost
+                    costs[player_id] = constants.get(f'{player_id}_cost', constants.get('marginal_cost', 10))
             else:
-                costs[player_id] = private_values.get('defender_cost', 10)
+                self.logger.warning(f"Invalid action format for {player_id}: {action}")
+                prices[player_id] = demand_intercept
+                costs[player_id] = constants.get('marginal_cost', 10)
         
-        # Step 1: Find minimum bid
-        min_price = min(prices.values()) if prices else 0
+        # Step 1: Find minimum price
+        min_price = min(prices.values())
         
-        # Step 2: Identify all players who bid p_min
+        # Step 2: Identify winners (all players who bid the minimum price)
         winners = [player_id for player_id, price in prices.items() if price == min_price]
-        K = len(winners)  # Number of winners
         
-        # Step 3: Tie-Breaking Rule - market_share for each winner = 1/K
-        market_share_per_winner = 1.0 / K if K > 0 else 0
-        
-        # Calculate payoffs for each player
-        payoffs = {}
-        quantities = {}
+        # Step 3: Calculate market shares (equal split among winners)
         market_shares = {}
-        
-        for player_id in player_ids:
+        for player_id in prices.keys():
             if player_id in winners:
-                # Winner gets market share
-                market_share = market_share_per_winner
-                
-                # Step 4: Calculate quantity sold (from t.txt)
-                quantity_sold = (demand_intercept - min_price) * market_share
-                quantity_sold = max(0, quantity_sold)  # Non-negative quantity
-                
-                # Step 5: Calculate profit (from t.txt)  
-                profit = (min_price - costs[player_id]) * quantity_sold
+                market_shares[player_id] = 1.0 / len(winners)  # Equal share among winners
             else:
-                # Loser gets nothing
-                market_share = 0
-                quantity_sold = 0
-                profit = 0
-            
-            payoffs[player_id] = profit
-            quantities[player_id] = quantity_sold
-            market_shares[player_id] = market_share
-            
-            self.logger.debug(f"Player {player_id}: bid={prices[player_id]:.2f}, "
-                            f"cost={costs[player_id]:.2f}, won={player_id in winners}, profit={profit:.2f}")
+                market_shares[player_id] = 0.0  # Losers get nothing
         
-        # Store additional data in game_state for metrics calculation
-        if game_state is not None:
-            game_state.update({
-                'prices': prices,
-                'costs': costs,
-                'quantities': quantities,
-                'market_shares': market_shares,
-                'min_price': min_price,
-                'winners': winners
-            })
+        # Step 4 & 5: Calculate quantities and profits
+        payoffs = {}
+        
+        # Calculate total quantity demanded at winning price
+        total_quantity = max(0, demand_intercept - demand_slope * min_price)
+        
+        for player_id in prices.keys():
+            if player_id in winners:
+                # Winner gets share of market
+                quantity_sold = total_quantity * market_shares[player_id]
+                player_cost = costs[player_id]
+                profit = (min_price - player_cost) * quantity_sold
+                payoffs[player_id] = profit
+                
+                self.logger.debug(f"Winner {player_id}: price={min_price:.2f}, cost={player_cost:.2f}, "
+                               f"quantity={quantity_sold:.1f}, profit={profit:.2f}")
+            else:
+                # Loser gets zero profit
+                payoffs[player_id] = 0.0
+                self.logger.debug(f"Loser {player_id}: price={prices[player_id]:.2f}, profit=0.0")
         
         return payoffs
 
     def get_game_data_for_logging(self, actions: Dict[str, Any], payoffs: Dict[str, float],
                                 game_config: GameConfig, game_state: Optional[Dict] = None) -> Dict[str, Any]:
-        """Get data needed for t.txt metrics calculation only"""
+        """
+        Get comprehensive structured data for metrics calculation and logging
+        Implements t.txt specification for Spulber metrics data collection
+        """
         
-        # Get calculated data from game_state
-        prices = game_state.get('prices', {}) if game_state else {}
-        costs = game_state.get('costs', {}) if game_state else {}
-        market_shares = game_state.get('market_shares', {}) if game_state else {}
-        min_price = game_state.get('min_price', 0) if game_state else 0
-        winners = game_state.get('winners', []) if game_state else []
+        # Extract basic data
+        constants = game_config.constants
+        prices = {}
+        costs = {}
         
-        # Calculate win status for Win Rate metric (from t.txt)
+        for player_id, action in actions.items():
+            if isinstance(action, dict):
+                # Extract price/bid
+                prices[player_id] = action.get('price', action.get('bid', 0))
+                # Extract cost
+                costs[player_id] = action.get('cost', constants.get(f'{player_id}_cost', 
+                                                                  constants.get('marginal_cost', 10)))
+            else:
+                prices[player_id] = 0
+                costs[player_id] = constants.get('marginal_cost', 10)
+        
+        # Calculate market shares (from payoff calculation logic)
+        min_price = min(prices.values()) if prices else 0
+        winners = [player_id for player_id, price in prices.items() if price == min_price]
+        
+        market_shares = {}
+        for player_id in prices.keys():
+            market_shares[player_id] = 1.0 / len(winners) if player_id in winners else 0.0
+        
+        # Calculate additional metrics for t.txt specification
         max_profit = max(payoffs.values()) if payoffs else 0
         win_status = {}
         profitable_status = {}

@@ -21,6 +21,15 @@ class SalopGame(StaticGame, PriceParsingMixin):
     def __init__(self):
         super().__init__("salop")
 
+    def initialize_game_state(self, game_config: GameConfig, simulation_id: int = 0) -> Dict[str, Any]:
+        """Initialize game state for static Salop game"""
+        return {
+            'game_type': 'static',
+            'current_round': 1,
+            'simulation_id': simulation_id,
+            'constants': game_config.constants
+        }
+
     def generate_player_prompt(self, player_id: str, game_state: Dict, 
                              game_config: GameConfig) -> str:
         """Generate prompt using template and config"""
@@ -66,125 +75,118 @@ class SalopGame(StaticGame, PriceParsingMixin):
         2. Calculate Monopoly Boundary (x_max for unconstrained market reach)
         3. Determine Final Market Reach (min of competitive and monopoly boundaries)
         4. Calculate Market Share and Quantities
-        5. Calculate Profits = (Price - MC) * Quantity - Fixed Cost
+        5. Calculate Profits (Revenue - Costs)
         """
         
-        constants = game_config.constants
+        # Store current config for use in parsing
+        self._current_config = game_config
         
-        # Extract constants
-        marginal_cost = constants.get('marginal_cost', 8)
-        fixed_cost = constants.get('fixed_cost', 100)
-        transport_cost = constants.get('transport_cost', 2)
+        # Extract game constants
+        constants = game_config.constants
+        marginal_cost = constants.get('marginal_cost', 0.5)
+        transport_cost = constants.get('transport_cost', 1.0)
         market_size = constants.get('market_size', 100)
-        v = constants.get('v', 50)  # Consumer reservation price
-        number_of_players = constants.get('number_of_players', 3)
+        num_firms = constants.get('num_firms', len(actions))
         
         # Extract prices from actions
         prices = {}
-        player_ids = list(actions.keys())
-        
         for player_id, action in actions.items():
-            price = action.get('price', marginal_cost + 1)  # Fallback price
-            prices[player_id] = price
+            if isinstance(action, dict) and 'price' in action:
+                prices[player_id] = action['price']
+            else:
+                self.logger.warning(f"Invalid action format for {player_id}: {action}")
+                prices[player_id] = marginal_cost + 1.0  # Default fallback price
         
-        # Calculate payoffs for each player
+        # Convert to list for algorithm (maintaining order)
+        player_ids = sorted(prices.keys())  # Ensure consistent ordering
+        price_list = [prices[pid] for pid in player_ids]
+        
+        # Calculate market shares using Salop algorithm
+        market_shares = self._calculate_salop_market_shares(price_list, transport_cost, num_firms)
+        
+        # Calculate quantities and payoffs
         payoffs = {}
-        
         for i, player_id in enumerate(player_ids):
-            p_i = prices[player_id]
-            
-            # Initialize market boundaries
-            total_market_share = 0.0
-            
-            # For circular market, each firm competes with adjacent firms
-            # In simplified model, assume uniform competition
-            if number_of_players == 1:
-                # Monopoly case
-                if p_i <= v:
-                    market_share = market_size
-                else:
-                    market_share = 0
-            else:
-                # Competition case - calculate against each other player
-                competitive_shares = []
-                
-                for j, other_player_id in enumerate(player_ids):
-                    if i == j:
-                        continue
-                        
-                    p_j = prices[other_player_id]
-                    
-                    # Calculate competitive boundary between firms i and j
-                    # Customer indifferent at distance x where: p_i + t*x = p_j + t*(1/n - x)
-                    # Solving: x = (p_j - p_i)/(2*t) + 1/(2*n)
-                    
-                    distance_between_firms = 1.0 / number_of_players  # Equal spacing on circle
-                    
-                    if abs(p_i - p_j) < 1e-6:  # Essentially same price
-                        competitive_boundary = distance_between_firms / 2
-                    else:
-                        competitive_boundary = (p_j - p_i) / (2 * transport_cost) + distance_between_firms / 2
-                    
-                    # Clamp boundary to valid range
-                    competitive_boundary = max(0, min(distance_between_firms, competitive_boundary))
-                    competitive_shares.append(competitive_boundary)
-                
-                # Calculate monopoly boundary (max reach before losing to reservation price)
-                # Customer at distance x pays p_i + t*x, must be <= v
-                monopoly_boundary = (v - p_i) / transport_cost if p_i < v else 0
-                monopoly_boundary = max(0, monopoly_boundary)
-                
-                # Market share is minimum of competitive constraints
-                if competitive_shares:
-                    avg_competitive_share = sum(competitive_shares) / len(competitive_shares)
-                    # Each firm gets market share in both directions (circular market)
-                    market_share_fraction = min(avg_competitive_share * 2, monopoly_boundary / (1.0 / number_of_players))
-                    market_share_fraction = min(market_share_fraction, 1.0)  # Can't exceed full market
-                else:
-                    market_share_fraction = min(monopoly_boundary / (1.0 / number_of_players), 1.0)
-                
-                market_share = market_share_fraction * market_size / number_of_players
-            
-            # Calculate quantity (market share determines quantity sold)
-            quantity = max(0, market_share)
-            
-            # Calculate profit
-            if quantity > 0:
-                revenue = p_i * quantity
-                variable_cost = marginal_cost * quantity
-                profit = revenue - variable_cost - fixed_cost
-            else:
-                profit = -fixed_cost  # Still pay fixed cost even with zero sales
-            
+            quantity = market_shares[i] * market_size
+            price = price_list[i]
+            profit = (price - marginal_cost) * quantity
             payoffs[player_id] = profit
             
-            # Log detailed calculation for debugging
-            self.logger.debug(f"Player {player_id}: price={p_i:.2f}, quantity={quantity:.2f}, profit={profit:.2f}")
+            self.logger.debug(f"Player {player_id}: price={price:.2f}, market_share={market_shares[i]:.3f}, "
+                           f"quantity={quantity:.1f}, profit={profit:.2f}")
         
         return payoffs
-
-    def get_game_data_for_logging(self, actions: Dict[str, Any], payoffs: Dict[str, float],
-                                game_config: GameConfig, game_state: Optional[Dict] = None) -> Dict[str, Any]:
-        """Get structured data for metrics calculation and logging"""
+    
+    def _calculate_salop_market_shares(self, prices: List[float], transport_cost: float, 
+                                     num_firms: int) -> List[float]:
+        """
+        Calculate market shares in Salop circular city model
         
-        # Extract key metrics for analysis
-        prices = [action.get('price', 0) for action in actions.values()]
+        Algorithm from t.txt:
+        For each firm i, calculate market boundaries with adjacent firms i-1 and i+1
+        Market share = distance covered on circle / total circumference
+        """
         
-        base_data = super().get_game_data_for_logging(actions, payoffs, game_config, game_state)
+        if num_firms <= 0:
+            return []
         
-        # Add Salop-specific metrics
-        salop_metrics = {
-            'average_price': sum(prices) / len(prices) if prices else 0,
-            'price_variance': sum((p - sum(prices)/len(prices))**2 for p in prices) / len(prices) if len(prices) > 1 else 0,
-            'min_price': min(prices) if prices else 0,
-            'max_price': max(prices) if prices else 0,
-            'marginal_cost': game_config.constants.get('marginal_cost', 8),
-            'transport_cost': game_config.constants.get('transport_cost', 2),
-            'market_size': game_config.constants.get('market_size', 100),
-            'price_dispersion': (max(prices) - min(prices)) if len(prices) > 1 else 0,
-            'markup_rates': [(prices[i] - game_config.constants.get('marginal_cost', 8)) / prices[i] 
-                           if prices[i] > 0 else 0 for i in range(len(prices))]
-        }
+        if num_firms == 1:
+            return [1.0]  # Monopoly
+            
+        market_shares = []
         
-        base_data.update(salop_metrics)
-        return base_data
+        for i in range(num_firms):
+            # Get adjacent firm indices (circular)
+            left_neighbor = (i - 1) % num_firms
+            right_neighbor = (i + 1) % num_firms
+            
+            # Calculate competitive boundaries
+            # Left boundary: point where consumers are indifferent between firm i and left neighbor
+            x_left = self._calculate_boundary(prices[i], prices[left_neighbor], transport_cost, num_firms)
+            
+            # Right boundary: point where consumers are indifferent between firm i and right neighbor  
+            x_right = self._calculate_boundary(prices[i], prices[right_neighbor], transport_cost, num_firms)
+            
+            # Market share is the distance covered (as fraction of circle circumference)
+            market_share = (x_left + x_right) / num_firms
+            
+            # Ensure non-negative market share
+            market_share = max(0.0, market_share)
+            
+            market_shares.append(market_share)
+        
+        # Normalize to ensure sum equals 1 (handle rounding errors)
+        total_share = sum(market_shares)
+        if total_share > 0:
+            market_shares = [share / total_share for share in market_shares]
+        else:
+            # If all shares are 0, distribute equally
+            market_shares = [1.0 / num_firms] * num_firms
+            
+        return market_shares
+    
+    def _calculate_boundary(self, price_i: float, price_j: float, transport_cost: float, 
+                          num_firms: int) -> float:
+        """
+        Calculate competitive boundary between two adjacent firms
+        
+        Returns distance from firm i where consumer is indifferent between firms i and j
+        Derived from setting total costs equal: price_i + t*x = price_j + t*(1/n - x)
+        """
+        
+        # Distance between adjacent firms on circle
+        firm_distance = 1.0 / num_firms
+        
+        # Solve for indifference point: price_i + t*x = price_j + t*(firm_distance - x)
+        # Rearranging: x = (price_j - price_i + t*firm_distance) / (2*t)
+        
+        if transport_cost <= 0:
+            # If no transport cost, split market equally
+            return firm_distance / 2.0
+        
+        boundary = (price_j - price_i + transport_cost * firm_distance) / (2.0 * transport_cost)
+        
+        # Ensure boundary is within valid range [0, firm_distance]
+        boundary = max(0.0, min(firm_distance, boundary))
+        
+        return boundary
