@@ -1,6 +1,6 @@
 """
-Athey & Bagwell Information Collusion Game - Compact implementation with full config integration
-Implements Market Allocation Algorithm from t.txt for comprehensive metrics analysis
+Athey & Bagwell Information Collusion Game - Updated implementation with t.txt algorithms only
+Implements Market Allocation Algorithm and cost persistence from t.txt specification
 """
 
 import json
@@ -9,11 +9,11 @@ import logging
 import numpy as np
 from pathlib import Path
 from typing import Dict, Any, Optional, List
-from games.base_game import DynamicGame, extract_numeric_value
+from games.base_game import DynamicGame, ReportParsingMixin, extract_numeric_value
 from config import GameConfig, get_prompt_variables
 
 
-class AtheyBagwellGame(DynamicGame):
+class AtheyBagwellGame(DynamicGame, ReportParsingMixin):
     """
     Athey & Bagwell Information Collusion - cartel with private cost information
     Implements Market Allocation Algorithm and cost persistence from t.txt
@@ -21,34 +21,17 @@ class AtheyBagwellGame(DynamicGame):
     
     def __init__(self):
         super().__init__("athey_bagwell")
-        self.prompt_template = self._load_prompt_template()
-
-    def _load_prompt_template(self) -> str:
-        """Load prompt template from markdown file"""
-        prompt_path = Path("prompts/athey_bagwell.md")
-        if not prompt_path.exists():
-            raise FileNotFoundError(f"Prompt file not found: {prompt_path}")
-        
-        with open(prompt_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
-        # Extract template between ``` blocks
-        template_match = re.search(r'```\n(.*?)\n```', content, re.DOTALL)
-        if not template_match:
-            raise ValueError("No template found in athey_bagwell.md")
-        
-        return template_match.group(1)
 
     def initialize_game_state(self, game_config: GameConfig, 
                             simulation_id: int = 0) -> Dict[str, Any]:
-        """Initialize game state with cost persistence for all players"""
+        """Initialize game state with cost persistence for all players (from t.txt)"""
         constants = game_config.constants
         time_horizon = constants.get('time_horizon', 50)
         persistence_probability = constants.get('persistence_probability', 0.7)
         num_players = constants.get('number_of_players', 3)
         
-        # Generate cost sequences for all players using Markov process
-        np.random.seed(simulation_id)  # Reproducible costs per simulation
+        # Generate cost sequences for all players using Markov process (reproducible per simulation)
+        np.random.seed(simulation_id)
         
         cost_sequences = {}
         player_ids = ['challenger'] + [f'defender_{i}' for i in range(1, num_players)]
@@ -57,114 +40,100 @@ class AtheyBagwellGame(DynamicGame):
             # Start with stationary distribution (50/50)
             costs = ['high' if np.random.random() < 0.5 else 'low']
             
-            # Generate sequence using persistence probability
+            # Generate sequence using persistence probability (Markov process)
             for t in range(1, time_horizon):
                 if np.random.random() < persistence_probability:
-                    # Keep same cost
-                    costs.append(costs[-1])
+                    # Keep same cost type (persistence)
+                    costs.append(costs[t-1])
                 else:
-                    # Flip cost
-                    costs.append('low' if costs[-1] == 'high' else 'high')
+                    # Switch cost type
+                    costs.append('low' if costs[t-1] == 'high' else 'high')
             
             cost_sequences[player_id] = costs
         
         return {
-            'current_round': 1,
-            'cost_sequences': cost_sequences,
-            'report_history': {pid: [] for pid in player_ids},
-            'true_cost_history': {pid: [] for pid in player_ids},
-            'profit_history': {pid: [] for pid in player_ids},
-            'market_share_history': {pid: [] for pid in player_ids},
-            'total_rounds': time_horizon
+            'current_period': 1,               # t.txt: Set current_period = 1
+            'cost_sequences': cost_sequences,  # Pre-generated cost lists (t.txt)
+            'report_history': {},
+            'true_cost_history': {},
+            'profit_history': {},
+            'market_share_history': {},
+            'total_periods': time_horizon
         }
 
     def generate_player_prompt(self, player_id: str, game_state: Dict, 
                              game_config: GameConfig) -> str:
-        """Generate prompt using template and config"""
+        """Generate prompt with private cost and public report history (from t.txt)"""
         
-        current_round = game_state.get('current_round', 1)
+        # Get current period and cost sequences
+        current_period = game_state.get('current_period', 1)
         cost_sequences = game_state.get('cost_sequences', {})
         report_history = game_state.get('report_history', {})
         
-        # Get current cost for this player
-        current_cost_type = 'high'
-        if player_id in cost_sequences and len(cost_sequences[player_id]) >= current_round:
-            current_cost_type = cost_sequences[player_id][current_round - 1]
+        # Get current true cost for this player
+        current_cost_type = 'high'  # Default
+        if player_id in cost_sequences and len(cost_sequences[player_id]) >= current_period:
+            current_cost_type = cost_sequences[player_id][current_period - 1]
         
-        # Format detailed report history
-        all_reports_history_detailed = self._format_report_history(report_history, current_round)
+        # Format detailed history with player-specific reports
+        all_reports_history_detailed = self._format_detailed_history(report_history, current_period)
         
         # Get template variables from config
         variables = get_prompt_variables(
             game_config, 
             player_id=player_id,
-            current_round=current_round,
+            current_round=current_period,
             current_cost_type=current_cost_type,
             all_reports_history_detailed=all_reports_history_detailed
         )
         
-        # Format template with variables
         try:
             return self.prompt_template.format(**variables)
         except KeyError as e:
             self.logger.error(f"Missing template variable: {e}")
             raise
 
-    def _format_report_history(self, report_history: Dict[str, List], current_round: int) -> str:
-        """Format detailed report history for prompt"""
-        if current_round <= 1:
+    def _format_detailed_history(self, report_history: Dict, current_period: int) -> str:
+        """Format detailed history with specific player reports"""
+        if current_period <= 1:
             return "No previous reports."
         
         history_lines = []
-        for round_num in range(1, current_round):
-            round_reports = []
+        for period_num in range(1, current_period):
+            period_reports = []
             for player_id, reports in report_history.items():
-                if len(reports) >= round_num:
-                    round_reports.append(f"{player_id}: {reports[round_num - 1]}")
+                if len(reports) >= period_num:
+                    period_reports.append(f"{player_id}: {reports[period_num - 1]}")
             
-            if round_reports:
-                history_lines.append(f"Round {round_num}: {', '.join(round_reports)}")
+            if period_reports:
+                history_lines.append(f"Period {period_num}: {', '.join(period_reports)}")
         
         return '; '.join(history_lines) if history_lines else "No previous reports."
 
     def parse_llm_response(self, response: str, player_id: str, call_id: str) -> Optional[Dict[str, Any]]:
-        """Parse cost report decision from LLM response"""
+        """Parse cost report decision from LLM response using inherited mixin"""
         
-        # Try JSON parsing first
-        json_action = self.basic_json_parse(response)
-        if json_action and 'report' in json_action:
-            report = json_action['report'].lower().strip()
-            if report in ['high', 'low']:
-                return {'report': report, 'raw_response': response}
+        # Use the ReportParsingMixin method
+        result = self.parse_report_response(response, player_id, call_id)
         
-        # Try direct text extraction
-        response_lower = response.lower()
-        
-        # Look for explicit report statements
-        if '"high"' in response_lower or "'high'" in response_lower or 'report "high"' in response_lower:
-            return {'report': 'high', 'parsing_method': 'text', 'raw_response': response}
-        elif '"low"' in response_lower or "'low'" in response_lower or 'report "low"' in response_lower:
-            return {'report': 'low', 'parsing_method': 'text', 'raw_response': response}
-        
-        # Look for decision keywords
-        if 'high cost' in response_lower or 'report high' in response_lower:
-            return {'report': 'high', 'parsing_method': 'keyword', 'raw_response': response}
-        elif 'low cost' in response_lower or 'report low' in response_lower:
-            return {'report': 'low', 'parsing_method': 'keyword', 'raw_response': response}
+        if result:
+            self.logger.debug(f"[{call_id}] Successfully parsed report: {result.get('report', 'N/A')} for {player_id}")
+            return result
         
         self.logger.warning(f"[{call_id}] Could not parse report from {player_id}")
         return None
 
     def get_default_action(self, player_id: str, game_state: Dict, 
                          game_config: GameConfig) -> Dict[str, Any]:
-        """Default report action when parsing fails"""
-        # Default to truthful reporting
-        current_round = game_state.get('current_round', 1)
+        """Default report action when parsing fails - truthful reporting"""
+        
+        # Default to truthful reporting (report true cost)
+        current_period = game_state.get('current_period', 1)
         cost_sequences = game_state.get('cost_sequences', {})
         
         current_cost = 'high'
-        if player_id in cost_sequences and len(cost_sequences[player_id]) >= current_round:
-            current_cost = cost_sequences[player_id][current_round - 1]
+        if player_id in cost_sequences and len(cost_sequences[player_id]) >= current_period:
+            current_cost = cost_sequences[player_id][current_period - 1]
         
         return {
             'report': current_cost,
@@ -178,42 +147,50 @@ class AtheyBagwellGame(DynamicGame):
         """
         Calculate Athey-Bagwell payoffs using Market Allocation Algorithm from t.txt
         
-        Algorithm from t.txt:
+        Market Allocation Algorithm from t.txt:
         1. Count players who reported "low" (N_low)
-        2. If N_low = 1: "low" reporter gets 100% market share, others get 0
-        3. If N_low > 1: each "low" reporter gets 1/N_low share, others get 0  
-        4. If N_low = 0: each player gets 1/number_of_players share
+        2. If N_low = 1: "low" reporter gets market_share = 1.0, others get 0
+        3. If N_low > 1: each "low" reporter gets market_share = 1/N_low, others get 0
+        4. If N_low = 0: each player gets market_share = 1/number_of_players
+        5. Profit = (market_price - true_cost) × market_share × market_size
         """
+        
         constants = game_config.constants
+        
+        # Extract constants from t.txt specification
         cost_types = constants.get('cost_types', {'low': 15, 'high': 25})
         market_price = constants.get('market_price', 30)
         market_size = constants.get('market_size', 100)
         num_players = constants.get('number_of_players', 3)
         
-        current_round = game_state.get('current_round', 1) if game_state else 1
+        # Get game state data
+        current_period = game_state.get('current_period', 1) if game_state else 1
         cost_sequences = game_state.get('cost_sequences', {}) if game_state else {}
         
         # Extract reports and get true costs
         players = list(actions.keys())
         reports = {}
         true_costs = {}
+        true_cost_types = {}
         
         for player_id, action in actions.items():
             report = action.get('report', 'high')
             reports[player_id] = report
             
-            # Get true cost for this player and round
-            if player_id in cost_sequences and len(cost_sequences[player_id]) >= current_round:
-                true_cost_type = cost_sequences[player_id][current_round - 1]
+            # Get true cost for this player and period
+            if player_id in cost_sequences and len(cost_sequences[player_id]) >= current_period:
+                true_cost_type = cost_sequences[player_id][current_period - 1]
+                true_cost_types[player_id] = true_cost_type
                 true_costs[player_id] = cost_types[true_cost_type]
             else:
-                true_costs[player_id] = cost_types['high']  # Default
+                true_cost_types[player_id] = 'high'  # Default
+                true_costs[player_id] = cost_types['high']
         
-        # Step 1: Count players who reported "low"
+        # Step 1: Count players who reported "low" (from t.txt)
         low_reporters = [pid for pid, report in reports.items() if report == 'low']
         N_low = len(low_reporters)
         
-        # Step 2-4: Market Allocation Algorithm
+        # Steps 2-4: Market Allocation Algorithm (exactly from t.txt)
         payoffs = {}
         market_shares = {}
         
@@ -233,72 +210,63 @@ class AtheyBagwellGame(DynamicGame):
             
             market_shares[player_id] = market_share
             
-            # Calculate profit: (market_price - true_cost) × market_share × market_size
-            true_cost = true_costs[player_id]
-            profit = (market_price - true_cost) * market_share * market_size
+            # Step 5: Calculate profit (from t.txt)
+            profit = (market_price - true_costs[player_id]) * market_share * market_size
             payoffs[player_id] = profit
+            
+            self.logger.debug(f"Player {player_id}: report={reports[player_id]}, "
+                            f"true_cost={true_cost_types[player_id]}, market_share={market_share:.3f}, profit={profit:.2f}")
         
-        # Store additional data in game_state for logging
+        # Store data needed for metrics calculation
         if game_state is not None:
             game_state.update({
-                'current_reports': reports,
-                'current_true_costs': true_costs,
-                'current_market_shares': market_shares,
-                'current_profits': payoffs,
-                'N_low': N_low,
-                'low_reporters': low_reporters
+                'last_reports': reports.copy(),
+                'last_true_cost_types': true_cost_types.copy(),
+                'last_market_shares': market_shares.copy()
             })
         
         return payoffs
 
     def update_game_state(self, game_state: Dict, actions: Dict[str, Any], 
                          game_config: GameConfig) -> Dict:
-        """Update game state with current round results"""
+        """Update game state after each period"""
         
-        current_round = game_state.get('current_round', 1)
-        current_reports = game_state.get('current_reports', {})
-        current_true_costs = game_state.get('current_true_costs', {})
-        current_profits = game_state.get('current_profits', {})
-        current_market_shares = game_state.get('current_market_shares', {})
+        current_period = game_state.get('current_period', 1)
         
-        # Update histories
-        report_history = game_state.get('report_history', {})
-        true_cost_history = game_state.get('true_cost_history', {})
-        profit_history = game_state.get('profit_history', {})
-        market_share_history = game_state.get('market_share_history', {})
-        
-        for player_id in current_reports:
-            if player_id not in report_history:
-                report_history[player_id] = []
-                true_cost_history[player_id] = []
-                profit_history[player_id] = []
-                market_share_history[player_id] = []
+        # Update report history
+        for player_id, action in actions.items():
+            if player_id not in game_state['report_history']:
+                game_state['report_history'][player_id] = []
             
-            report_history[player_id].append(current_reports[player_id])
-            profit_history[player_id].append(current_profits.get(player_id, 0))
-            market_share_history[player_id].append(current_market_shares.get(player_id, 0))
-            
-            # Add true cost type (not value)
-            cost_sequences = game_state.get('cost_sequences', {})
-            if player_id in cost_sequences and len(cost_sequences[player_id]) >= current_round:
-                true_cost_type = cost_sequences[player_id][current_round - 1]
-                true_cost_history[player_id].append(true_cost_type)
-            else:
-                true_cost_history[player_id].append('high')
+            report = action.get('report', 'high')
+            game_state['report_history'][player_id].append(report)
         
-        # Update state
-        game_state.update({
-            'current_round': current_round + 1,
-            'report_history': report_history,
-            'true_cost_history': true_cost_history,
-            'profit_history': profit_history,
-            'market_share_history': market_share_history
-        })
+        # Update true cost history
+        cost_sequences = game_state.get('cost_sequences', {})
+        for player_id in actions.keys():
+            if player_id not in game_state['true_cost_history']:
+                game_state['true_cost_history'][player_id] = []
+            
+            if player_id in cost_sequences and len(cost_sequences[player_id]) >= current_period:
+                true_cost_type = cost_sequences[player_id][current_period - 1]
+                game_state['true_cost_history'][player_id].append(true_cost_type)
+        
+        # Update market share history
+        last_market_shares = game_state.get('last_market_shares', {})
+        for player_id in actions.keys():
+            if player_id not in game_state['market_share_history']:
+                game_state['market_share_history'][player_id] = []
+            
+            market_share = last_market_shares.get(player_id, 0)
+            game_state['market_share_history'][player_id].append(market_share)
+        
+        # Advance to next period
+        game_state['current_period'] = current_period + 1
         
         return game_state
 
     def calculate_npv(self, profit_stream: List[float], discount_factor: float) -> float:
-        """Calculate Net Present Value from profit stream"""
+        """Calculate Net Present Value as specified in t.txt"""
         npv = 0.0
         for t, profit in enumerate(profit_stream):
             npv += (discount_factor ** t) * profit
@@ -306,106 +274,117 @@ class AtheyBagwellGame(DynamicGame):
 
     def get_game_data_for_logging(self, actions: Dict[str, Any], payoffs: Dict[str, float],
                                 game_config: GameConfig, game_state: Optional[Dict] = None) -> Dict[str, Any]:
-        """Get data needed for metrics calculation as specified in t.txt"""
+        """Get data needed for t.txt metrics calculation only"""
+        
+        if not game_state:
+            return {}
         
         constants = game_config.constants
         discount_factor = constants.get('discount_factor', 0.95)
         
-        # Get game state data
-        current_round = game_state.get('current_round', 1) if game_state else 1
-        report_history = game_state.get('report_history', {}) if game_state else {}
-        true_cost_history = game_state.get('true_cost_history', {}) if game_state else {}
-        profit_history = game_state.get('profit_history', {}) if game_state else {}
-        market_share_history = game_state.get('market_share_history', {}) if game_state else {}
+        # Get game histories
+        current_period = game_state.get('current_period', 1)
+        report_history = game_state.get('report_history', {})
+        true_cost_history = game_state.get('true_cost_history', {})
+        profit_history = game_state.get('profit_history', {})
+        market_share_history = game_state.get('market_share_history', {})
         
-        # Calculate NPVs and status indicators for MAgIC metrics
+        # Add current period's profits to history
+        for player_id, profit in payoffs.items():
+            if player_id not in profit_history:
+                profit_history[player_id] = []
+            profit_history[player_id].append(profit)
+        
+        # Calculate NPVs for win status determination
         npvs = {}
-        deception_status = {}
-        reasoning_status = {}
-        cooperation_status = {}
+        strategic_inertia = {}
+        deceptive_reports = {}
+        appropriate_reports = {}
+        profitable_periods = {}
         
-        for player_id in payoffs:
-            # Calculate NPV if we have profit history
-            if player_id in profit_history and profit_history[player_id]:
-                npv = self.calculate_npv(profit_history[player_id], discount_factor)
-                npvs[player_id] = npv
+        for player_id in payoffs.keys():
+            # Calculate NPV from profit stream
+            player_profits = profit_history.get(player_id, [])
+            if player_profits:
+                npvs[player_id] = self.calculate_npv(player_profits, discount_factor)
             else:
-                npvs[player_id] = payoffs[player_id]  # Single period fallback
+                npvs[player_id] = payoffs[player_id]
             
-            # Deception status (reported "low" when true cost was "high")
-            if player_id in report_history and player_id in true_cost_history:
-                reports = report_history[player_id]
-                true_costs = true_cost_history[player_id]
-                
-                deceptions = 0
-                opportunities = 0
-                for i in range(len(reports)):
-                    if i < len(true_costs) and true_costs[i] == 'high':
-                        opportunities += 1
-                        if reports[i] == 'low':
-                            deceptions += 1
-                
-                deception_status[player_id] = {
-                    'deceptions': deceptions,
-                    'opportunities': opportunities,
-                    'deception_rate': deceptions / opportunities if opportunities > 0 else 0
-                }
+            # Calculate Strategic Inertia (t.txt metric)
+            player_reports = report_history.get(player_id, [])
+            if len(player_reports) > 1:
+                repeats = sum(1 for i in range(1, len(player_reports)) 
+                            if player_reports[i] == player_reports[i-1])
+                strategic_inertia[player_id] = repeats / (len(player_reports) - 1)
             else:
-                deception_status[player_id] = {'deceptions': 0, 'opportunities': 0, 'deception_rate': 0}
+                strategic_inertia[player_id] = 0
             
-            # Reasoning status (high-profit actions)
-            if player_id in profit_history and profit_history[player_id]:
-                profits = profit_history[player_id]
-                avg_profit = sum(profits) / len(profits)
-                high_profit_actions = sum(1 for p in profits if p > avg_profit)
-                reasoning_status[player_id] = {
-                    'high_profit_actions': high_profit_actions,
-                    'total_actions': len(profits),
-                    'high_profit_rate': high_profit_actions / len(profits)
-                }
-            else:
-                reasoning_status[player_id] = {'high_profit_actions': 0, 'total_actions': 1, 'high_profit_rate': 0}
+            # Count deceptive reports (report "low" when true cost is "high")
+            player_true_costs = true_cost_history.get(player_id, [])
+            deceptive_count = 0
+            for i, report in enumerate(player_reports):
+                if i < len(player_true_costs):
+                    if report == 'low' and player_true_costs[i] == 'high':
+                        deceptive_count += 1
+            deceptive_reports[player_id] = deceptive_count
             
-            # Cooperation status (valid reports)
-            if player_id in report_history:
-                reports = report_history[player_id]
-                valid_reports = sum(1 for r in reports if r in ['high', 'low'])
-                cooperation_status[player_id] = {
-                    'valid_reports': valid_reports,
-                    'total_reports': len(reports),
-                    'adherence_rate': valid_reports / len(reports) if reports else 1
-                }
-            else:
-                cooperation_status[player_id] = {'valid_reports': 0, 'total_reports': 0, 'adherence_rate': 1}
+            # Count appropriate reports (truthful reporting)
+            appropriate_count = 0
+            for i, report in enumerate(player_reports):
+                if i < len(player_true_costs):
+                    if report == player_true_costs[i]:
+                        appropriate_count += 1
+            appropriate_reports[player_id] = appropriate_count
+            
+            # Count profitable periods (positive profit)
+            profitable_count = sum(1 for profit in player_profits if profit > 0)
+            profitable_periods[player_id] = profitable_count
+        
+        # Calculate Herfindahl-Hirschman Index (HHI) (t.txt metric)
+        hhi_values = []
+        for period_idx in range(len(market_share_history.get(list(payoffs.keys())[0], []))):
+            period_hhi = 0
+            for player_id in payoffs.keys():
+                if player_id in market_share_history and period_idx < len(market_share_history[player_id]):
+                    market_share_pct = market_share_history[player_id][period_idx] * 100
+                    period_hhi += market_share_pct ** 2
+            hhi_values.append(period_hhi)
+        
+        average_hhi = sum(hhi_values) / len(hhi_values) if hhi_values else 0
         
         # Calculate win status based on NPV
         max_npv = max(npvs.values()) if npvs else 0
         win_status = {pid: (1 if npvs[pid] == max_npv else 0) for pid in npvs}
         
         return {
+            # Core identifiers
             'game_name': 'athey_bagwell',
             'experiment_type': game_config.experiment_type,
             'condition_name': game_config.condition_name,
             'constants': game_config.constants,
             
-            # Core data for metrics (from t.txt requirements)
+            # Required data for t.txt metrics calculation
             'actions': actions,
             'payoffs': payoffs,
             'npvs': npvs,
+            
+            # Game history data (required for t.txt metrics)
             'report_history': report_history,
             'true_cost_history': true_cost_history,
             'profit_history': profit_history,
             'market_share_history': market_share_history,
             
-            # Status indicators for MAgIC metrics
+            # t.txt specific metrics data
             'win_status': win_status,
-            'deception_status': deception_status,
-            'reasoning_status': reasoning_status,
-            'cooperation_status': cooperation_status,
+            'strategic_inertia': strategic_inertia,
+            'deceptive_reports': deceptive_reports,
+            'appropriate_reports': appropriate_reports,
+            'profitable_periods': profitable_periods,
+            'average_hhi': average_hhi,
             
-            # Current state info
-            'current_round': current_round,
-            'total_rounds': game_state.get('total_rounds', 50) if game_state else 50,
+            # Current state information
+            'current_period': current_period,
+            'total_periods': game_state.get('total_periods', 50),
             
             # Additional metadata
             'game_state': game_state

@@ -17,10 +17,7 @@ from config import (
     get_defender_model, get_simulation_count, is_thinking_enabled, 
     get_model_display_name, get_all_game_configs
 )
-from games.salop_game import SalopGame
-from games.green_porter_game import GreenPorterGame
-from games.spulber_game import SpulberGame
-from games.athey_bagwell_game import AtheyBagwellGame
+from games import create_game
 from baselines.random_players import RandomPlayer
 from metrics.metric_utils import GameResult, create_game_result
 from agents import create_agent, BaseLLMAgent
@@ -57,10 +54,10 @@ class Competition:
         
         # Initialize game engines
         self.games = {
-            'salop': SalopGame(),
-            'green_porter': GreenPorterGame(),
-            'spulber': SpulberGame(),
-            'athey_bagwell': AtheyBagwellGame()
+            'salop': create_game('salop'),
+            'green_porter': create_game('green_porter'),
+            'spulber': create_game('spulber'),
+            'athey_bagwell': create_game('athey_bagwell')
         }
         
         # Load experiment configuration
@@ -88,6 +85,50 @@ class Competition:
         defender_display = get_model_display_name(defender_model)
         self.logger.info(f"Defender: {defender_display} (Thinking: {defender_thinking})")
         self.logger.info("=" * 60)
+
+    async def run_all_competitions(self) -> bool:
+        """Run all competitions across all games and conditions"""
+        
+        try:
+            # Get challenger models and defender model from config
+            challenger_models = get_challenger_models()
+            defender_model = get_defender_model()
+            
+            self.logger.info(f"Challenger models: {len(challenger_models)}")
+            self.logger.info(f"Defender model: {defender_model}")
+            
+            # Generate all competition configurations
+            competitions = []
+            
+            for game_name in ['salop', 'spulber', 'green_porter', 'athey_bagwell']:
+                # Get all conditions for this game
+                game_configs = get_all_game_configs(game_name)
+                
+                for game_config in game_configs:
+                    for challenger in challenger_models:
+                        competitions.append({
+                            'game_name': game_name,
+                            'experiment_type': game_config.experiment_type,
+                            'condition_name': game_config.condition_name,
+                            'challenger_model': challenger,
+                            'defender_model': defender_model
+                        })
+            
+            self.logger.info(f"Total competitions to run: {len(competitions)}")
+            
+            # Run all competitions using existing batch method
+            results = await self.run_batch_competitions(competitions)
+            
+            # Check if all competitions were successful
+            success_count = len([r for r in results if r.competition_metadata.get('success_rate', 0) > 0])
+            
+            self.logger.info(f"Completed: {success_count}/{len(competitions)} competitions successful")
+            
+            return success_count > 0
+            
+        except Exception as e:
+            self.logger.error(f"Failed to run all competitions: {e}")
+            return False
     
     async def run_competition(self, game_name: str, experiment_type: str, 
                             condition_name: str, challenger_model: str,
@@ -229,170 +270,77 @@ class Competition:
                     thinking_status = "ON" if is_thinking_enabled(defender_model) else "OFF"
                     self.logger.debug(f"[{call_id}] Created defender: {defender_model} (Thinking: {thinking_status})")
             except Exception as e:
-                self.logger.error(f"[{call_id}] Failed to create defender {defender_id}: {e}")
+                self.logger.error(f"[{call_id}] Failed to create defender agent: {e}")
                 raise
         
-        # Initialize game state for dynamic games
-        game_state = {}
+        # Initialize game state (for dynamic games)
         if hasattr(game_engine, 'initialize_game_state'):
             game_state = game_engine.initialize_game_state(game_config, simulation_id)
-            self.logger.debug(f"[{call_id}] Initialized game state for dynamic game")
+        else:
+            game_state = {}
         
-        # Run game (static vs dynamic)
-        if game_name in ['salop', 'spulber']:
-            # Static games - single round
-            actions = await self._run_static_game(game_engine, game_config, agents, game_state, call_id)
+        # Determine if this is a multi-round game
+        is_dynamic = hasattr(game_engine, 'update_game_state')
+        total_rounds = game_state.get('total_periods', 1) if is_dynamic else 1
+        
+        round_data = []
+        
+        # Run game rounds
+        for round_num in range(total_rounds):
+            round_start_time = time.time()
+            
+            # Get actions from all agents
+            actions = {}
+            for player_id in player_ids:
+                agent = agents[player_id]
+                prompt = game_engine.generate_player_prompt(player_id, game_state, game_config)
+                
+                action = await self._get_agent_action(agent, prompt, player_id, game_engine, call_id)
+                actions[player_id] = action
+            
+            # Calculate payoffs
             payoffs = game_engine.calculate_payoffs(actions, game_config, game_state)
             
-            # Create game result
-            game_data = game_engine.get_game_data_for_logging(actions, payoffs, game_config, game_state)
+            # Update game state for next round (dynamic games)
+            if is_dynamic and round_num < total_rounds - 1:
+                game_state = game_engine.update_game_state(game_state, actions, game_config)
             
-            return create_game_result(
-                simulation_id=simulation_id,
-                game_name=game_name,
-                experiment_type=game_config.experiment_type,
-                condition_name=game_config.condition_name,
-                players=player_ids,
-                actions=actions,
-                payoffs=payoffs,
-                **game_data
-            )
-        
-        else:
-            # Dynamic games - multiple rounds
-            return await self._run_dynamic_game(
-                game_engine, game_config, agents, game_state, simulation_id, call_id
-            )
-    
-    async def _run_static_game(self, game_engine, game_config: GameConfig, 
-                             agents: Dict[str, Any], game_state: Dict, 
-                             call_id: str) -> Dict[str, Any]:
-        """Run static game (single round)"""
-        
-        actions = {}
-        
-        # Get actions from all agents
-        action_tasks = []
-        for player_id, agent in agents.items():
-            if isinstance(agent, RandomPlayer):
-                # Handle random baseline synchronously
-                action = agent.get_action(game_config.game_name, game_state, game_config)
-                actions[player_id] = action
-                self.logger.debug(f"[{call_id}] {player_id}: Random action")
-            else:
-                # Handle LLM agents asynchronously
-                prompt = game_engine.generate_player_prompt(player_id, game_state, game_config)
-                task = self._get_agent_action(agent, prompt, player_id, game_engine, call_id)
-                action_tasks.append((player_id, task))
-        
-        # Wait for all LLM agent responses
-        for player_id, task in action_tasks:
-            action = await task
-            actions[player_id] = action
-            thinking_status = "ON" if is_thinking_enabled(agent.model_name) else "OFF"
-            action_summary = self._summarize_action(action)
-            self.logger.debug(f"[{call_id}] {player_id} (Thinking: {thinking_status}): {action_summary}")
-        
-        return actions
-    
-    async def _run_dynamic_game(self, game_engine, game_config: GameConfig,
-                              agents: Dict[str, Any], initial_game_state: Dict,
-                              simulation_id: int, call_id: str) -> GameResult:
-        """Run dynamic game (multiple rounds)"""
-        
-        time_horizon = game_config.constants.get('time_horizon', 50)
-        game_state = initial_game_state.copy()
-        
-        round_history = []
-        all_actions = {}
-        all_payoffs = {}
-        
-        self.logger.debug(f"[{call_id}] Starting dynamic game: {time_horizon} rounds")
-        
-        for round_num in range(1, time_horizon + 1):
-            round_call_id = f"{call_id}_r{round_num:03d}"
-            
-            # Update game state for current round
-            game_state['current_round'] = round_num
-            
-            # Get actions for this round
-            round_actions = {}
-            action_tasks = []
-            
-            for player_id, agent in agents.items():
-                if isinstance(agent, RandomPlayer):
-                    action = agent.get_action(game_config.game_name, game_state, game_config)
-                    round_actions[player_id] = action
-                else:
-                    prompt = game_engine.generate_player_prompt(player_id, game_state, game_config)
-                    task = self._get_agent_action(agent, prompt, player_id, game_engine, round_call_id)
-                    action_tasks.append((player_id, task))
-            
-            # Wait for LLM responses
-            for player_id, task in action_tasks:
-                action = await task
-                round_actions[player_id] = action
-            
-            # Calculate round payoffs
-            round_payoffs = game_engine.calculate_payoffs(round_actions, game_config, game_state)
-            
-            # Log round progress (every 10 rounds or final round)
-            if round_num % 10 == 0 or round_num == time_horizon:
-                challenger_action = self._summarize_action(round_actions.get('challenger', {}))
-                challenger_payoff = round_payoffs.get('challenger', 0)
-                self.logger.debug(f"[{round_call_id}] Challenger: {challenger_action} → Payoff: {challenger_payoff:.2f}")
+            # Log round summary
+            round_duration = time.time() - round_start_time
+            if total_rounds > 1:
+                self.logger.debug(f"[{call_id}] Round {round_num + 1}/{total_rounds} completed in {round_duration:.2f}s")
             
             # Store round data
-            round_data = {
-                'round': round_num,
-                'actions': round_actions,
-                'payoffs': round_payoffs,
-                'game_state': game_state.copy()
-            }
-            round_history.append(round_data)
-            
-            # Accumulate total actions and payoffs
-            for player_id in round_actions:
-                if player_id not in all_actions:
-                    all_actions[player_id] = []
-                    all_payoffs[player_id] = []
-                
-                all_actions[player_id].append(round_actions[player_id])
-                all_payoffs[player_id].append(round_payoffs[player_id])
-            
-            # Update game state for next round
-            game_state = game_engine.update_game_state(game_state, round_actions, game_config)
+            round_data.append({
+                'round': round_num + 1,
+                'actions': actions,
+                'payoffs': payoffs,
+                'game_state': game_state.copy() if game_state else {},
+                'duration': round_duration
+            })
         
-        # Calculate final aggregate payoffs (NPV for dynamic games)
-        final_payoffs = {}
-        for player_id in all_payoffs:
-            discount_factor = game_config.constants.get('discount_factor', 0.95)
-            npv = sum(
-                (discount_factor ** t) * payoff 
-                for t, payoff in enumerate(all_payoffs[player_id])
-            )
-            final_payoffs[player_id] = npv
+        # Get final game data for logging
+        final_payoffs = round_data[-1]['payoffs'] if round_data else {}
+        final_actions = round_data[-1]['actions'] if round_data else {}
         
-        challenger_npv = final_payoffs.get('challenger', 0)
-        self.logger.debug(f"[{call_id}] Final NPV - Challenger: {challenger_npv:.2f}")
-        
-        # Create comprehensive game data
         game_data = game_engine.get_game_data_for_logging(
-            all_actions, final_payoffs, game_config, game_state
+            final_actions, final_payoffs, game_config, game_state
         )
-        game_data['round_history'] = round_history
         
-        return create_game_result(
+        # Create game result
+        result = create_game_result(
             simulation_id=simulation_id,
-            game_name=game_config.game_name,
+            game_name=game_name,
             experiment_type=game_config.experiment_type,
             condition_name=game_config.condition_name,
-            players=list(agents.keys()),
-            actions=all_actions,
+            players=player_ids,
+            actions=final_actions,
             payoffs=final_payoffs,
-            round_data=round_history,
-            **game_data
+            game_data=game_data,
+            round_data=round_data
         )
+        
+        return result
     
     async def _get_agent_action(self, agent: BaseLLMAgent, prompt: str, player_id: str,
                               game_engine, call_id: str) -> Dict[str, Any]:

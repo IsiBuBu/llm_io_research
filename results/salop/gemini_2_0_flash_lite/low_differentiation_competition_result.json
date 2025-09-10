@@ -1,0 +1,164 @@
+{
+  "game_name": "salop",
+  "experiment_type": "ablation_studies",
+  "condition_name": "low_differentiation",
+  "challenger_model": "gemini_2_0_flash_lite",
+  "challenger_display_name": "Gemini 2.0 Flash-Lite (No Thinking)",
+  "defender_model": "gemini_2_0_flash_lite",
+  "defender_display_name": "Gemini 2.0 Flash-Lite (No Thinking)",
+  "challenger_thinking_enabled": false,
+  "defender_thinking_enabled": false,
+  "competition_metadata": {
+    "num_simulations_planned": 1,
+    "num_simulations_successful": 1,
+    "num_simulations_failed": 0,
+    "success_rate": 1.0,
+    "game_config": {
+      "game_name": "salop",
+      "experiment_type": "ablation_studies",
+      "condition_name": "low_differentiation",
+      "constants": {
+        "number_of_players": 3,
+        "marginal_cost": 8,
+        "fixed_cost": 100,
+        "transport_cost": 0.5,
+        "v": 30,
+        "market_size": 1000
+      }
+    }
+  },
+  "start_time": "2025-09-10T21:51:57.180133",
+  "end_time": "2025-09-10T21:51:59.247621",
+  "total_duration": 2.067488,
+  "simulation_results": [
+    {
+      "simulation_id": 0,
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2"
+      ],
+      "actions": {
+        "challenger": {
+          "price": 15.0,
+          "raw_response": "```json\n{\"price\": 15.0}\n```",
+          "parsing_method": "json",
+          "player_id": "challenger",
+          "parsing_success": true
+        },
+        "defender_1": {
+          "price": 18.0,
+          "raw_response": "```json\n{\"price\": 18}\n```",
+          "parsing_method": "json",
+          "player_id": "defender_1",
+          "parsing_success": true
+        },
+        "defender_2": {
+          "price": 18.0,
+          "raw_response": "```json\n{\"price\": 18}\n```",
+          "parsing_method": "json",
+          "player_id": "defender_2",
+          "parsing_success": true
+        }
+      },
+      "payoffs": {
+        "challenger": 1455.5555555555554,
+        "defender_1": 455.55555555555543,
+        "defender_2": 455.55555555555543
+      },
+      "game_data": {
+        "game_data": {
+          "game_name": "salop",
+          "experiment_type": "ablation_studies",
+          "condition_name": "low_differentiation",
+          "actions": {
+            "challenger": {
+              "price": 15.0,
+              "raw_response": "```json\n{\"price\": 15.0}\n```",
+              "parsing_method": "json",
+              "player_id": "challenger",
+              "parsing_success": true
+            },
+            "defender_1": {
+              "price": 18.0,
+              "raw_response": "```json\n{\"price\": 18}\n```",
+              "parsing_method": "json",
+              "player_id": "defender_1",
+              "parsing_success": true
+            },
+            "defender_2": {
+              "price": 18.0,
+              "raw_response": "```json\n{\"price\": 18}\n```",
+              "parsing_method": "json",
+              "player_id": "defender_2",
+              "parsing_success": true
+            }
+          },
+          "payoffs": {
+            "challenger": 1455.5555555555554,
+            "defender_1": 455.55555555555543,
+            "defender_2": 455.55555555555543
+          },
+          "constants": {
+            "number_of_players": 3,
+            "marginal_cost": 8,
+            "fixed_cost": 100,
+            "transport_cost": 0.5,
+            "v": 30,
+            "market_size": 1000
+          },
+          "game_state": {},
+          "average_price": 17.0,
+          "price_variance": 2.0,
+          "min_price": 15.0,
+          "max_price": 18.0,
+          "marginal_cost": 8,
+          "transport_cost": 0.5,
+          "market_size": 1000,
+          "price_dispersion": 3.0,
+          "markup_rates": [
+            0.4666666666666667,
+            0.5555555555555556,
+            0.5555555555555556
+          ]
+        },
+        "round_data": [
+          {
+            "round": 1,
+            "actions": {
+              "challenger": {
+                "price": 15.0,
+                "raw_response": "```json\n{\"price\": 15.0}\n```",
+                "parsing_method": "json",
+                "player_id": "challenger",
+                "parsing_success": true
+              },
+              "defender_1": {
+                "price": 18.0,
+                "raw_response": "```json\n{\"price\": 18}\n```",
+                "parsing_method": "json",
+                "player_id": "defender_1",
+                "parsing_success": true
+              },
+              "defender_2": {
+                "price": 18.0,
+                "raw_response": "```json\n{\"price\": 18}\n```",
+                "parsing_method": "json",
+                "player_id": "defender_2",
+                "parsing_success": true
+              }
+            },
+            "payoffs": {
+              "challenger": 1455.5555555555554,
+              "defender_1": 455.55555555555543,
+              "defender_2": 455.55555555555543
+            },
+            "game_state": {},
+            "duration": 1.9101898670196533
+          }
+        ]
+      },
+      "round_data": []
+    }
+  ]
+}

@@ -1,0 +1,339 @@
+{
+  "game_name": "spulber",
+  "experiment_type": "structural_variations",
+  "condition_name": "five_players",
+  "challenger_model": "gemini_2_0_flash_lite",
+  "challenger_display_name": "Gemini 2.0 Flash-Lite (No Thinking)",
+  "defender_model": "gemini_2_0_flash_lite",
+  "defender_display_name": "Gemini 2.0 Flash-Lite (No Thinking)",
+  "challenger_thinking_enabled": false,
+  "defender_thinking_enabled": false,
+  "competition_metadata": {
+    "num_simulations_planned": 1,
+    "num_simulations_successful": 1,
+    "num_simulations_failed": 0,
+    "success_rate": 1.0,
+    "game_config": {
+      "game_name": "spulber",
+      "experiment_type": "structural_variations",
+      "condition_name": "five_players",
+      "constants": {
+        "number_of_players": 5,
+        "market_size": 100,
+        "demand_intercept": 100,
+        "rival_cost_mean": 10,
+        "rival_cost_std": 2.0,
+        "private_values": {
+          "challenger_cost": 8,
+          "defender_cost": 10
+        }
+      }
+    }
+  },
+  "start_time": "2025-09-10T21:52:01.187415",
+  "end_time": "2025-09-10T21:52:04.465388",
+  "total_duration": 3.277973,
+  "simulation_results": [
+    {
+      "simulation_id": 0,
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2",
+        "defender_3",
+        "defender_4"
+      ],
+      "actions": {
+        "challenger": {
+          "price": 9.0,
+          "raw_response": "```json\n{\"price\": 9.0}\n```",
+          "parsing_method": "json",
+          "player_id": "challenger",
+          "parsing_success": true
+        },
+        "defender_1": {
+          "price": 9.0,
+          "raw_response": "```json\n{\"price\": 9.0}\n```",
+          "parsing_method": "json",
+          "player_id": "defender_1",
+          "parsing_success": true
+        },
+        "defender_2": {
+          "price": 9.0,
+          "raw_response": "```json\n{\"price\": 9.0}\n```",
+          "parsing_method": "json",
+          "player_id": "defender_2",
+          "parsing_success": true
+        },
+        "defender_3": {
+          "price": 9.0,
+          "raw_response": "```json\n{\"price\": 9.0}\n```",
+          "parsing_method": "json",
+          "player_id": "defender_3",
+          "parsing_success": true
+        },
+        "defender_4": {
+          "price": 9.0,
+          "raw_response": "```json\n{\"price\": 9.0}\n```",
+          "parsing_method": "json",
+          "player_id": "defender_4",
+          "parsing_success": true
+        }
+      },
+      "payoffs": {
+        "challenger": 18.2,
+        "defender_1": -18.2,
+        "defender_2": -18.2,
+        "defender_3": -18.2,
+        "defender_4": -18.2
+      },
+      "game_data": {
+        "game_data": {
+          "game_name": "spulber",
+          "experiment_type": "structural_variations",
+          "condition_name": "five_players",
+          "constants": {
+            "number_of_players": 5,
+            "market_size": 100,
+            "demand_intercept": 100,
+            "rival_cost_mean": 10,
+            "rival_cost_std": 2.0,
+            "private_values": {
+              "challenger_cost": 8,
+              "defender_cost": 10
+            }
+          },
+          "actions": {
+            "challenger": {
+              "price": 9.0,
+              "raw_response": "```json\n{\"price\": 9.0}\n```",
+              "parsing_method": "json",
+              "player_id": "challenger",
+              "parsing_success": true
+            },
+            "defender_1": {
+              "price": 9.0,
+              "raw_response": "```json\n{\"price\": 9.0}\n```",
+              "parsing_method": "json",
+              "player_id": "defender_1",
+              "parsing_success": true
+            },
+            "defender_2": {
+              "price": 9.0,
+              "raw_response": "```json\n{\"price\": 9.0}\n```",
+              "parsing_method": "json",
+              "player_id": "defender_2",
+              "parsing_success": true
+            },
+            "defender_3": {
+              "price": 9.0,
+              "raw_response": "```json\n{\"price\": 9.0}\n```",
+              "parsing_method": "json",
+              "player_id": "defender_3",
+              "parsing_success": true
+            },
+            "defender_4": {
+              "price": 9.0,
+              "raw_response": "```json\n{\"price\": 9.0}\n```",
+              "parsing_method": "json",
+              "player_id": "defender_4",
+              "parsing_success": true
+            }
+          },
+          "payoffs": {
+            "challenger": 18.2,
+            "defender_1": -18.2,
+            "defender_2": -18.2,
+            "defender_3": -18.2,
+            "defender_4": -18.2
+          },
+          "prices": {
+            "challenger": 9.0,
+            "defender_1": 9.0,
+            "defender_2": 9.0,
+            "defender_3": 9.0,
+            "defender_4": 9.0
+          },
+          "costs": {
+            "challenger": 8,
+            "defender_1": 10,
+            "defender_2": 10,
+            "defender_3": 10,
+            "defender_4": 10
+          },
+          "market_shares": {
+            "challenger": 0.2,
+            "defender_1": 0.2,
+            "defender_2": 0.2,
+            "defender_3": 0.2,
+            "defender_4": 0.2
+          },
+          "win_status": {
+            "challenger": 1,
+            "defender_1": 0,
+            "defender_2": 0,
+            "defender_3": 0,
+            "defender_4": 0
+          },
+          "profitable_status": {
+            "challenger": 1,
+            "defender_1": 0,
+            "defender_2": 0,
+            "defender_3": 0,
+            "defender_4": 0
+          },
+          "market_capture_status": {
+            "challenger": 0.2,
+            "defender_1": 0.2,
+            "defender_2": 0.2,
+            "defender_3": 0.2,
+            "defender_4": 0.2
+          },
+          "rational_bid_status": {
+            "challenger": 1,
+            "defender_1": 0,
+            "defender_2": 0,
+            "defender_3": 0,
+            "defender_4": 0
+          },
+          "min_price": 9.0,
+          "winners": [
+            "challenger",
+            "defender_1",
+            "defender_2",
+            "defender_3",
+            "defender_4"
+          ],
+          "number_of_winners": 5,
+          "game_state": {
+            "prices": {
+              "challenger": 9.0,
+              "defender_1": 9.0,
+              "defender_2": 9.0,
+              "defender_3": 9.0,
+              "defender_4": 9.0
+            },
+            "costs": {
+              "challenger": 8,
+              "defender_1": 10,
+              "defender_2": 10,
+              "defender_3": 10,
+              "defender_4": 10
+            },
+            "quantities": {
+              "challenger": 18.2,
+              "defender_1": 18.2,
+              "defender_2": 18.2,
+              "defender_3": 18.2,
+              "defender_4": 18.2
+            },
+            "market_shares": {
+              "challenger": 0.2,
+              "defender_1": 0.2,
+              "defender_2": 0.2,
+              "defender_3": 0.2,
+              "defender_4": 0.2
+            },
+            "min_price": 9.0,
+            "winners": [
+              "challenger",
+              "defender_1",
+              "defender_2",
+              "defender_3",
+              "defender_4"
+            ]
+          }
+        },
+        "round_data": [
+          {
+            "round": 1,
+            "actions": {
+              "challenger": {
+                "price": 9.0,
+                "raw_response": "```json\n{\"price\": 9.0}\n```",
+                "parsing_method": "json",
+                "player_id": "challenger",
+                "parsing_success": true
+              },
+              "defender_1": {
+                "price": 9.0,
+                "raw_response": "```json\n{\"price\": 9.0}\n```",
+                "parsing_method": "json",
+                "player_id": "defender_1",
+                "parsing_success": true
+              },
+              "defender_2": {
+                "price": 9.0,
+                "raw_response": "```json\n{\"price\": 9.0}\n```",
+                "parsing_method": "json",
+                "player_id": "defender_2",
+                "parsing_success": true
+              },
+              "defender_3": {
+                "price": 9.0,
+                "raw_response": "```json\n{\"price\": 9.0}\n```",
+                "parsing_method": "json",
+                "player_id": "defender_3",
+                "parsing_success": true
+              },
+              "defender_4": {
+                "price": 9.0,
+                "raw_response": "```json\n{\"price\": 9.0}\n```",
+                "parsing_method": "json",
+                "player_id": "defender_4",
+                "parsing_success": true
+              }
+            },
+            "payoffs": {
+              "challenger": 18.2,
+              "defender_1": -18.2,
+              "defender_2": -18.2,
+              "defender_3": -18.2,
+              "defender_4": -18.2
+            },
+            "game_state": {
+              "prices": {
+                "challenger": 9.0,
+                "defender_1": 9.0,
+                "defender_2": 9.0,
+                "defender_3": 9.0,
+                "defender_4": 9.0
+              },
+              "costs": {
+                "challenger": 8,
+                "defender_1": 10,
+                "defender_2": 10,
+                "defender_3": 10,
+                "defender_4": 10
+              },
+              "quantities": {
+                "challenger": 18.2,
+                "defender_1": 18.2,
+                "defender_2": 18.2,
+                "defender_3": 18.2,
+                "defender_4": 18.2
+              },
+              "market_shares": {
+                "challenger": 0.2,
+                "defender_1": 0.2,
+                "defender_2": 0.2,
+                "defender_3": 0.2,
+                "defender_4": 0.2
+              },
+              "min_price": 9.0,
+              "winners": [
+                "challenger",
+                "defender_1",
+                "defender_2",
+                "defender_3",
+                "defender_4"
+              ]
+            },
+            "duration": 3.024944305419922
+          }
+        ]
+      },
+      "round_data": []
+    }
+  ]
+}

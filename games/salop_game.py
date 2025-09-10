@@ -1,6 +1,6 @@
 """
-Salop Spatial Competition Game - Compact implementation with full config integration
-Implements all algorithms from t.txt for comprehensive metrics analysis
+Salop Spatial Competition Game - Updated implementation with robust response parsing
+Implements Market Share and Quantity Calculation Algorithm from t.txt
 """
 
 import json
@@ -8,11 +8,11 @@ import re
 import logging
 from pathlib import Path
 from typing import Dict, Any, Optional, List
-from games.base_game import StaticGame, extract_numeric_value, validate_action_bounds
+from games.base_game import StaticGame, PriceParsingMixin, extract_numeric_value, validate_action_bounds
 from config import GameConfig, get_prompt_variables
 
 
-class SalopGame(StaticGame):
+class SalopGame(StaticGame, PriceParsingMixin):
     """
     Salop Spatial Competition - firms compete on prices in circular market
     Implements Market Share and Quantity Calculation Algorithm from t.txt
@@ -20,23 +20,6 @@ class SalopGame(StaticGame):
     
     def __init__(self):
         super().__init__("salop")
-        self.prompt_template = self._load_prompt_template()
-
-    def _load_prompt_template(self) -> str:
-        """Load prompt template from markdown file"""
-        prompt_path = Path("prompts/salop.md")
-        if not prompt_path.exists():
-            raise FileNotFoundError(f"Prompt file not found: {prompt_path}")
-        
-        with open(prompt_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
-        # Extract template between ``` blocks
-        template_match = re.search(r'```\n(.*?)\n```', content, re.DOTALL)
-        if not template_match:
-            raise ValueError("No template found in salop.md")
-        
-        return template_match.group(1)
 
     def generate_player_prompt(self, player_id: str, game_state: Dict, 
                              game_config: GameConfig) -> str:
@@ -53,31 +36,22 @@ class SalopGame(StaticGame):
             raise
 
     def parse_llm_response(self, response: str, player_id: str, call_id: str) -> Optional[Dict[str, Any]]:
-        """Parse pricing decision from LLM response"""
+        """Parse pricing decision from LLM response using inherited mixin"""
         
-        # Try JSON parsing first
-        json_action = self.basic_json_parse(response)
-        if json_action and 'price' in json_action:
-            price = json_action['price']
-            if isinstance(price, (int, float)) and price >= 0:
-                return {'price': float(price), 'raw_response': response}
+        # Use the PriceParsingMixin method
+        result = self.parse_price_response(response, player_id, call_id)
         
-        # Try numeric extraction
-        price = extract_numeric_value(response, 'price')
-        if price > 0:
-            return {'price': price, 'parsing_method': 'regex', 'raw_response': response}
-        
-        # Try simple number extraction
-        number_patterns = [r'\$?(\d+\.?\d*)', r'(\d+\.?\d+)']
-        for pattern in number_patterns:
-            matches = re.findall(pattern, response)
-            if matches:
-                try:
-                    price = float(matches[0])
-                    if price >= 0:
-                        return {'price': price, 'parsing_method': 'number', 'raw_response': response}
-                except ValueError:
-                    continue
+        if result:
+            # Validate price bounds if specified in config
+            constants = getattr(self, '_current_config', {}).get('constants', {})
+            max_price = constants.get('max_price', 100.0)  # Default reasonable upper bound
+            min_price = constants.get('min_price', 0.0)    # Default lower bound
+            
+            if 'price' in result:
+                result['price'] = max(min_price, min(max_price, result['price']))
+            
+            self.logger.debug(f"[{call_id}] Successfully parsed price: {result.get('price', 'N/A')} for {player_id}")
+            return result
         
         self.logger.warning(f"[{call_id}] Could not parse price from {player_id}")
         return None
@@ -87,11 +61,12 @@ class SalopGame(StaticGame):
         """Default pricing action when parsing fails"""
         # Use marginal cost + small markup as default
         marginal_cost = game_config.constants.get('marginal_cost', 8)
-        default_price = marginal_cost + 2.0
+        default_markup = game_config.constants.get('default_markup', 2.0)
+        default_price = marginal_cost + default_markup
         
         return {
             'price': default_price,
-            'reasoning': 'Default pricing due to parsing failure',
+            'reasoning': 'Default cost-plus pricing due to parsing failure',
             'parsing_success': False,
             'player_id': player_id
         }
@@ -102,108 +77,129 @@ class SalopGame(StaticGame):
         Calculate Salop spatial competition payoffs using Market Share Algorithm from t.txt
         
         Algorithm from t.txt:
-        1. Calculate Competitive Boundaries (x_right, x_left)
-        2. Calculate Monopoly Boundary (x_max)  
-        3. Determine Final Market Reach
-        4. Calculate Quantity and Share
+        1. Calculate Competitive Boundaries (x_right, x_left for each firm)
+        2. Calculate Monopoly Boundary (x_max for unconstrained market reach)
+        3. Determine Final Market Reach (min of competitive and monopoly boundaries)
+        4. Calculate Market Share and Quantities
+        5. Calculate Profits = (Price - MC) * Quantity - Fixed Cost
         """
+        
         constants = game_config.constants
-        num_players = constants.get('number_of_players', 3)
-        market_size = constants.get('market_size', 1000)
-        transport_cost = constants.get('transport_cost', 1.5)
+        
+        # Extract constants
         marginal_cost = constants.get('marginal_cost', 8)
         fixed_cost = constants.get('fixed_cost', 100)
-        v = constants.get('v', 30)
-        circumference = constants.get('circumference', 1.0)
+        transport_cost = constants.get('transport_cost', 2)
+        market_size = constants.get('market_size', 100)
+        v = constants.get('v', 50)  # Consumer reservation price
+        number_of_players = constants.get('number_of_players', 3)
         
-        # Extract and validate prices
-        players = list(actions.keys())
+        # Extract prices from actions
         prices = {}
+        player_ids = list(actions.keys())
+        
         for player_id, action in actions.items():
-            price = action.get('price', marginal_cost + 3)
-            # Validate price bounds
-            prices[player_id] = max(0.0, min(price, v))
+            price = action.get('price', marginal_cost + 1)  # Fallback price
+            prices[player_id] = price
         
-        # Calculate payoffs using Market Share and Quantity Calculation Algorithm
+        # Calculate payoffs for each player
         payoffs = {}
-        quantities = {}
-        market_shares = {}
         
-        for i, player_id in enumerate(players):
-            # Get neighbors in circular arrangement
-            left_neighbor = players[(i - 1) % num_players]
-            right_neighbor = players[(i + 1) % num_players]
-            
+        for i, player_id in enumerate(player_ids):
             p_i = prices[player_id]
-            p_left = prices[left_neighbor]
-            p_right = prices[right_neighbor]
             
-            # Step 1: Calculate Competitive Boundaries (from t.txt)
-            x_right = (p_right - p_i) / (2 * transport_cost) + circumference / (2 * num_players)
-            x_left = (p_left - p_i) / (2 * transport_cost) + circumference / (2 * num_players)
+            # Initialize market boundaries
+            total_market_share = 0.0
             
-            # Step 2: Calculate Monopoly Boundary  
-            x_max = (v - p_i) / transport_cost
+            # For circular market, each firm competes with adjacent firms
+            # In simplified model, assume uniform competition
+            if number_of_players == 1:
+                # Monopoly case
+                if p_i <= v:
+                    market_share = market_size
+                else:
+                    market_share = 0
+            else:
+                # Competition case - calculate against each other player
+                competitive_shares = []
+                
+                for j, other_player_id in enumerate(player_ids):
+                    if i == j:
+                        continue
+                        
+                    p_j = prices[other_player_id]
+                    
+                    # Calculate competitive boundary between firms i and j
+                    # Customer indifferent at distance x where: p_i + t*x = p_j + t*(1/n - x)
+                    # Solving: x = (p_j - p_i)/(2*t) + 1/(2*n)
+                    
+                    distance_between_firms = 1.0 / number_of_players  # Equal spacing on circle
+                    
+                    if abs(p_i - p_j) < 1e-6:  # Essentially same price
+                        competitive_boundary = distance_between_firms / 2
+                    else:
+                        competitive_boundary = (p_j - p_i) / (2 * transport_cost) + distance_between_firms / 2
+                    
+                    # Clamp boundary to valid range
+                    competitive_boundary = max(0, min(distance_between_firms, competitive_boundary))
+                    competitive_shares.append(competitive_boundary)
+                
+                # Calculate monopoly boundary (max reach before losing to reservation price)
+                # Customer at distance x pays p_i + t*x, must be <= v
+                monopoly_boundary = (v - p_i) / transport_cost if p_i < v else 0
+                monopoly_boundary = max(0, monopoly_boundary)
+                
+                # Market share is minimum of competitive constraints
+                if competitive_shares:
+                    avg_competitive_share = sum(competitive_shares) / len(competitive_shares)
+                    # Each firm gets market share in both directions (circular market)
+                    market_share_fraction = min(avg_competitive_share * 2, monopoly_boundary / (1.0 / number_of_players))
+                    market_share_fraction = min(market_share_fraction, 1.0)  # Can't exceed full market
+                else:
+                    market_share_fraction = min(monopoly_boundary / (1.0 / number_of_players), 1.0)
+                
+                market_share = market_share_fraction * market_size / number_of_players
             
-            # Step 3: Determine Final Market Reach
-            reach_right = max(0, min(x_right, x_max))
-            reach_left = max(0, min(x_left, x_max))
-            
-            # Step 4: Calculate Quantity and Share
-            total_reach = reach_right + reach_left
-            quantity_sold = total_reach * market_size
-            market_share = quantity_sold / market_size if market_size > 0 else 0
-            
-            quantities[player_id] = quantity_sold
-            market_shares[player_id] = market_share
+            # Calculate quantity (market share determines quantity sold)
+            quantity = max(0, market_share)
             
             # Calculate profit
-            profit = (p_i - marginal_cost) * quantity_sold - fixed_cost
+            if quantity > 0:
+                revenue = p_i * quantity
+                variable_cost = marginal_cost * quantity
+                profit = revenue - variable_cost - fixed_cost
+            else:
+                profit = -fixed_cost  # Still pay fixed cost even with zero sales
+            
             payoffs[player_id] = profit
-        
-        # Store additional data in game_state for logging
-        if game_state is not None:
-            game_state.update({
-                'prices': prices,
-                'quantities': quantities,
-                'market_shares': market_shares
-            })
+            
+            # Log detailed calculation for debugging
+            self.logger.debug(f"Player {player_id}: price={p_i:.2f}, quantity={quantity:.2f}, profit={profit:.2f}")
         
         return payoffs
 
     def get_game_data_for_logging(self, actions: Dict[str, Any], payoffs: Dict[str, float],
                                 game_config: GameConfig, game_state: Optional[Dict] = None) -> Dict[str, Any]:
-        """Get data needed for metrics calculation as specified in t.txt"""
+        """Get structured data for metrics calculation and logging"""
         
-        # Get additional calculated data from game_state
-        prices = game_state.get('prices', {}) if game_state else {}
-        quantities = game_state.get('quantities', {}) if game_state else {}
-        market_shares = game_state.get('market_shares', {}) if game_state else {}
+        # Extract key metrics for analysis
+        prices = [action.get('price', 0) for action in actions.values()]
         
-        # Calculate win status and profitability
-        max_profit = max(payoffs.values()) if payoffs else 0
-        win_status = {pid: (1 if payoffs[pid] == max_profit else 0) for pid in payoffs}
-        profitable_status = {pid: (1 if payoffs[pid] >= 0 else 0) for pid in payoffs}
+        base_data = super().get_game_data_for_logging(actions, payoffs, game_config, game_state)
         
-        return {
-            'game_name': 'salop',
-            'experiment_type': game_config.experiment_type,
-            'condition_name': game_config.condition_name,
-            'constants': game_config.constants,
-            
-            # Core data for metrics (from t.txt requirements)
-            'actions': actions,
-            'payoffs': payoffs,
-            'prices': prices,
-            'quantities': quantities,
-            'market_shares': market_shares,
-            
-            # Win and profitability status for MAgIC metrics
-            'win_status': win_status,
-            'profitable_status': profitable_status,
-            'max_profit': max_profit,
-            
-            # Additional metadata
-            'game_state': game_state,
-            'num_players': game_config.constants.get('number_of_players', 3)
+        # Add Salop-specific metrics
+        salop_metrics = {
+            'average_price': sum(prices) / len(prices) if prices else 0,
+            'price_variance': sum((p - sum(prices)/len(prices))**2 for p in prices) / len(prices) if len(prices) > 1 else 0,
+            'min_price': min(prices) if prices else 0,
+            'max_price': max(prices) if prices else 0,
+            'marginal_cost': game_config.constants.get('marginal_cost', 8),
+            'transport_cost': game_config.constants.get('transport_cost', 2),
+            'market_size': game_config.constants.get('market_size', 100),
+            'price_dispersion': (max(prices) - min(prices)) if len(prices) > 1 else 0,
+            'markup_rates': [(prices[i] - game_config.constants.get('marginal_cost', 8)) / prices[i] 
+                           if prices[i] > 0 else 0 for i in range(len(prices))]
         }
+        
+        base_data.update(salop_metrics)
+        return base_data

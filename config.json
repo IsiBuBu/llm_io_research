@@ -1,12 +1,6 @@
 {
   "models": {
     "challenger_models": [
-      "gemini_2_5_pro",
-      "gemini_2_5_flash_thinking_on",
-      "gemini_2_5_flash_thinking_off", 
-      "gemini_2_5_flash_lite_thinking_on",
-      "gemini_2_5_flash_lite_thinking_off",
-      "gemini_2_0_flash",
       "gemini_2_0_flash_lite"
     ],
     "defender_model": "gemini_2_0_flash_lite",
@@ -92,8 +86,8 @@
   },
 
   "experiment_config": {
-    "main_experiment_simulations": 2,
-    "ablation_experiment_simulations": 2,
+    "main_experiment_simulations": 1,
+    "ablation_experiment_simulations": 1,
     "parallel_workers": 4,
     "random_seed": 42,
     "checkpoint_frequency": 10
@@ -124,7 +118,7 @@
     "green_porter": {
       "baseline": {
         "number_of_players": 3,
-        "time_horizon": 4,
+        "time_horizon": 2,
         "base_demand": 120,
         "marginal_cost": 20,
         "demand_shock_std": 5,
@@ -136,7 +130,7 @@
       },
       "structural_variations": {
         "short_horizon": { 
-          "time_horizon": 2
+          "time_horizon": 1
         }
       },
       "ablation_studies": {
@@ -176,7 +170,7 @@
     "athey_bagwell": {
       "baseline": {
         "number_of_players": 3,
-        "time_horizon": 4,
+        "time_horizon": 2,
         "cost_types": { 
           "low": 15, 
           "high": 25 
@@ -188,7 +182,7 @@
       },
       "structural_variations": {
         "short_horizon": { 
-          "time_horizon": 2 
+          "time_horizon": 1 
         }
       },
       "ablation_studies": {
