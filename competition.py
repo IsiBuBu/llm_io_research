@@ -353,8 +353,8 @@ class Competition:
         self.logger.info(f"Challenger: {challenger_display} (Thinking: {'ON' if challenger_thinking else 'OFF'})")
         self.logger.info(f"Defender: {defender_display} (Thinking: {'ON' if defender_thinking else 'OFF'})")
         
-        # Load game configuration
-        game_config = get_game_config(game_name, condition_name)
+        # CRITICAL FIX: Load game configuration with correct parameters
+        game_config = get_game_config(game_name, experiment_type, condition_name)
         game_engine = self.games[game_name]
         
         # Get simulation count from config
@@ -428,50 +428,39 @@ class Competition:
         # Save results to disk
         await self._save_competition_result(result)
         
-        # Log completion
-        self.logger.info("=" * 60)
-        self.logger.info("COMPETITION COMPLETED")
-        self.logger.info("=" * 60)
-        self.logger.info(f"Results: {successful_sims}/{num_simulations} successful ({success_rate*100:.1f}%)")
-        self.logger.info(f"Duration: {total_duration:.2f} seconds ({total_duration/60:.1f} minutes)")
-        
-        if failed_sims > 0:
-            self.logger.warning(f"Failed simulations: {failed_sims}")
-        
         return result
 
-    async def _save_competition_result(self, result: CompetitionResult):
-        """Save competition result to disk with error response filtering"""
+    async def _save_competition_result(self, result: CompetitionResult) -> None:
+        """Save competition result to JSON file with error filtering"""
         
-        # Create directory structure
-        output_path = (self.output_dir / result.game_name / result.challenger_model)
-        output_path.mkdir(parents=True, exist_ok=True)
+        # Create output directory structure
+        game_dir = self.output_dir / result.game_name
+        challenger_dir = game_dir / result.challenger_model
+        challenger_dir.mkdir(parents=True, exist_ok=True)
         
-        # Save complete result
-        filename = f"{result.condition_name}_competition_result.json"
+        # Create filename
+        safe_condition = result.condition_name.replace(" ", "_").replace("/", "_")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
-        # Convert to serializable format with error filtering
+        if self.mock_mode:
+            filename = f"{safe_condition}_competition_result_mock_{timestamp}.json"
+        else:
+            filename = f"{safe_condition}_competition_result.json"
+        
+        output_path = challenger_dir
+        
+        # Clean simulation results to remove error responses
         cleaned_simulation_results = []
-        for sim in result.simulation_results:
-            cleaned_sim = {
-                'simulation_id': sim.simulation_id,
-                'players': sim.players,
-                'actions': self._clean_error_responses(sim.actions),  # Filter errors here
-                'payoffs': sim.payoffs,
-                'game_data': sim.game_data,
-                'round_data': getattr(sim, 'round_data', [])
-            }
+        for sim_result in result.simulation_results:
+            cleaned_sim = dict(sim_result.__dict__)
             
-            # Also clean any actions within game_data if they exist
-            if 'game_data' in cleaned_sim and isinstance(cleaned_sim['game_data'], dict):
-                if 'actions' in cleaned_sim['game_data']:
-                    cleaned_sim['game_data']['actions'] = self._clean_error_responses(
-                        cleaned_sim['game_data']['actions']
-                    )
+            # Clean actions to prevent JSON serialization issues
+            if 'actions' in cleaned_sim:
+                cleaned_sim['actions'] = self._clean_error_responses(cleaned_sim['actions'])
             
             cleaned_simulation_results.append(cleaned_sim)
         
-        # Convert to serializable format
+        # Create final result dictionary
         result_dict = {
             'game_name': result.game_name,
             'experiment_type': result.experiment_type,
