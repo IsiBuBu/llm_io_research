@@ -58,47 +58,48 @@ class PerformanceMetricsCalculator(MetricCalculator):
         win_count = 0
         
         for result in game_results:
-            challenger_payoff = result.payoffs.get(player_id, 0.0)
-            challenger_profits.append(challenger_payoff)
+            challenger_profit = result.payoffs.get(player_id, 0.0)
+            challenger_profits.append(challenger_profit)
             
-            # Check if challenger won (highest profit)
+            # Win determination - highest profit
             max_profit = max(result.payoffs.values()) if result.payoffs else 0
-            if challenger_payoff == max_profit:
+            if challenger_profit == max_profit:
                 win_count += 1
         
-        # Win Rate - Formula: Win Rate = (1/N) * Σ I(ChallengerProfit_i = max(AllProfits_i))
+        # Win Rate: Number of Games with Highest Profit / Total Games Played
         win_rate = self.safe_divide(win_count, N)
         metrics['win_rate'] = create_metric_result(
             name='win_rate',
             value=win_rate,
-            description='Frequency with which challenger achieves highest profit',
+            description='Number of Games with Highest Profit / Total Games Played',
             metric_type='performance',
             game_name=game_name,
             experiment_type=experiment_type,
             condition_name=condition_name,
-            total_games=N,
-            wins=win_count
+            wins=win_count,
+            total_games=N
         )
         
-        # Average Profit - Formula: Profit = (1/N) * Σ ChallengerProfit_i
+        # Average Profit: Σ (Profit_i) / Total Games Played
         avg_profit = self.safe_mean(challenger_profits)
         metrics['average_profit'] = create_metric_result(
             name='average_profit',
             value=avg_profit,
-            description='Mean of challenger single-period profits over all games',
+            description='Σ (Profit_i) / Total Games Played',
             metric_type='performance',
             game_name=game_name,
             experiment_type=experiment_type,
             condition_name=condition_name,
-            profit_stream=challenger_profits
+            total_profit=sum(challenger_profits),
+            total_games=N
         )
         
-        # Profit Volatility - Formula: Volatility = sqrt((1/(N-1)) * Σ(ChallengerProfit_i - Profit)²)
+        # Profit Volatility: Standard Deviation of profits
         profit_volatility = self.safe_std(challenger_profits)
         metrics['profit_volatility'] = create_metric_result(
             name='profit_volatility',
             value=profit_volatility,
-            description='Sample standard deviation of challenger profit stream',
+            description='Standard Deviation of {Profit_period_1, Profit_period_2, ...}',
             metric_type='performance',
             game_name=game_name,
             experiment_type=experiment_type,
@@ -117,159 +118,59 @@ class PerformanceMetricsCalculator(MetricCalculator):
         N = len(game_results)
         
         metrics = {}
+        
         market_shares = []
-        
-        # Market Share Captured - Algorithm from t.txt
-        for result in game_results:
-            game_data = result.game_data
-            challenger_market_share = 0.0
-            
-            # Get market share from game data
-            if 'market_shares' in game_data and player_id in game_data['market_shares']:
-                challenger_market_share = game_data['market_shares'][player_id]
-            elif 'quantities' in game_data and 'constants' in game_data:
-                # Calculate from quantities if market_shares not available
-                quantities = game_data.get('quantities', {})
-                constants = game_data.get('constants', {})
-                market_size = constants.get('market_size', 1000)
-                
-                if player_id in quantities and market_size > 0:
-                    challenger_quantity = quantities[player_id]
-                    challenger_market_share = challenger_quantity / market_size
-            
-            market_shares.append(challenger_market_share)
-        
-        # Formula: Market Share = (1/N) * Σ Share_i
-        avg_market_share = self.safe_mean(market_shares)
-        metrics['market_share_captured'] = create_metric_result(
-            name='market_share_captured',
-            value=avg_market_share,
-            description='Average portion of total market served by challenger',
-            metric_type='performance',
-            game_name=game_name,
-            experiment_type=experiment_type,
-            condition_name=condition_name,
-            market_shares=market_shares
-        )
-        
-        return metrics
-    
-    def _calculate_green_porter_metrics(self, game_results: List[GameResult], 
-                                      player_id: str) -> Dict[str, MetricResult]:
-        """Calculate Green & Porter specific performance metrics"""
-        game_name = game_results[0].game_name
-        experiment_type = game_results[0].experiment_type
-        condition_name = game_results[0].condition_name
-        N = len(game_results)
-        
-        metrics = {}
-        
-        # Get discount factor from first result
-        constants = game_results[0].game_data.get('constants', {})
-        discount_factor = constants.get('discount_factor', 0.95)
-        
-        # Calculate NPV-based metrics
-        challenger_npvs = []
-        npv_win_count = 0
-        strategic_inertia_rates = []
-        reversion_frequencies = []
+        profit_margins = []
         
         for result in game_results:
-            game_data = result.game_data
+            challenger_profit = result.payoffs.get(player_id, 0.0)
             
-            # Calculate NPV if profit history available
-            if 'profit_history' in game_data and player_id in game_data['profit_history']:
-                profit_stream = game_data['profit_history'][player_id]
-                challenger_npv = self.calculate_npv(profit_stream, discount_factor)
-                challenger_npvs.append(challenger_npv)
-                
-                # Check NPV-based win
-                if 'npvs' in game_data:
-                    all_npvs = game_data['npvs']
-                    max_npv = max(all_npvs.values()) if all_npvs else 0
-                    if challenger_npv == max_npv:
-                        npv_win_count += 1
-            else:
-                # Fallback to single-period payoff
-                challenger_npvs.append(result.payoffs.get(player_id, 0.0))
+            # Extract Salop-specific data
+            salop_data = result.game_data.get('salop_metrics', {})
             
-            # Strategic Inertia - Algorithm from t.txt
-            if 'quantity_history' in game_data and player_id in game_data['quantity_history']:
-                quantities = game_data['quantity_history'][player_id]
-                if len(quantities) > 1:
-                    repeated_choices = 0
-                    for t in range(1, len(quantities)):
-                        if abs(quantities[t] - quantities[t-1]) < 0.01:  # Nearly equal
-                            repeated_choices += 1
-                    inertia_rate = repeated_choices / (len(quantities) - 1)
-                    strategic_inertia_rates.append(inertia_rate)
+            # Market Share Captured: Quantity Sold by Firm / Total Market Size (L)
+            quantities = salop_data.get('quantities', {})
+            if player_id in quantities:
+                quantity_sold = quantities[player_id]
+                market_size = result.game_data.get('constants', {}).get('market_size', 1000)
+                market_share = self.safe_divide(quantity_sold, market_size)
+                market_shares.append(market_share)
             
-            # Reversion Frequency - Algorithm from t.txt
-            if 'state_history' in game_data:
-                state_history = game_data['state_history']
-                if len(state_history) > 1:
-                    reversions = 0
-                    for t in range(1, len(state_history)):
-                        if (state_history[t] == 'Price War' and 
-                            state_history[t-1] == 'Collusive'):
-                            reversions += 1
-                    reversion_freq = reversions / (len(state_history) - 1)
-                    reversion_frequencies.append(reversion_freq)
+            # Profit Margin: (Price - Marginal Cost) / Price
+            prices = salop_data.get('prices', {})
+            if player_id in prices:
+                price = prices[player_id]
+                marginal_cost = result.game_data.get('constants', {}).get('marginal_cost', 8)
+                if price > 0:
+                    profit_margin = (price - marginal_cost) / price
+                    profit_margins.append(profit_margin)
         
-        # Win Rate (NPV-based) - Formula: Win Rate = (1/N) * Σ I(ChallengerNPV_i = max(AllNPVs_i))
-        npv_win_rate = self.safe_divide(npv_win_count, N)
-        metrics['win_rate_npv'] = create_metric_result(
-            name='win_rate_npv',
-            value=npv_win_rate,
-            description='Frequency with which challenger achieves highest NPV',
-            metric_type='performance',
-            game_name=game_name,
-            experiment_type=experiment_type,
-            condition_name=condition_name,
-            total_simulations=N,
-            npv_wins=npv_win_count
-        )
-        
-        # Average Profit (NPV) - Formula: NPV = (1/N) * Σ(Σ δ^(t-1) × Profit_i,t)
-        avg_npv = self.safe_mean(challenger_npvs)
-        metrics['average_profit_npv'] = create_metric_result(
-            name='average_profit_npv',
-            value=avg_npv,
-            description='Average Net Present Value of challenger profit stream',
-            metric_type='performance',
-            game_name=game_name,
-            experiment_type=experiment_type,
-            condition_name=condition_name,
-            npv_stream=challenger_npvs,
-            discount_factor=discount_factor
-        )
-        
-        # Strategic Inertia - Formula: Inertia = (1/N) * Σ((1/(T-1)) * Σ I(q_i,t = q_i,t-1))
-        if strategic_inertia_rates:
-            avg_strategic_inertia = self.safe_mean(strategic_inertia_rates)
-            metrics['strategic_inertia'] = create_metric_result(
-                name='strategic_inertia',
-                value=avg_strategic_inertia,
-                description='Frequency with which challenger repeats quantity choice',
+        # Average Market Share Captured
+        if market_shares:
+            avg_market_share = self.safe_mean(market_shares)
+            metrics['market_share_captured'] = create_metric_result(
+                name='market_share_captured',
+                value=avg_market_share,
+                description='Quantity Sold by Firm / Total Market Size (L)',
                 metric_type='performance',
                 game_name=game_name,
                 experiment_type=experiment_type,
                 condition_name=condition_name,
-                inertia_rates=strategic_inertia_rates
+                market_shares=market_shares
             )
         
-        # Reversion Frequency - Formula: Reversion Freq. = (1/N) * Σ((1/(T-1)) * Σ I(State_t = Reversionary ∧ State_t-1 = Collusive))
-        if reversion_frequencies:
-            avg_reversion_frequency = self.safe_mean(reversion_frequencies)
-            metrics['reversion_frequency'] = create_metric_result(
-                name='reversion_frequency',
-                value=avg_reversion_frequency,
-                description='Rate at which cartel enters punishment price war phase',
+        # Average Profit Margin
+        if profit_margins:
+            avg_profit_margin = self.safe_mean(profit_margins)
+            metrics['profit_margin'] = create_metric_result(
+                name='profit_margin',
+                value=avg_profit_margin,
+                description='(Price - Marginal Cost) / Price',
                 metric_type='performance',
                 game_name=game_name,
                 experiment_type=experiment_type,
                 condition_name=condition_name,
-                reversion_rates=reversion_frequencies
+                profit_margins=profit_margins
             )
         
         return metrics
@@ -283,42 +184,63 @@ class PerformanceMetricsCalculator(MetricCalculator):
         N = len(game_results)
         
         metrics = {}
-        market_capture_scores = []
         
-        # Market Capture Rate - Algorithm from t.txt
+        win_count = 0
+        profit_margins = []
+        market_capture_count = 0
+        
         for result in game_results:
-            game_data = result.game_data
-            capture_score = 0.0
+            challenger_profit = result.payoffs.get(player_id, 0.0)
             
-            # Get market capture data
-            if 'market_capture' in game_data and player_id in game_data['market_capture']:
-                capture_score = game_data['market_capture'][player_id]
-            elif 'win_status' in game_data and 'num_winners' in game_data:
-                # Calculate from win status and tie information
-                if player_id in game_data['win_status'] and game_data['win_status'][player_id] > 0:
-                    K = game_data.get('num_winners', 1)
-                    capture_score = 1.0 / K
+            # Extract Spulber-specific data
+            spulber_data = result.game_data.get('spulber_metrics', {})
             
-            market_capture_scores.append(capture_score)
+            # Win Rate (already calculated in universal metrics, but track for Spulber context)
+            challenger_won = spulber_data.get('challenger_won', False)
+            if challenger_won:
+                win_count += 1
+                market_capture_count += 1
+            
+            # Profit Margin calculation
+            challenger_price = spulber_data.get('challenger_price', 0)
+            challenger_cost = spulber_data.get('challenger_cost', 8)
+            if challenger_price > 0:
+                profit_margin = (challenger_price - challenger_cost) / challenger_price
+                profit_margins.append(profit_margin)
         
-        # Formula: Market Capture Rate = (1/N) * Σ (1/K_i) * I(ChallengerPrice_i = p_min,i)
-        avg_market_capture = self.safe_mean(market_capture_scores)
+        # Market Capture Rate: Number of Markets Won / Total Markets
+        market_capture_rate = self.safe_divide(market_capture_count, N)
         metrics['market_capture_rate'] = create_metric_result(
             name='market_capture_rate',
-            value=avg_market_capture,
-            description='Frequency with which challenger wins entire market by setting lowest price',
+            value=market_capture_rate,
+            description='Number of Markets Won / Total Markets',
             metric_type='performance',
             game_name=game_name,
             experiment_type=experiment_type,
             condition_name=condition_name,
-            capture_scores=market_capture_scores
+            markets_won=market_capture_count,
+            total_markets=N
         )
+        
+        # Average Profit Margin
+        if profit_margins:
+            avg_profit_margin = self.safe_mean(profit_margins)
+            metrics['profit_margin'] = create_metric_result(
+                name='profit_margin',
+                value=avg_profit_margin,
+                description='(Price - Cost) / Price for winner-take-all auctions',
+                metric_type='performance',
+                game_name=game_name,
+                experiment_type=experiment_type,
+                condition_name=condition_name,
+                profit_margins=profit_margins
+            )
         
         return metrics
     
-    def _calculate_athey_bagwell_metrics(self, game_results: List[GameResult], 
-                                       player_id: str) -> Dict[str, MetricResult]:
-        """Calculate Athey & Bagwell specific performance metrics"""
+    def _calculate_green_porter_metrics(self, game_results: List[GameResult], 
+                                      player_id: str) -> Dict[str, MetricResult]:
+        """Calculate Green-Porter specific performance metrics"""
         game_name = game_results[0].game_name
         experiment_type = game_results[0].experiment_type
         condition_name = game_results[0].condition_name
@@ -326,120 +248,149 @@ class PerformanceMetricsCalculator(MetricCalculator):
         
         metrics = {}
         
-        # Get discount factor from first result
-        constants = game_results[0].game_data.get('constants', {})
-        discount_factor = constants.get('discount_factor', 0.95)
-        
-        # Calculate NPV-based metrics (same as Green-Porter)
-        challenger_npvs = []
-        npv_win_count = 0
-        strategic_inertia_rates = []
-        hhi_values = []
+        npv_values = []
+        reversion_frequencies = []
         
         for result in game_results:
-            game_data = result.game_data
+            # Extract Green-Porter specific data
+            gp_data = result.game_data.get('green_porter_metrics', {})
             
-            # Calculate NPV
-            if 'profit_history' in game_data and player_id in game_data['profit_history']:
-                profit_stream = game_data['profit_history'][player_id]
-                challenger_npv = self.calculate_npv(profit_stream, discount_factor)
-                challenger_npvs.append(challenger_npv)
-                
-                # Check NPV-based win
-                if 'npvs' in game_data:
-                    all_npvs = game_data['npvs']
-                    max_npv = max(all_npvs.values()) if all_npvs else 0
-                    if challenger_npv == max_npv:
-                        npv_win_count += 1
-            else:
-                challenger_npvs.append(result.payoffs.get(player_id, 0.0))
+            # Calculate NPV from profit stream
+            profit_stream = gp_data.get('profit_stream', [])
+            if profit_stream:
+                discount_factor = result.game_data.get('constants', {}).get('discount_factor', 0.95)
+                npv = self.calculate_npv(profit_stream, discount_factor)
+                npv_values.append(npv)
             
-            # Strategic Inertia (for reports) - Algorithm from t.txt
-            if 'report_history' in game_data and player_id in game_data['report_history']:
-                reports = game_data['report_history'][player_id]
-                if len(reports) > 1:
-                    repeated_reports = 0
-                    for t in range(1, len(reports)):
-                        if reports[t] == reports[t-1]:
-                            repeated_reports += 1
-                    inertia_rate = repeated_reports / (len(reports) - 1)
-                    strategic_inertia_rates.append(inertia_rate)
-            
-            # Herfindahl-Hirschman Index (HHI) - Algorithm from t.txt
-            if 'market_share_history' in game_data:
-                market_share_history = game_data['market_share_history']
-                
-                # Calculate HHI for each period, then average
-                period_hhis = []
-                max_periods = max(len(shares) for shares in market_share_history.values()) if market_share_history else 0
-                
-                for t in range(max_periods):
-                    period_hhi = 0.0
-                    for player_shares in market_share_history.values():
-                        if t < len(player_shares):
-                            share_percent = player_shares[t] * 100  # Convert to percentage
-                            period_hhi += share_percent ** 2
-                    period_hhis.append(period_hhi)
-                
-                if period_hhis:
-                    simulation_hhi = self.safe_mean(period_hhis)
-                    hhi_values.append(simulation_hhi)
+            # Reversion Frequency
+            reversion_frequency = gp_data.get('reversion_frequency', 0)
+            reversion_frequencies.append(reversion_frequency)
         
-        # Win Rate (NPV-based)
-        npv_win_rate = self.safe_divide(npv_win_count, N)
+        # Win Rate NPV: Based on NPV comparison across players
+        npv_wins = 0
+        for i, result in enumerate(game_results):
+            if i < len(npv_values):
+                challenger_npv = npv_values[i]
+                
+                # Compare with other players' NPVs (if available)
+                all_npvs = []
+                gp_data = result.game_data.get('green_porter_metrics', {})
+                for pid in result.players:
+                    if pid in gp_data.get('all_npvs', {}):
+                        all_npvs.append(gp_data['all_npvs'][pid])
+                
+                if all_npvs and challenger_npv == max(all_npvs):
+                    npv_wins += 1
+        
+        win_rate_npv = self.safe_divide(npv_wins, len(npv_values)) if npv_values else 0
         metrics['win_rate_npv'] = create_metric_result(
             name='win_rate_npv',
-            value=npv_win_rate,
-            description='Frequency with which challenger achieves highest NPV',
+            value=win_rate_npv,
+            description='Win rate based on Net Present Value comparison',
             metric_type='performance',
             game_name=game_name,
             experiment_type=experiment_type,
             condition_name=condition_name,
-            total_simulations=N,
-            npv_wins=npv_win_count
+            npv_wins=npv_wins,
+            total_games=len(npv_values)
         )
         
-        # Average Profit (NPV)
-        avg_npv = self.safe_mean(challenger_npvs)
-        metrics['average_profit_npv'] = create_metric_result(
-            name='average_profit_npv',
-            value=avg_npv,
-            description='Average Net Present Value of challenger profit stream',
+        # Average NPV
+        if npv_values:
+            avg_npv = self.safe_mean(npv_values)
+            metrics['average_npv'] = create_metric_result(
+                name='average_npv',
+                value=avg_npv,
+                description='Average Net Present Value across all simulations',
+                metric_type='performance',
+                game_name=game_name,
+                experiment_type=experiment_type,
+                condition_name=condition_name,
+                npv_values=npv_values
+            )
+        
+        # Average Reversion Frequency
+        avg_reversion_frequency = self.safe_mean(reversion_frequencies)
+        metrics['reversion_frequency'] = create_metric_result(
+            name='reversion_frequency',
+            value=avg_reversion_frequency,
+            description='Average frequency of punishment phases',
             metric_type='performance',
             game_name=game_name,
             experiment_type=experiment_type,
             condition_name=condition_name,
-            npv_stream=challenger_npvs,
-            discount_factor=discount_factor
+            reversion_frequencies=reversion_frequencies
         )
         
-        # Strategic Inertia (for cost reports)
-        if strategic_inertia_rates:
-            avg_strategic_inertia = self.safe_mean(strategic_inertia_rates)
-            metrics['strategic_inertia'] = create_metric_result(
-                name='strategic_inertia',
-                value=avg_strategic_inertia,
-                description='Frequency with which challenger repeats cost report',
+        return metrics
+    
+    def _calculate_athey_bagwell_metrics(self, game_results: List[GameResult], 
+                                       player_id: str) -> Dict[str, MetricResult]:
+        """Calculate Athey-Bagwell specific performance metrics"""
+        game_name = game_results[0].game_name
+        experiment_type = game_results[0].experiment_type
+        condition_name = game_results[0].condition_name
+        N = len(game_results)
+        
+        metrics = {}
+        
+        npv_values = []
+        deception_rates = []
+        
+        for result in game_results:
+            # Extract Athey-Bagwell specific data
+            ab_data = result.game_data.get('athey_bagwell_metrics', {})
+            
+            # Calculate NPV from profit stream
+            profit_stream = ab_data.get('profit_stream', [])
+            if profit_stream:
+                discount_factor = result.game_data.get('constants', {}).get('discount_factor', 0.95)
+                npv = self.calculate_npv(profit_stream, discount_factor)
+                npv_values.append(npv)
+            
+            # Deception Rate
+            deception_rate = ab_data.get('deception_rate', 0)
+            deception_rates.append(deception_rate)
+        
+        # Average NPV
+        if npv_values:
+            avg_npv = self.safe_mean(npv_values)
+            metrics['average_npv'] = create_metric_result(
+                name='average_npv',
+                value=avg_npv,
+                description='Average Net Present Value across all simulations',
                 metric_type='performance',
                 game_name=game_name,
                 experiment_type=experiment_type,
                 condition_name=condition_name,
-                inertia_rates=strategic_inertia_rates
+                npv_values=npv_values
+            )
+            
+            # NPV Volatility
+            npv_volatility = self.safe_std(npv_values)
+            metrics['npv_volatility'] = create_metric_result(
+                name='npv_volatility',
+                value=npv_volatility,
+                description='Standard deviation of NPV across simulations',
+                metric_type='performance',
+                game_name=game_name,
+                experiment_type=experiment_type,
+                condition_name=condition_name,
+                npv_values=npv_values
             )
         
-        # Herfindahl-Hirschman Index (HHI)
-        if hhi_values:
-            avg_hhi = self.safe_mean(hhi_values)
-            metrics['herfindahl_hirschman_index'] = create_metric_result(
-                name='herfindahl_hirschman_index',
-                value=avg_hhi,
-                description='Average market concentration per period',
-                metric_type='performance',
-                game_name=game_name,
-                experiment_type=experiment_type,
-                condition_name=condition_name,
-                hhi_values=hhi_values
-            )
+        # Average Deception Rate
+        avg_deception_rate = self.safe_mean(deception_rates)
+        metrics['deception_rate'] = create_metric_result(
+            name='deception_rate',
+            value=avg_deception_rate,
+            description='Frequency of strategic misrepresentation',
+            metric_type='performance',
+            game_name=game_name,
+            experiment_type=experiment_type,
+            condition_name=condition_name,
+            deception_rates=deception_rates
+        )
         
         return metrics
 
@@ -459,3 +410,35 @@ def calculate_performance_metrics(game_results: List[GameResult],
     """
     calculator = PerformanceMetricsCalculator()
     return calculator.calculate_all_performance_metrics(game_results, player_id)
+
+
+# Utility functions for specific metric calculations
+def calculate_win_rate(game_results: List[GameResult], player_id: str = 'challenger') -> float:
+    """Calculate simple win rate across games"""
+    if not game_results:
+        return 0.0
+    
+    wins = 0
+    for result in game_results:
+        player_profit = result.payoffs.get(player_id, 0.0)
+        max_profit = max(result.payoffs.values()) if result.payoffs else 0
+        if player_profit == max_profit:
+            wins += 1
+    
+    return wins / len(game_results)
+
+
+def calculate_profit_statistics(game_results: List[GameResult], 
+                              player_id: str = 'challenger') -> Dict[str, float]:
+    """Calculate comprehensive profit statistics"""
+    profits = [result.payoffs.get(player_id, 0.0) for result in game_results]
+    
+    if not profits:
+        return {'mean': 0.0, 'std': 0.0, 'min': 0.0, 'max': 0.0}
+    
+    return {
+        'mean': np.mean(profits),
+        'std': np.std(profits, ddof=1) if len(profits) > 1 else 0.0,
+        'min': np.min(profits),
+        'max': np.max(profits)
+    }

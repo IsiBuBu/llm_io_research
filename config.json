@@ -1,38 +1,104 @@
 {
   "models": {
-    "gemini_2_5_pro": {
-      "model_name": "gemini-2.5-pro",
-      "thinking_available": true,
-      "display_name": "Gemini 2.5 Pro",
-      "timeout": 45
-    },
-    "gemini_2_5_flash": {
-      "model_name": "gemini-2.5-flash",
-      "thinking_available": true,
-      "display_name": "Gemini 2.5 Flash",
-      "timeout": 30
-    },
-    "gemini_2_5_flash_lite": {
-      "model_name": "gemini-2.5-flash-lite",
-      "thinking_available": true,
-      "display_name": "Gemini 2.5 Flash-Lite",
-      "timeout": 30
-    }
-  },
-  "api": {
-    "gemini_api_key_env": "GEMINI_API_KEY",
-    "max_retries": 3
-  },
-  "experiment_config": {
     "challenger_models": [
       "gemini_2_5_pro",
-      "gemini_2_5_flash",
-      "gemini_2_5_flash_lite"
+      "gemini_2_5_flash_thinking_on",
+      "gemini_2_5_flash_thinking_off", 
+      "gemini_2_5_flash_lite_thinking_on",
+      "gemini_2_5_flash_lite_thinking_off",
+      "gemini_2_0_flash",
+      "gemini_2_0_flash_lite"
     ],
-    "defender_model": "gemini_2_5_flash_lite",
-    "simulations_per_condition": 50,
-    "ablation_simulations_per_condition": 20
+    "defender_model": "gemini_2_0_flash_lite",
+    "model_configs": {
+      "gemini_2_5_pro": {
+        "model_name": "gemini-2.5-pro",
+        "display_name": "Gemini 2.5 Pro (Thinking On - Default)",
+        "timeout": 45,
+        "temperature": 0.1,
+        "thinking_available": true,
+        "thinking_config": {
+          "thinking_budget": -1,
+          "include_thoughts": false
+        }
+      },
+      "gemini_2_5_flash_thinking_on": {
+        "model_name": "gemini-2.5-flash",
+        "display_name": "Gemini 2.5 Flash (Thinking On - Dynamic)",
+        "timeout": 30,
+        "temperature": 0.1,
+        "thinking_available": true,
+        "thinking_config": {
+          "thinking_budget": -1,
+          "include_thoughts": false
+        }
+      },
+      "gemini_2_5_flash_thinking_off": {
+        "model_name": "gemini-2.5-flash",
+        "display_name": "Gemini 2.5 Flash (Thinking Off)",
+        "timeout": 30,
+        "temperature": 0.1,
+        "thinking_available": true,
+        "thinking_config": {
+          "thinking_budget": 0,
+          "include_thoughts": false
+        }
+      },
+      "gemini_2_5_flash_lite_thinking_on": {
+        "model_name": "gemini-2.5-flash-lite",
+        "display_name": "Gemini 2.5 Flash-Lite (Thinking On - Dynamic)",
+        "timeout": 30,
+        "temperature": 0.1,
+        "thinking_available": true,
+        "thinking_config": {
+          "thinking_budget": -1,
+          "include_thoughts": false
+        }
+      },
+      "gemini_2_5_flash_lite_thinking_off": {
+        "model_name": "gemini-2.5-flash-lite",
+        "display_name": "Gemini 2.5 Flash-Lite (Thinking Off - Default)",
+        "timeout": 30,
+        "temperature": 0.1,
+        "thinking_available": true,
+        "thinking_config": {
+          "thinking_budget": 0,
+          "include_thoughts": false
+        }
+      },
+      "gemini_2_0_flash": {
+        "model_name": "gemini-2.0-flash",
+        "display_name": "Gemini 2.0 Flash (No Thinking)",
+        "timeout": 30,
+        "temperature": 0.1,
+        "thinking_available": false
+      },
+      "gemini_2_0_flash_lite": {
+        "model_name": "gemini-2.0-flash-lite",
+        "display_name": "Gemini 2.0 Flash-Lite (No Thinking)",
+        "timeout": 30,
+        "temperature": 0.1,
+        "thinking_available": false
+      }
+    }
   },
+
+  "api": {
+    "google": {
+      "api_key_env": "GEMINI_API_KEY",
+      "timeout": 60,
+      "max_retries": 3
+    }
+  },
+
+  "experiment_config": {
+    "main_experiment_simulations": 2,
+    "ablation_experiment_simulations": 2,
+    "parallel_workers": 4,
+    "random_seed": 42,
+    "checkpoint_frequency": 10
+  },
+
   "game_configs": {
     "salop": {
       "baseline": {
@@ -44,16 +110,21 @@
         "market_size": 1000
       },
       "structural_variations": {
-        "five_players": { "number_of_players": 5 }
+        "five_players": { 
+          "number_of_players": 5 
+        }
       },
       "ablation_studies": {
-        "low_differentiation": { "transport_cost": 0.5 }
+        "low_differentiation": { 
+          "transport_cost": 0.5 
+        }
       }
     },
+
     "green_porter": {
       "baseline": {
         "number_of_players": 3,
-        "time_horizon": 50,
+        "time_horizon": 4,
         "base_demand": 120,
         "marginal_cost": 20,
         "demand_shock_std": 5,
@@ -64,16 +135,24 @@
         "discount_factor": 0.95
       },
       "structural_variations": {
-        "short_horizon": { "time_horizon": 15 }
+        "short_horizon": { 
+          "time_horizon": 2
+        }
       },
       "ablation_studies": {
-        "high_noise": { "demand_shock_std": 10 },
-        "low_patience": { "discount_factor": 0.50 }
+        "high_noise": { 
+          "demand_shock_std": 10 
+        },
+        "low_patience": { 
+          "discount_factor": 0.50 
+        }
       }
     },
+
     "spulber": {
       "baseline": {
         "number_of_players": 3,
+        "market_size": 100,
         "demand_intercept": 100,
         "rival_cost_mean": 10,
         "rival_cost_std": 2.0,
@@ -83,34 +162,51 @@
         }
       },
       "structural_variations": {
-        "five_players": { "number_of_players": 5 }
+        "five_players": { 
+          "number_of_players": 5 
+        }
       },
       "ablation_studies": {
-        "high_uncertainty": { "rival_cost_std": 4.0 }
+        "high_uncertainty": { 
+          "rival_cost_std": 4.0 
+        }
       }
     },
+
     "athey_bagwell": {
       "baseline": {
         "number_of_players": 3,
-        "time_horizon": 50,
-        "cost_types": { "low": 15, "high": 25 },
+        "time_horizon": 4,
+        "cost_types": { 
+          "low": 15, 
+          "high": 25 
+        },
         "persistence_probability": 0.7,
         "market_price": 30,
         "market_size": 100,
         "discount_factor": 0.95
       },
       "structural_variations": {
-        "short_horizon": { "time_horizon": 15 }
+        "short_horizon": { 
+          "time_horizon": 2 
+        }
       },
       "ablation_studies": {
-        "low_persistence": { "persistence_probability": 0.2 },
-        "low_patience": { "discount_factor": 0.50 }
+        "low_persistence": { 
+          "persistence_probability": 0.2 
+        },
+        "low_patience": { 
+          "discount_factor": 0.50 
+        }
       }
     }
   },
+
   "logging": {
     "level": "INFO",
     "save_detailed_logs": true,
-    "output_format": ["json"]
+    "output_format": ["json"],
+    "log_directory": "logs",
+    "max_log_files": 10
   }
 }

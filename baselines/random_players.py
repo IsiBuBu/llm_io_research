@@ -5,7 +5,7 @@ Non-strategic baselines that choose valid actions uniformly at random
 
 import random
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, List, Any, Optional
 from config import GameConfig
 
 
@@ -252,3 +252,69 @@ def validate_random_action(action: Dict[str, Any], game_name: str,
             
     except (KeyError, TypeError, ValueError):
         return False
+
+
+# Integration functions for batch experiments
+def get_random_baseline_results(game_name: str, game_config: GameConfig, 
+                               num_simulations: int = 100, seed: Optional[int] = None) -> List[Dict[str, Any]]:
+    """
+    Run random baseline for multiple simulations to establish performance bounds
+    
+    Returns:
+        List of game results with actions and payoffs
+    """
+    if seed is not None:
+        random.seed(seed)
+    
+    results = []
+    
+    for sim_id in range(num_simulations):
+        # Create random players for all roles
+        game_state = {}
+        
+        if game_name in ['salop', 'spulber']:
+            # Static games - single round
+            players = ['challenger'] + [f'defender_{i}' for i in range(1, 
+                                       game_config.constants.get('number_of_players', 3))]
+            actions = {}
+            
+            for player_id in players:
+                random_player = RandomPlayer(player_id, seed=sim_id if seed else None)
+                action = random_player.get_action(game_name, game_state, game_config)
+                actions[player_id] = action
+            
+            # Would need to import and use the appropriate game class to calculate payoffs
+            # This is a simplified version for the baseline framework
+            results.append({
+                'simulation_id': sim_id,
+                'actions': actions,
+                'game_config': game_config.to_dict() if hasattr(game_config, 'to_dict') else str(game_config)
+            })
+        
+        elif game_name in ['green_porter', 'athey_bagwell']:
+            # Dynamic games - multiple rounds
+            time_horizon = game_config.constants.get('time_horizon', 50)
+            players = ['challenger'] + [f'defender_{i}' for i in range(1, 
+                                       game_config.constants.get('number_of_players', 3))]
+            
+            simulation_history = []
+            for round_num in range(1, time_horizon + 1):
+                round_actions = {}
+                
+                for player_id in players:
+                    random_player = RandomPlayer(player_id, seed=sim_id * 1000 + round_num if seed else None)
+                    action = random_player.get_action(game_name, game_state, game_config)
+                    round_actions[player_id] = action
+                
+                simulation_history.append({
+                    'round': round_num,
+                    'actions': round_actions
+                })
+            
+            results.append({
+                'simulation_id': sim_id,
+                'history': simulation_history,
+                'game_config': game_config.to_dict() if hasattr(game_config, 'to_dict') else str(game_config)
+            })
+    
+    return results

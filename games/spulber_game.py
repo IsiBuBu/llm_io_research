@@ -45,13 +45,6 @@ class SpulberGame(StaticGame):
         # Get all template variables from config
         variables = get_prompt_variables(game_config, player_id=player_id)
         
-        # Add player-specific cost information
-        private_values = game_config.constants.get('private_values', {})
-        if player_id == 'challenger':
-            variables['your_cost'] = private_values.get('challenger_cost', 8)
-        else:
-            variables['your_cost'] = private_values.get('defender_cost', 10)
-        
         # Format template with variables
         try:
             return self.prompt_template.format(**variables)
@@ -60,7 +53,7 @@ class SpulberGame(StaticGame):
             raise
 
     def parse_llm_response(self, response: str, player_id: str, call_id: str) -> Optional[Dict[str, Any]]:
-        """Parse pricing decision from LLM response"""
+        """Parse bidding decision from LLM response"""
         
         # Try JSON parsing first
         json_action = self.basic_json_parse(response)
@@ -69,13 +62,17 @@ class SpulberGame(StaticGame):
             if isinstance(price, (int, float)) and price >= 0:
                 return {'price': float(price), 'raw_response': response}
         
-        # Try numeric extraction
+        # Try numeric extraction for 'price' and 'bid'
         price = extract_numeric_value(response, 'price')
         if price > 0:
             return {'price': price, 'parsing_method': 'regex', 'raw_response': response}
         
-        # Try simple number extraction
-        number_patterns = [r'\$?(\d+\.?\d*)', r'(\d+\.?\d+)']
+        bid = extract_numeric_value(response, 'bid')
+        if bid > 0:
+            return {'price': bid, 'parsing_method': 'regex', 'raw_response': response}
+        
+        # Try simple number extraction - first reasonable number found
+        number_patterns = [r'\$?(\d+\.?\d*)', r'(\d+\.?\d*)', r'(\d+\.?\d+)']
         for pattern in number_patterns:
             matches = re.findall(pattern, response)
             if matches:
@@ -117,151 +114,91 @@ class SpulberGame(StaticGame):
         1. Find the minimum bid: p_min = min(p_1, p_2, ..., p_N)
         2. Identify all players (K) who bid p_min
         3. Tie-Breaking Rule: market_share for each winner = 1/K, others = 0
-        4. For each winner: quantity_sold = (demand_intercept - p_min) × market_share
-                           profit = (p_min - private_cost) × quantity_sold
+        4. Payoff = (price - cost) * market_share * market_size
         """
         constants = game_config.constants
-        demand_intercept = constants.get('demand_intercept', 100)
+        market_size = constants.get('market_size', 100)
         private_values = constants.get('private_values', {})
         
-        # Extract prices and get private costs
+        # Extract prices and costs
         players = list(actions.keys())
         prices = {}
-        private_costs = {}
+        costs = {}
         
         for player_id, action in actions.items():
-            price = action.get('price', 50)
+            price = action.get('price', 0)
             prices[player_id] = max(0.0, price)  # Ensure non-negative
             
-            # Get private cost for each player
+            # Get player's private cost
             if player_id == 'challenger':
-                private_costs[player_id] = private_values.get('challenger_cost', 8)
+                costs[player_id] = private_values.get('challenger_cost', 8)
             else:
-                private_costs[player_id] = private_values.get('defender_cost', 10)
+                costs[player_id] = private_values.get('defender_cost', 10)
         
-        # Step 1: Find minimum bid
-        p_min = min(prices.values())
+        # Winner Determination Algorithm
+        min_price = min(prices.values())
+        winners = [pid for pid, price in prices.items() if price == min_price]
+        market_share_per_winner = 1.0 / len(winners)
         
-        # Step 2: Identify all players who bid p_min
-        winners = [pid for pid, price in prices.items() if price == p_min]
-        K = len(winners)
-        
-        # Step 3 & 4: Calculate payoffs using tie-breaking rule
+        # Calculate payoffs
         payoffs = {}
-        quantities = {}
-        market_shares = {}
-        win_status = {}
-        
         for player_id in players:
             if player_id in winners:
-                # Winner gets share 1/K
-                market_share = 1.0 / K
-                quantity_sold = (demand_intercept - p_min) * market_share
-                profit = (p_min - private_costs[player_id]) * quantity_sold
-                win_status[player_id] = 1.0 / K  # For tie accounting
+                market_share = market_share_per_winner
             else:
-                # Loser gets nothing
                 market_share = 0.0
-                quantity_sold = 0.0
-                profit = 0.0
-                win_status[player_id] = 0.0
             
-            market_shares[player_id] = market_share
-            quantities[player_id] = quantity_sold
-            payoffs[player_id] = profit
-        
-        # Store additional data in game_state for logging
-        if game_state is not None:
-            game_state.update({
-                'prices': prices,
-                'private_costs': private_costs,
-                'quantities': quantities,
-                'market_shares': market_shares,
-                'p_min': p_min,
-                'winners': winners,
-                'num_winners': K
-            })
+            profit_margin = prices[player_id] - costs[player_id]
+            payoff = profit_margin * market_share * market_size
+            payoffs[player_id] = payoff
         
         return payoffs
 
     def get_game_data_for_logging(self, actions: Dict[str, Any], payoffs: Dict[str, float],
                                 game_config: GameConfig, game_state: Optional[Dict] = None) -> Dict[str, Any]:
-        """Get data needed for metrics calculation as specified in t.txt"""
-        
-        # Get additional calculated data from game_state
-        prices = game_state.get('prices', {}) if game_state else {}
-        private_costs = game_state.get('private_costs', {}) if game_state else {}
-        quantities = game_state.get('quantities', {}) if game_state else {}
-        market_shares = game_state.get('market_shares', {}) if game_state else {}
-        p_min = game_state.get('p_min', 0) if game_state else 0
-        winners = game_state.get('winners', []) if game_state else []
-        
-        # Calculate status indicators for MAgIC metrics
-        win_status = {}
-        profitable_status = {}
-        rational_bids = {}
-        market_capture = {}
-        
+        """Get structured data for metrics calculation and logging"""
         constants = game_config.constants
-        rival_cost_mean = constants.get('rival_cost_mean', 10)
+        private_values = constants.get('private_values', {})
         
-        for player_id in payoffs:
-            # Win status (accounting for ties)
-            win_status[player_id] = 1 if player_id in winners else 0
-            
-            # Profitable status
-            profitable_status[player_id] = 1 if payoffs[player_id] > 0 else 0
-            
-            # Rational bids (price >= own cost)
-            own_cost = private_costs.get(player_id, 0)
-            player_price = prices.get(player_id, 0)
-            rational_bids[player_id] = 1 if player_price >= own_cost else 0
-            
-            # Market capture rate (for ties, gets fractional credit)
-            if player_id in winners:
-                K = len(winners)
-                market_capture[player_id] = 1.0 / K
+        # Extract prices and calculate market outcomes
+        prices = {pid: action.get('price', 0) for pid, action in actions.items()}
+        min_price = min(prices.values())
+        winners = [pid for pid, price in prices.items() if price == min_price]
+        
+        # Calculate challenger-specific metrics
+        challenger_price = prices.get('challenger', 0)
+        challenger_cost = private_values.get('challenger_cost', 8)
+        challenger_won = 'challenger' in winners
+        
+        # Calculate profit margins
+        profit_margins = {}
+        for player_id, price in prices.items():
+            if player_id == 'challenger':
+                cost = private_values.get('challenger_cost', 8)
             else:
-                market_capture[player_id] = 0.0
-            
-        # Calculate bid appropriateness for challenger (MAgIC Self-awareness metric)
-        challenger_appropriate = 0
-        if 'challenger' in private_costs and 'challenger' in prices:
-            challenger_cost = private_costs['challenger']
-            challenger_price = prices['challenger']
-            
-            # Appropriate if: (cost < rival_mean AND bid < rival_mean) OR (cost > rival_mean AND bid > rival_mean)
-            if ((challenger_cost < rival_cost_mean and challenger_price < rival_cost_mean) or
-                (challenger_cost > rival_cost_mean and challenger_price > rival_cost_mean)):
-                challenger_appropriate = 1
+                cost = private_values.get('defender_cost', 10)
+            profit_margins[player_id] = (price - cost) / price if price > 0 else 0
         
         return {
-            'game_name': 'spulber',
+            'game_name': game_config.game_name,
             'experiment_type': game_config.experiment_type,
             'condition_name': game_config.condition_name,
-            'constants': game_config.constants,
-            
-            # Core data for metrics (from t.txt requirements)
             'actions': actions,
             'payoffs': payoffs,
-            'prices': prices,
-            'private_costs': private_costs,
-            'quantities': quantities,
-            'market_shares': market_shares,
-            
-            # Winner determination results
-            'p_min': p_min,
-            'winners': winners,
-            'num_winners': len(winners),
-            
-            # Status indicators for MAgIC metrics
-            'win_status': win_status,
-            'profitable_status': profitable_status,
-            'rational_bids': rational_bids,
-            'market_capture': market_capture,
-            'challenger_bid_appropriate': challenger_appropriate,
-            
-            # Additional metadata
+            'constants': constants,
             'game_state': game_state,
-            'num_players': game_config.constants.get('number_of_players', 3)
+            
+            # Spulber-specific metrics data
+            'spulber_metrics': {
+                'prices': prices,
+                'min_price': min_price,
+                'winners': winners,
+                'challenger_won': challenger_won,
+                'challenger_price': challenger_price,
+                'challenger_cost': challenger_cost,
+                'challenger_profit_margin': profit_margins.get('challenger', 0),
+                'profit_margins': profit_margins,
+                'num_players': len(actions),
+                'market_concentration': len(actions)  # For structural variation analysis
+            }
         }
