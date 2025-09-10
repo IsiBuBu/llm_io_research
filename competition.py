@@ -99,7 +99,7 @@ class Competition:
         self.logger.info("=" * 60)
 
     async def _create_agents(self, challenger_model: str, defender_model: str, 
-                           num_players: int, call_id: str) -> Dict[str, Any]:
+                           num_of_players: int, call_id: str) -> Dict[str, Any]:
         """Create agents for a single simulation"""
         agents = {}
         
@@ -108,17 +108,17 @@ class Competition:
             challenger_agent = create_agent(
                 challenger_model, 
                 "challenger", 
-                mock_mode=self.mock_mode  # Pass mock_mode here
+                mock_mode=self.mock_mode
             )
             agents["challenger"] = challenger_agent
             
             # Create defender agents for remaining players
-            for i in range(2, num_players + 1):
+            for i in range(2, num_of_players + 1):
                 player_id = f"defender_{i}"
                 defender_agent = create_agent(
                     defender_model, 
                     player_id,
-                    mock_mode=self.mock_mode  # Pass mock_mode here
+                    mock_mode=self.mock_mode
                 )
                 agents[player_id] = defender_agent
                 
@@ -136,9 +136,9 @@ class Competition:
         game_state = game_engine.initialize_game_state(game_config, simulation_id)
         
         # Create agents
-        num_players = game_config.constants.get('num_players', 2)
-        agents = await self._create_agents(challenger_model, defender_model, num_players, call_id)
-        
+        num_of_players = game_config.constants.get('number_of_players', 2)
+        agents = await self._create_agents(challenger_model, defender_model, num_of_players, call_id)
+
         # Determine if this is a dynamic or static game
         if hasattr(game_engine, 'update_game_state'):
             # Dynamic game (multi-round)
@@ -154,6 +154,7 @@ class Competition:
         # Create GameResult
         player_ids = list(agents.keys())
         
+        # FIXED: Pass game_data directly instead of unpacking it
         result = create_game_result(
             simulation_id=simulation_id,
             game_name=game_config.game_name,
@@ -162,7 +163,7 @@ class Competition:
             players=player_ids,
             actions=actions,
             payoffs=payoffs,
-            **game_data  # Unpack game_data as additional keyword arguments
+            game_data=game_data  # Pass game_data as parameter, not unpacked
         )
         
         return result
@@ -223,7 +224,7 @@ class Competition:
         return final_actions, final_payoffs, game_data
 
     async def _run_static_game(self, game_engine, game_config: GameConfig, game_state: Dict,
-                             agents: Dict[str, BaseLLMAgent], call_id: str) -> Tuple[Dict, Dict, Dict]:
+                            agents: Dict[str, BaseLLMAgent], call_id: str) -> Tuple[Dict, Dict, Dict]:
         """Run a static (single-round) game"""
         
         # Get actions from all players
@@ -269,7 +270,6 @@ class Competition:
         parsed_action = game_engine.parse_llm_response(raw_response, player_id, call_id)
         
         if parsed_action is None:
-            # REMOVED: get_default_action call - instead return error action
             self.logger.warning(f"[{call_id}] Parsing failed for {player_id}, returning error action")
             return {
                 'error': f"LLM response parsing failed",
@@ -375,7 +375,8 @@ class Competition:
                 
                 # Run single game simulation
                 result = await self._run_single_simulation(
-                    sim_id, game_engine, game_config, challenger_model, defender_model, call_id
+                    sim_id, game_engine, game_config,
+                    challenger_model, defender_model, call_id
                 )
                 
                 simulation_results.append(result)

@@ -28,13 +28,13 @@ class AtheyBagwellGame(DynamicGame, ReportParsingMixin):
         constants = game_config.constants
         time_horizon = constants.get('time_horizon', 50)
         persistence_probability = constants.get('persistence_probability', 0.7)
-        num_players = constants.get('number_of_players', 3)
-        
+        num_of_players = constants.get('number_of_players', 3)
+
         # Generate cost sequences for all players using Markov process (reproducible per simulation)
         np.random.seed(simulation_id)
         
         cost_sequences = {}
-        player_ids = ['challenger'] + [f'defender_{i}' for i in range(1, num_players)]
+        player_ids = ['challenger'] + [f'defender_{i}' for i in range(1, num_of_players)]
         
         for player_id in player_ids:
             # Start with stationary distribution (50/50)
@@ -142,8 +142,8 @@ class AtheyBagwellGame(DynamicGame, ReportParsingMixin):
         cost_types = constants.get('cost_types', {'low': 15, 'high': 25})
         market_price = constants.get('market_price', 30)
         market_size = constants.get('market_size', 100)
-        num_players = constants.get('number_of_players', 3)
-        
+        num_of_players = constants.get('number_of_players', 3)
+
         # Get game state data
         current_period = game_state.get('current_period', 1) if game_state else 1
         cost_sequences = game_state.get('cost_sequences', {}) if game_state else {}
@@ -184,7 +184,7 @@ class AtheyBagwellGame(DynamicGame, ReportParsingMixin):
                 market_share = 1.0 / N_low
             elif N_low == 0:
                 # All reported "high", split evenly
-                market_share = 1.0 / num_players
+                market_share = 1.0 / num_of_players
             else:
                 # Reported "high" when others reported "low"
                 market_share = 0.0
