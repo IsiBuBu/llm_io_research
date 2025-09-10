@@ -16,11 +16,11 @@ from datetime import datetime
 from config import (
     load_config_file, validate_config, get_challenger_models, get_defender_model,
     get_experiment_config, create_experiment_summary, get_model_display_name,
-    is_thinking_enabled, get_model_config
+    is_thinking_enabled, get_model_config, get_all_game_configs
 )
 from competition import Competition
 from analysis.results_analyzer import ResultsAnalyzer
-from agents import create_agent
+from agents import create_agent, validate_agent_setup, test_agent_connectivity
 
 # Global flag for mock mode
 MOCK_MODE = False
@@ -116,27 +116,9 @@ async def test_agent(model_name: str) -> dict:
     """Test a single agent configuration"""
     test_prompt = "You are playing an economic game. Choose a price between 0.1 and 2.0. Respond with a JSON format: {\"answer\": your_answer}"
     
-async def test_agent(model_name: str) -> dict:
-    """Test a single agent configuration"""
-    test_prompt = "You are playing an economic game. Choose a price between 0.1 and 2.0. Respond with a JSON format: {\"answer\": your_answer}"
-    
     try:
-        agent = create_agent(model_name, "test_player")
-        
-        start_time = time.time()
-        response = await agent.get_response(test_prompt, "test_call")
-        end_time = time.time()
-        
-        return {
-            'model_name': model_name,
-            'success': response.success,
-            'response_time': end_time - start_time,
-            'content': response.content[:100] + "..." if len(response.content) > 100 else response.content,
-            'tokens_used': response.tokens_used,
-            'thinking_tokens': response.thinking_tokens,
-            'error': response.error
-        }
-        
+        from agents import test_agent_connectivity
+        return await test_agent_connectivity(model_name, "test", mock_mode=MOCK_MODE)
     except Exception as e:
         return {
             'model_name': model_name,
@@ -146,45 +128,39 @@ async def test_agent(model_name: str) -> dict:
 
 
 async def test_all_agents() -> dict:
-    """Test all configured agents"""
-    config = load_config_file()
-    challenger_models = config.get('models', {}).get('challenger_models', [])
-    defender_model = config.get('models', {}).get('defender_model')
+    """Test connectivity for all configured agents"""
+    logger = logging.getLogger(__name__)
     
-    all_models = challenger_models + ([defender_model] if defender_model else [])
+    challenger_models = get_challenger_models()
+    defender_model = get_defender_model()
+    all_models = challenger_models + [defender_model]
     
-    results = {}
+    logger.info(f"Testing connectivity for {len(all_models)} models...")
     
-    for model in all_models:
-        print(f"Testing {model}...")
-        result = await test_agent(model)
-        results[model] = result
-        
-        if result['success']:
-            print(f"  ✅ Success in {result['response_time']:.2f}s")
+    # Test all models in parallel
+    test_tasks = [test_agent(model) for model in all_models]
+    results = await asyncio.gather(*test_tasks, return_exceptions=True)
+    
+    # Process results
+    test_summary = {}
+    for i, result in enumerate(results):
+        model_name = all_models[i]
+        if isinstance(result, Exception):
+            test_summary[model_name] = {
+                'success': False,
+                'error': str(result)
+            }
         else:
-            print(f"  ❌ Failed: {result['error']}")
+            test_summary[model_name] = result
     
-    return results
-
-
-def validate_agent_setup(model_name: str) -> bool:
-    """Validate agent setup for a specific model"""
-    try:
-        model_config = get_model_config(model_name)
-        return True
-    except Exception as e:
-        logging.getLogger(__name__).error(f"Model {model_name} configuration error: {e}")
-        return False
+    return test_summary
 
 
 async def validate_system_setup() -> bool:
-    """Validate that the system is ready for experiments"""
+    """Validate system configuration and API connectivity"""
     logger = logging.getLogger(__name__)
     
-    logger.info("Validating system setup...")
-    
-    # Validate configuration
+    # Validate configuration file
     if not validate_config():
         logger.error("❌ Configuration validation failed. Please check config.json")
         return False
@@ -193,13 +169,14 @@ async def validate_system_setup() -> bool:
     challenger_models = get_challenger_models()
     defender_model = get_defender_model()
     
-    # Validate API setup for all models
-    all_models = challenger_models + [defender_model]
-    
-    for model in all_models:
-        if not validate_agent_setup(model):
-            logger.error(f"❌ Agent setup validation failed for {model}")
-            return False
+    # Validate API setup for all models (skip in mock mode)
+    if not MOCK_MODE:
+        all_models = challenger_models + [defender_model]
+        
+        for model in all_models:
+            if not validate_agent_setup(model):
+                logger.error(f"❌ Agent setup validation failed for {model}")
+                return False
     
     logger.info("✅ System setup validation passed")
     
@@ -258,14 +235,12 @@ def display_experiment_overview():
     logger.info("🎮 GAMES (4):")
     games = ['salop', 'green_porter', 'spulber', 'athey_bagwell']
     for game_name in games:
-        from config import get_all_game_configs
         game_configs = get_all_game_configs(game_name)
         logger.info(f"    • {game_name.upper()}: {len(game_configs)} conditions")
     
     # Calculate experiment summary
     total_configs = 0
     for game_name in games:
-        from config import get_all_game_configs
         game_configs = get_all_game_configs(game_name)
         total_configs += len(game_configs)
     
@@ -284,7 +259,7 @@ def display_experiment_overview():
         logger.info(f"    • Estimated time: ~{estimated_time_hours:.1f} hours")
         logger.info(f"    • Estimated cost: ~${estimated_simulations * 0.01:.2f}")  # Rough estimate
     else:
-        logger.info(f"    • Mock mode: Fast execution, no API costs")
+        logger.info("    • Mock mode: Fast execution, no API costs")
     
     logger.info("=" * 100)
 
@@ -300,7 +275,6 @@ async def run_game_experiments(game_name: str, competition: Competition) -> bool
         defender_model = get_defender_model()
         
         # Get all configurations for this game
-        from config import get_all_game_configs
         game_configs = get_all_game_configs(game_name)
         
         total_competitions = len(game_configs) * len(challenger_models)
@@ -344,8 +318,16 @@ async def run_all_experiments() -> bool:
     """Run experiments for all games"""
     logger = logging.getLogger(__name__)
     
-    # Initialize competition engine
-    competition = Competition()
+    # Get models from config
+    challenger_models = get_challenger_models()
+    defender_model = get_defender_model()
+    
+    # Initialize competition engine with proper mock mode flag
+    competition = Competition(
+        challenger_models=challenger_models,
+        defender_model=defender_model,
+        mock_mode=MOCK_MODE  # THIS IS THE KEY FIX
+    )
     
     # Run experiments for each game
     games = ['salop', 'green_porter', 'spulber', 'athey_bagwell']
@@ -357,6 +339,17 @@ async def run_all_experiments() -> bool:
             return False
     
     logger.info("🎯 All game experiments completed successfully!")
+    return True
+
+
+async def run_analysis() -> bool:
+    """Run comprehensive analysis of experimental results"""
+    logger = logging.getLogger(__name__)
+    
+    # Skip analysis in mock mode since results are simulated
+    if MOCK_MODE:
+        logger.info("📊 Skipping analysis in mock mode")
+        return True
     
     # Run analysis
     logger.info("📊 Starting comprehensive analysis...")
@@ -408,11 +401,11 @@ async def main() -> int:
     # Display experiment overview
     display_experiment_overview()
     
-    # Ask for user confirmation (optional)
-    experiment_config = get_experiment_config()
-    estimated_time_hours = (experiment_config.get('main_experiment_simulations', 50) * 4 * 7) / 3600  # Rough estimate
-    
+    # Ask for user confirmation (optional in mock mode)
     if not MOCK_MODE:
+        experiment_config = get_experiment_config()
+        estimated_time_hours = (experiment_config.get('main_experiment_simulations', 50) * 4 * 7) / 3600  # Rough estimate
+        
         logger.info(f"⏱️ ESTIMATED EXPERIMENT TIME: ~{estimated_time_hours:.1f} hours")
         logger.info("🚀 Starting experiments in 5 seconds... (Press Ctrl+C to abort)")
         try:
@@ -428,10 +421,19 @@ async def main() -> int:
         success = await run_all_experiments()
         
         if success:
+            # Run analysis (skipped in mock mode)
+            if not MOCK_MODE:
+                analysis_success = await run_analysis()
+                if not analysis_success:
+                    logger.warning("⚠️ Analysis failed, but experiments completed successfully")
+            
             logger.info("=" * 100)
             logger.info("🎉 GEMINI THINKING EXPERIMENTS COMPLETED SUCCESSFULLY!")
-            logger.info("📊 Analysis results available in analysis_output/")
-            logger.info("🔬 Review publication_summary.md for key findings")
+            if not MOCK_MODE:
+                logger.info("📊 Analysis results available in analysis_output/")
+                logger.info("🔬 Review publication_summary.md for key findings")
+            else:
+                logger.info("🎭 Mock experiment completed - workflow validated!")
             logger.info("=" * 100)
             return 0
         else:

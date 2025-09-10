@@ -8,6 +8,7 @@ import asyncio
 import logging
 import time
 import concurrent.futures
+import os
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
@@ -101,117 +102,105 @@ class GeminiAgent(BaseLLMAgent):
     def _initialize_client(self):
         """Initialize Gemini client with proper authentication"""
         try:
-            import google.generativeai as genai
-            
             # Get API configuration
-            api_config = self.model_config.get('api_config', {})
-            api_key = api_config.get('api_key')
+            config = load_config_file()
+            api_config = config.get('api', {}).get('google', {})
+            api_key_env = api_config.get('api_key_env', 'GEMINI_API_KEY')
             
+            api_key = os.getenv(api_key_env)
             if not api_key:
-                raise ValueError("Gemini API key not found in configuration")
+                raise ValueError(f"Gemini API key not found in configuration")
             
-            # Configure Gemini
+            # Import and configure Gemini
+            from google import genai
             genai.configure(api_key=api_key)
             
-            # Create model instance
-            generation_config = {
-                'temperature': self.model_config.get('temperature', 0.7),
-                'top_p': self.model_config.get('top_p', 0.9),
-                'top_k': self.model_config.get('top_k', 40),
-                'max_output_tokens': self.model_config.get('max_output_tokens', 1024),
-            }
+            # Create client
+            client = genai.GenerativeModel(self.model_config.get('model_name', 'gemini-pro'))
             
-            model = genai.GenerativeModel(
-                model_name=self.model_name,
-                generation_config=generation_config
-            )
+            return client
             
-            return model
-            
+        except ImportError:
+            self.logger.error("google-genai package not installed. Run: pip install google-genai")
+            raise
         except Exception as e:
             self.logger.error(f"Failed to initialize Gemini client: {e}")
             raise
     
+    def _prepare_request(self, prompt: str) -> Dict[str, Any]:
+        """Prepare request parameters with thinking configuration"""
+        request_config = {
+            'contents': prompt,
+            'generation_config': {
+                'temperature': self.model_config.get('temperature', 0.0),
+                'max_output_tokens': self.model_config.get('max_tokens', 1024),
+            }
+        }
+        
+        # Add thinking configuration if enabled
+        if self.thinking_enabled and self.thinking_budget != 0:
+            if self.thinking_budget > 0 and self.thinking_used >= self.thinking_budget:
+                self.logger.warning(f"Thinking budget ({self.thinking_budget}) exceeded, disabling thinking")
+            else:
+                request_config['generation_config']['thinking'] = True
+                
+        return request_config
+    
     async def get_action(self, prompt: str, call_id: str) -> str:
-        """Get action from Gemini with thinking support and error handling"""
+        """Get action from Gemini with retries and error handling"""
         self.total_calls += 1
         
         for attempt in range(self.max_retries):
             try:
-                # Check thinking budget
-                if self.thinking_enabled and self.thinking_budget > 0:
-                    if self.thinking_used >= self.thinking_budget:
-                        self.logger.warning(f"[{call_id}] Thinking budget exhausted, disabling thinking")
-                        self.thinking_enabled = False
+                # Prepare request
+                request_config = self._prepare_request(prompt)
                 
-                # Prepare the prompt
-                final_prompt = self._prepare_prompt(prompt, call_id)
+                # Make API call with timeout
+                start_time = time.time()
                 
-                # Make API call
-                response = await self._make_api_call(final_prompt, call_id)
+                # Use executor for timeout handling
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(
+                        self.client.generate_content,
+                        **request_config
+                    )
+                    
+                    try:
+                        response = await asyncio.wait_for(
+                            asyncio.wrap_future(future),
+                            timeout=self.timeout
+                        )
+                    except asyncio.TimeoutError:
+                        future.cancel()
+                        raise TimeoutError(f"Request timed out after {self.timeout}s")
                 
-                # Process response
+                # Extract content and update metrics
                 content = self._extract_content(response)
-                
-                # Update thinking usage if applicable
-                if self.thinking_enabled and hasattr(response, 'usage_metadata'):
-                    thinking_tokens = getattr(response.usage_metadata, 'thinking_tokens', 0)
-                    self.thinking_used += thinking_tokens
-                    self.total_thinking_tokens += thinking_tokens
-                
-                # Update success metrics
                 self.successful_calls += 1
-                if hasattr(response, 'usage_metadata'):
-                    self.total_tokens += getattr(response.usage_metadata, 'total_token_count', 0)
                 
-                self.logger.debug(f"[{call_id}] Successful response from {self.model_name}")
+                # Update token usage
+                if hasattr(response, 'usage_metadata'):
+                    usage = response.usage_metadata
+                    self.total_tokens += getattr(usage, 'total_token_count', 0)
+                    if hasattr(usage, 'thinking_token_count'):
+                        thinking_tokens = getattr(usage, 'thinking_token_count', 0)
+                        self.total_thinking_tokens += thinking_tokens
+                        if thinking_tokens > 0:
+                            self.thinking_used += 1
+                
+                response_time = time.time() - start_time
+                self.logger.debug(f"[{call_id}] Successful response in {response_time:.2f}s")
+                
                 return content
                 
             except Exception as e:
-                self.logger.warning(f"[{call_id}] Attempt {attempt + 1}/{self.max_retries} failed: {e}")
+                self.logger.warning(f"[{call_id}] Attempt {attempt + 1} failed: {e}")
                 
                 if attempt < self.max_retries - 1:
-                    # Wait before retry with exponential backoff
-                    wait_time = self.retry_delay * (2 ** attempt)
-                    await asyncio.sleep(wait_time)
+                    await asyncio.sleep(self.retry_delay * (2 ** attempt))  # Exponential backoff
                 else:
-                    # Final attempt failed
                     self.logger.error(f"[{call_id}] All {self.max_retries} attempts failed")
                     raise
-        
-        # This should never be reached due to the raise above
-        raise RuntimeError(f"[{call_id}] Unexpected error in get_action")
-    
-    def _prepare_prompt(self, prompt: str, call_id: str) -> str:
-        """Prepare prompt for Gemini API call"""
-        return prompt
-    
-    async def _make_api_call(self, prompt: str, call_id: str) -> Any:
-        """Make actual API call to Gemini"""
-        try:
-            # Create a timeout for the API call
-            response = await asyncio.wait_for(
-                self._call_gemini_api(prompt),
-                timeout=self.timeout
-            )
-            return response
-            
-        except asyncio.TimeoutError:
-            raise TimeoutError(f"API call timed out after {self.timeout} seconds")
-        except Exception as e:
-            raise RuntimeError(f"API call failed: {str(e)}")
-    
-    async def _call_gemini_api(self, prompt: str):
-        """Actual Gemini API call in executor to avoid blocking"""
-        loop = asyncio.get_event_loop()
-        
-        def sync_call():
-            return self.client.generate_content(prompt)
-        
-        # Run in thread pool to avoid blocking the event loop
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            response = await loop.run_in_executor(executor, sync_call)
-            return response
     
     def _extract_content(self, response) -> str:
         """Extract text content from Gemini response"""
@@ -249,16 +238,18 @@ class GeminiAgent(BaseLLMAgent):
         }
 
 
-def create_agent(model_name: str, player_id: str, **kwargs) -> BaseLLMAgent:
+def create_agent(model_name: str, player_id: str, mock_mode: bool = False, **kwargs) -> BaseLLMAgent:
     """
     Create appropriate LLM agent based on model name and configuration
     Supports both real and mock agents for testing
+    
+    Args:
+        model_name: Name of the model to create
+        player_id: ID for this player/agent
+        mock_mode: If True, create mock agent instead of real one
+        **kwargs: Additional arguments for real agents
     """
     logger = logging.getLogger(f"{__name__}.create_agent")
-    
-    # Import here to get current value of MOCK_MODE
-    import runner
-    mock_mode = getattr(runner, 'MOCK_MODE', False)
     
     # Use mock agent if mock mode is enabled
     if mock_mode:
@@ -287,8 +278,13 @@ def validate_agent_setup(model_name: str) -> bool:
         
         # Check required configuration
         if model_name.startswith('gemini'):
-            api_config = model_config.get('api_config', {})
-            if not api_config.get('api_key'):
+            # Check API key availability
+            config = load_config_file()
+            api_config = config.get('api', {}).get('google', {})
+            api_key_env = api_config.get('api_key_env', 'GEMINI_API_KEY')
+            
+            api_key = os.getenv(api_key_env)
+            if not api_key:
                 return False
         
         return True
@@ -298,12 +294,12 @@ def validate_agent_setup(model_name: str) -> bool:
         return False
 
 
-async def test_agent_connectivity(model_name: str, player_id: str = "test") -> Dict[str, Any]:
+async def test_agent_connectivity(model_name: str, player_id: str = "test", mock_mode: bool = False) -> Dict[str, Any]:
     """Test agent connectivity and basic functionality"""
     logger = logging.getLogger(__name__)
     
     try:
-        agent = create_agent(model_name, player_id)
+        agent = create_agent(model_name, player_id, mock_mode=mock_mode)
         
         test_prompt = "Respond with a simple JSON: {\"status\": \"ok\", \"model\": \"" + model_name + "\"}"
         
@@ -370,14 +366,14 @@ def create_gemini_agent(model_name: str, player_id: str, **kwargs) -> GeminiAgen
     return GeminiAgent(model_name, player_id, **kwargs)
 
 
-async def batch_test_agents(model_names: list, test_prompt: str = None) -> Dict[str, Any]:
+async def batch_test_agents(model_names: list, test_prompt: str = None, mock_mode: bool = False) -> Dict[str, Any]:
     """Test multiple agents in parallel"""
     if test_prompt is None:
         test_prompt = "Respond with JSON: {\"test\": \"success\"}"
     
     tasks = []
     for model_name in model_names:
-        task = test_agent_connectivity(model_name)
+        task = test_agent_connectivity(model_name, mock_mode=mock_mode)
         tasks.append(task)
     
     results = await asyncio.gather(*tasks, return_exceptions=True)
