@@ -1,0 +1,561 @@
+{
+  "game_name": "salop",
+  "experiment_type": "ablation_studies",
+  "condition_name": "low_transport",
+  "challenger_model": "gemini_2_0_flash_lite",
+  "challenger_display_name": "Gemini 2.0 Flash-Lite (No Thinking)",
+  "defender_model": "gemini_2_0_flash_lite",
+  "defender_display_name": "Gemini 2.0 Flash-Lite (No Thinking)",
+  "challenger_thinking_enabled": false,
+  "defender_thinking_enabled": false,
+  "simulation_results": [
+    {
+      "simulation_id": 0,
+      "game_name": "salop",
+      "experiment_type": "ablation_studies",
+      "condition_name": "low_transport",
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2"
+      ],
+      "actions": {
+        "challenger": {
+          "price": 5.9,
+          "parsing_method": "number_extraction",
+          "raw_response": "{\"quantity\": 5.9}",
+          "player_id": "challenger",
+          "parsing_success": true
+        },
+        "defender_1": {
+          "price": 5.8,
+          "parsing_method": "number_extraction",
+          "raw_response": "{\"quantity\": 5.8}",
+          "player_id": "defender_1",
+          "parsing_success": true
+        },
+        "defender_2": {
+          "price": 6.3,
+          "parsing_method": "number_extraction",
+          "raw_response": "{\"quantity\": 6.3}",
+          "player_id": "defender_2",
+          "parsing_success": true
+        }
+      },
+      "payoffs": {
+        "challenger": -839.9999999999987,
+        "defender_1": -1320.0000000000011,
+        "defender_2": -0.0
+      },
+      "game_data": {
+        "all_rounds": [
+          {
+            "round": 1,
+            "actions": {
+              "challenger": {
+                "price": 4.4,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 4.4}",
+                "player_id": "challenger",
+                "parsing_success": true
+              },
+              "defender_1": {
+                "price": 5.2,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 5.2}",
+                "player_id": "defender_1",
+                "parsing_success": true
+              },
+              "defender_2": {
+                "price": 3.6,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 3.6}",
+                "player_id": "defender_2",
+                "parsing_success": true
+              }
+            },
+            "payoffs": {
+              "challenger": -1199.9999999999998,
+              "defender_1": -0.0,
+              "defender_2": -2933.3333333333335
+            },
+            "game_state": {
+              "game_type": "static",
+              "current_round": 1,
+              "simulation_id": 0,
+              "constants": {
+                "transport_cost": 0.5,
+                "number_of_players": 3,
+                "v": 30,
+                "marginal_cost": 8,
+                "fixed_cost": 100,
+                "market_size": 1000,
+                "description": "Low transport cost increases competition"
+              }
+            }
+          },
+          {
+            "round": 2,
+            "actions": {
+              "challenger": {
+                "price": 4.1,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 4.1}",
+                "player_id": "challenger",
+                "parsing_success": true
+              },
+              "defender_1": {
+                "price": 2.1,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 2.1}",
+                "player_id": "defender_1",
+                "parsing_success": true
+              },
+              "defender_2": {
+                "price": 5.2,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 5.2}",
+                "player_id": "defender_2",
+                "parsing_success": true
+              }
+            },
+            "payoffs": {
+              "challenger": -1300.0,
+              "defender_1": -3933.3333333333335,
+              "defender_2": -0.0
+            },
+            "game_state": {
+              "game_type": "static",
+              "current_round": 2,
+              "simulation_id": 0,
+              "constants": {
+                "transport_cost": 0.5,
+                "number_of_players": 3,
+                "v": 30,
+                "marginal_cost": 8,
+                "fixed_cost": 100,
+                "market_size": 1000,
+                "description": "Low transport cost increases competition"
+              }
+            }
+          },
+          {
+            "round": 3,
+            "actions": {
+              "challenger": {
+                "price": 2.9,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 2.9}",
+                "player_id": "challenger",
+                "parsing_success": true
+              },
+              "defender_1": {
+                "price": 5.3,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 5.3}",
+                "player_id": "defender_1",
+                "parsing_success": true
+              },
+              "defender_2": {
+                "price": 8.0,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 8.0}",
+                "player_id": "defender_2",
+                "parsing_success": true
+              }
+            },
+            "payoffs": {
+              "challenger": -3399.9999999999995,
+              "defender_1": -900.0,
+              "defender_2": 0.0
+            },
+            "game_state": {
+              "game_type": "static",
+              "current_round": 3,
+              "simulation_id": 0,
+              "constants": {
+                "transport_cost": 0.5,
+                "number_of_players": 3,
+                "v": 30,
+                "marginal_cost": 8,
+                "fixed_cost": 100,
+                "market_size": 1000,
+                "description": "Low transport cost increases competition"
+              }
+            }
+          },
+          {
+            "round": 4,
+            "actions": {
+              "challenger": {
+                "price": 3.6,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 3.6}",
+                "player_id": "challenger",
+                "parsing_success": true
+              },
+              "defender_1": {
+                "price": 7.0,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 7.0}",
+                "player_id": "defender_1",
+                "parsing_success": true
+              },
+              "defender_2": {
+                "price": 5.2,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 5.2}",
+                "player_id": "defender_2",
+                "parsing_success": true
+              }
+            },
+            "payoffs": {
+              "challenger": -2933.3333333333335,
+              "defender_1": -0.0,
+              "defender_2": -933.3333333333333
+            },
+            "game_state": {
+              "game_type": "static",
+              "current_round": 4,
+              "simulation_id": 0,
+              "constants": {
+                "transport_cost": 0.5,
+                "number_of_players": 3,
+                "v": 30,
+                "marginal_cost": 8,
+                "fixed_cost": 100,
+                "market_size": 1000,
+                "description": "Low transport cost increases competition"
+              }
+            }
+          },
+          {
+            "round": 5,
+            "actions": {
+              "challenger": {
+                "price": 3.5,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 3.5}",
+                "player_id": "challenger",
+                "parsing_success": true
+              },
+              "defender_1": {
+                "price": 2.4,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 2.4}",
+                "player_id": "defender_1",
+                "parsing_success": true
+              },
+              "defender_2": {
+                "price": 2.3,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 2.3}",
+                "player_id": "defender_2",
+                "parsing_success": true
+              }
+            },
+            "payoffs": {
+              "challenger": -0.0,
+              "defender_1": -2239.999999999999,
+              "defender_2": -3420.000000000001
+            },
+            "game_state": {
+              "game_type": "static",
+              "current_round": 5,
+              "simulation_id": 0,
+              "constants": {
+                "transport_cost": 0.5,
+                "number_of_players": 3,
+                "v": 30,
+                "marginal_cost": 8,
+                "fixed_cost": 100,
+                "market_size": 1000,
+                "description": "Low transport cost increases competition"
+              }
+            }
+          },
+          {
+            "round": 6,
+            "actions": {
+              "challenger": {
+                "price": 4.6,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 4.6}",
+                "player_id": "challenger",
+                "parsing_success": true
+              },
+              "defender_1": {
+                "price": 5.3,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 5.3}",
+                "player_id": "defender_1",
+                "parsing_success": true
+              },
+              "defender_2": {
+                "price": 2.2,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 2.2}",
+                "player_id": "defender_2",
+                "parsing_success": true
+              }
+            },
+            "payoffs": {
+              "challenger": -1133.3333333333335,
+              "defender_1": -0.0,
+              "defender_2": -3866.6666666666665
+            },
+            "game_state": {
+              "game_type": "static",
+              "current_round": 6,
+              "simulation_id": 0,
+              "constants": {
+                "transport_cost": 0.5,
+                "number_of_players": 3,
+                "v": 30,
+                "marginal_cost": 8,
+                "fixed_cost": 100,
+                "market_size": 1000,
+                "description": "Low transport cost increases competition"
+              }
+            }
+          },
+          {
+            "round": 7,
+            "actions": {
+              "challenger": {
+                "price": 5.6,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 5.6}",
+                "player_id": "challenger",
+                "parsing_success": true
+              },
+              "defender_1": {
+                "price": 4.8,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 4.8}",
+                "player_id": "defender_1",
+                "parsing_success": true
+              },
+              "defender_2": {
+                "price": 5.3,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 5.3}",
+                "player_id": "defender_2",
+                "parsing_success": true
+              }
+            },
+            "payoffs": {
+              "challenger": -0.0,
+              "defender_1": -2133.3333333333335,
+              "defender_2": -900.0
+            },
+            "game_state": {
+              "game_type": "static",
+              "current_round": 7,
+              "simulation_id": 0,
+              "constants": {
+                "transport_cost": 0.5,
+                "number_of_players": 3,
+                "v": 30,
+                "marginal_cost": 8,
+                "fixed_cost": 100,
+                "market_size": 1000,
+                "description": "Low transport cost increases competition"
+              }
+            }
+          },
+          {
+            "round": 8,
+            "actions": {
+              "challenger": {
+                "price": 3.6,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 3.6}",
+                "player_id": "challenger",
+                "parsing_success": true
+              },
+              "defender_1": {
+                "price": 7.5,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 7.5}",
+                "player_id": "defender_1",
+                "parsing_success": true
+              },
+              "defender_2": {
+                "price": 6.9,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 6.9}",
+                "player_id": "defender_2",
+                "parsing_success": true
+              }
+            },
+            "payoffs": {
+              "challenger": -2933.3333333333335,
+              "defender_1": -0.0,
+              "defender_2": -366.6666666666665
+            },
+            "game_state": {
+              "game_type": "static",
+              "current_round": 8,
+              "simulation_id": 0,
+              "constants": {
+                "transport_cost": 0.5,
+                "number_of_players": 3,
+                "v": 30,
+                "marginal_cost": 8,
+                "fixed_cost": 100,
+                "market_size": 1000,
+                "description": "Low transport cost increases competition"
+              }
+            }
+          },
+          {
+            "round": 9,
+            "actions": {
+              "challenger": {
+                "price": 3.1,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 3.1}",
+                "player_id": "challenger",
+                "parsing_success": true
+              },
+              "defender_1": {
+                "price": 4.2,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 4.2}",
+                "player_id": "defender_1",
+                "parsing_success": true
+              },
+              "defender_2": {
+                "price": 5.4,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 5.4}",
+                "player_id": "defender_2",
+                "parsing_success": true
+              }
+            },
+            "payoffs": {
+              "challenger": -3266.6666666666665,
+              "defender_1": -1266.6666666666665,
+              "defender_2": -0.0
+            },
+            "game_state": {
+              "game_type": "static",
+              "current_round": 9,
+              "simulation_id": 0,
+              "constants": {
+                "transport_cost": 0.5,
+                "number_of_players": 3,
+                "v": 30,
+                "marginal_cost": 8,
+                "fixed_cost": 100,
+                "market_size": 1000,
+                "description": "Low transport cost increases competition"
+              }
+            }
+          },
+          {
+            "round": 10,
+            "actions": {
+              "challenger": {
+                "price": 5.9,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 5.9}",
+                "player_id": "challenger",
+                "parsing_success": true
+              },
+              "defender_1": {
+                "price": 5.8,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 5.8}",
+                "player_id": "defender_1",
+                "parsing_success": true
+              },
+              "defender_2": {
+                "price": 6.3,
+                "parsing_method": "number_extraction",
+                "raw_response": "{\"quantity\": 6.3}",
+                "player_id": "defender_2",
+                "parsing_success": true
+              }
+            },
+            "payoffs": {
+              "challenger": -839.9999999999987,
+              "defender_1": -1320.0000000000011,
+              "defender_2": -0.0
+            },
+            "game_state": {
+              "game_type": "static",
+              "current_round": 10,
+              "simulation_id": 0,
+              "constants": {
+                "transport_cost": 0.5,
+                "number_of_players": 3,
+                "v": 30,
+                "marginal_cost": 8,
+                "fixed_cost": 100,
+                "market_size": 1000,
+                "description": "Low transport cost increases competition"
+              }
+            }
+          }
+        ],
+        "num_rounds": 10,
+        "final_round_actions": {
+          "challenger": {
+            "price": 5.9,
+            "parsing_method": "number_extraction",
+            "raw_response": "{\"quantity\": 5.9}",
+            "player_id": "challenger",
+            "parsing_success": true
+          },
+          "defender_1": {
+            "price": 5.8,
+            "parsing_method": "number_extraction",
+            "raw_response": "{\"quantity\": 5.8}",
+            "player_id": "defender_1",
+            "parsing_success": true
+          },
+          "defender_2": {
+            "price": 6.3,
+            "parsing_method": "number_extraction",
+            "raw_response": "{\"quantity\": 6.3}",
+            "player_id": "defender_2",
+            "parsing_success": true
+          }
+        },
+        "final_round_payoffs": {
+          "challenger": -839.9999999999987,
+          "defender_1": -1320.0000000000011,
+          "defender_2": -0.0
+        }
+      }
+    }
+  ],
+  "competition_metadata": {
+    "game_config": {
+      "game_name": "salop",
+      "experiment_type": "ablation_studies",
+      "condition_name": "low_transport",
+      "constants": {
+        "transport_cost": 0.5,
+        "number_of_players": 3,
+        "v": 30,
+        "marginal_cost": 8,
+        "fixed_cost": 100,
+        "market_size": 1000,
+        "description": "Low transport cost increases competition"
+      }
+    },
+    "challenger_model_config": "gemini_2_0_flash_lite",
+    "defender_model_config": "gemini_2_0_flash_lite",
+    "num_simulations_planned": 1,
+    "mock_mode": true,
+    "num_simulations_completed": 1,
+    "success_rate": 1.0,
+    "total_duration_seconds": 0.338751
+  },
+  "start_time": "2025-09-11T16:34:35.913107",
+  "end_time": "2025-09-11T16:34:36.251858",
+  "total_duration": 0.338751
+}

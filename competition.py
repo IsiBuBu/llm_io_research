@@ -585,6 +585,11 @@ class Competition:
             # Create output directory
             self.output_dir.mkdir(parents=True, exist_ok=True)
             
+            # Save individual competition results
+            self.logger.info(f"💾 Saving {len(results)} individual competition results...")
+            for result in results:
+                await self._save_competition_result(result)
+            
             # Save summary
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             summary_file = self.output_dir / f"competition_summary_{timestamp}.json"
@@ -612,7 +617,7 @@ class Competition:
             with open(summary_file, 'w') as f:
                 json.dump(summary, f, indent=2)
             
-            self.logger.info(f"Results saved to {summary_file}")
+            self.logger.info(f"📋 Summary saved to {summary_file}")
             
         except Exception as e:
             self.logger.error(f"Failed to save results: {e}")

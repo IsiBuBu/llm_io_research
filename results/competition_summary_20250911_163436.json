@@ -1,0 +1,43 @@
+{
+  "timestamp": "20250911_163436",
+  "total_competitions": 4,
+  "mock_mode": true,
+  "challenger_models": [
+    "gemini_2_0_flash_lite"
+  ],
+  "defender_model": "gemini_2_0_flash_lite",
+  "results_summary": [
+    {
+      "game_name": "salop",
+      "experiment_type": "baseline",
+      "condition_name": "baseline",
+      "challenger_model": "gemini_2_0_flash_lite",
+      "simulations_completed": 1,
+      "duration": 0.336339
+    },
+    {
+      "game_name": "salop",
+      "experiment_type": "structural_variations",
+      "condition_name": "3player",
+      "challenger_model": "gemini_2_0_flash_lite",
+      "simulations_completed": 1,
+      "duration": 0.336245
+    },
+    {
+      "game_name": "salop",
+      "experiment_type": "structural_variations",
+      "condition_name": "5player",
+      "challenger_model": "gemini_2_0_flash_lite",
+      "simulations_completed": 1,
+      "duration": 0.560951
+    },
+    {
+      "game_name": "salop",
+      "experiment_type": "ablation_studies",
+      "condition_name": "low_transport",
+      "challenger_model": "gemini_2_0_flash_lite",
+      "simulations_completed": 1,
+      "duration": 0.338751
+    }
+  ]
+}

@@ -16,7 +16,7 @@ from datetime import datetime
 from config import (
     load_config_file, validate_config, get_challenger_models, get_defender_model,
     get_experiment_config, create_experiment_summary, get_model_display_name,
-    is_thinking_enabled, get_model_config, get_all_game_configs
+    is_thinking_enabled, get_model_config, get_all_game_configs, get_output_dir
 )
 from competition import Competition
 from analysis.results_analyzer import ResultsAnalyzer
@@ -82,100 +82,55 @@ def setup_logging(verbose: bool = False) -> tuple:
     # Generate log file with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     mode_suffix = "_mock" if MOCK_MODE else ""
-    log_file = logs_dir / f"gemini_thinking_experiment_{timestamp}{mode_suffix}.log"
+    log_file = logs_dir / f"experiment_{timestamp}{mode_suffix}.log"
     
     # Configure logging level
-    log_level = logging_config.get('level', 'DEBUG' if verbose else 'INFO')
-    log_format = "%(asctime)s | %(levelname)-8s | %(name)-30s | %(message)s"
+    log_level = logging.DEBUG if verbose else getattr(logging, logging_config.get('level', 'INFO').upper())
     
-    # Remove any existing handlers to avoid duplication
-    for handler in logging.root.handlers[:]:
-        logging.root.removeHandler(handler)
+    # Setup logging configuration
+    log_format = '%(asctime)s | %(levelname)-8s | %(name)-20s | %(message)s'
     
-    # Set up handlers - both console and file
-    handlers = [
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler(log_file, mode='w', encoding='utf-8')
-    ]
-    
-    # Configure root logger
     logging.basicConfig(
-        level=getattr(logging, log_level.upper()),
+        level=log_level,
         format=log_format,
-        handlers=handlers,
-        force=True
+        handlers=[
+            logging.FileHandler(log_file, mode='w', encoding='utf-8'),
+            logging.StreamHandler(sys.stdout)
+        ]
     )
     
-    # Reduce external library noise unless verbose
-    if not verbose:
-        logging.getLogger("urllib3").setLevel(logging.WARNING)
-        logging.getLogger("requests").setLevel(logging.WARNING)
-        logging.getLogger("google").setLevel(logging.WARNING)
-        logging.getLogger("httpx").setLevel(logging.WARNING)
-        logging.getLogger("httpcore").setLevel(logging.WARNING)
-    
-    # Get logger for main application
+    # Get logger for this module
     logger = logging.getLogger(__name__)
-    logger.info(f"Gemini Thinking Experiment started. Log file: {log_file}")
-    
-    if MOCK_MODE:
-        logger.info("🎭 MOCK MODE ENABLED - All LLM responses will be simulated")
-        logger.info("💡 No API calls will be made, no costs will be incurred")
     
     return logger, log_file
 
 
-async def test_agent(model_name: str) -> dict:
-    """Test a single agent configuration"""
-    test_prompt = "You are playing an economic game. Choose a price between 0.1 and 2.0. Respond with a JSON format: {\"answer\": your_answer}"
-    
-    try:
-        from agents import test_agent_connectivity
-        return await test_agent_connectivity(model_name, "test", mock_mode=MOCK_MODE)
-    except Exception as e:
-        return {
-            'model_name': model_name,
-            'success': False,
-            'error': str(e)
-        }
-
-
-async def test_all_agents() -> dict:
+async def test_all_agents():
     """Test connectivity for all configured agents"""
-    logger = logging.getLogger(__name__)
-    
     challenger_models = get_challenger_models()
     defender_model = get_defender_model()
-    all_models = challenger_models + [defender_model]
     
-    logger.info(f"Testing connectivity for {len(all_models)} models...")
+    all_models = list(set(challenger_models + [defender_model]))
+    test_results = {}
     
-    # Test all models in parallel
-    test_tasks = [test_agent(model) for model in all_models]
-    results = await asyncio.gather(*test_tasks, return_exceptions=True)
+    for model_name in all_models:
+        try:
+            agent = create_agent(model_name, mock_mode=MOCK_MODE)
+            result = await test_agent_connectivity(agent)
+            test_results[model_name] = result
+        except Exception as e:
+            test_results[model_name] = {'success': False, 'error': str(e)}
     
-    # Process results
-    test_summary = {}
-    for i, result in enumerate(results):
-        model_name = all_models[i]
-        if isinstance(result, Exception):
-            test_summary[model_name] = {
-                'success': False,
-                'error': str(result)
-            }
-        else:
-            test_summary[model_name] = result
-    
-    return test_summary
+    return test_results
 
 
 async def validate_system_setup() -> bool:
-    """Validate system configuration and API connectivity"""
+    """Validate system setup before running experiments"""
     logger = logging.getLogger(__name__)
     
-    # Validate configuration file
+    # Validate configuration
     if not validate_config():
-        logger.error("❌ Configuration validation failed.")
+        logger.error("❌ Configuration validation failed")
         return False
     
     logger.info("✅ Configuration validation passed")
@@ -262,6 +217,9 @@ async def run_game_experiments(game_name: str, competition: Competition) -> bool
         total_competitions = len(game_configs) * len(challenger_models)
         completed = 0
         
+        # Collect results for saving
+        game_results = []
+        
         for game_config in game_configs:
             for challenger_model in challenger_models:
                 logger.info(f"🔄 Competition {completed+1}/{total_competitions}: "
@@ -279,6 +237,7 @@ async def run_game_experiments(game_name: str, competition: Competition) -> bool
                     
                     if result:
                         logger.info(f"✅ Competition completed successfully")
+                        game_results.append(result)  # Collect the result
                     else:
                         logger.warning(f"⚠️ Competition completed with issues")
                     
@@ -287,6 +246,11 @@ async def run_game_experiments(game_name: str, competition: Competition) -> bool
                 except Exception as e:
                     logger.error(f"❌ Competition failed: {e}")
                     return False
+        
+        # Save all results for this game
+        if game_results:
+            logger.info(f"💾 Saving {len(game_results)} competition results for {game_name.upper()}...")
+            await competition._save_results(game_results)
         
         logger.info(f"🎉 {game_name.upper()} experiments completed!")
         return True
@@ -304,10 +268,14 @@ async def run_all_experiments() -> bool:
         challenger_models = get_challenger_models()
         defender_model = get_defender_model()
         
-        logger.info(f"📱 Models loaded: {len(challenger_models)} challengers, defender: {defender_model}")
+        # CRITICAL FIX: Actually get the output directory from config
+        output_dir = Path(get_output_dir())
         
-        # FIXED: Initialize competition with proper arguments
-        competition = Competition(challenger_models, defender_model, mock_mode=MOCK_MODE)
+        logger.info(f"📱 Models loaded: {len(challenger_models)} challengers, defender: {defender_model}")
+        logger.info(f"📁 Output directory from config: {output_dir}")
+        
+        # ACTUALLY FIXED: Initialize competition with output_dir from config
+        competition = Competition(challenger_models, defender_model, mock_mode=MOCK_MODE, output_dir=output_dir)
         
         # Run experiments for all games
         games_to_run = ['salop', 'green_porter', 'spulber', 'athey_bagwell']
@@ -419,29 +387,25 @@ async def main() -> int:
             
             logger.info("=" * 100)
             logger.info("🎉 GEMINI THINKING EXPERIMENTS COMPLETED SUCCESSFULLY!")
-            if not MOCK_MODE:
-                logger.info("📊 Analysis results available in analysis_output/")
-                logger.info("🔬 Review publication_summary.md for key findings")
-            else:
-                logger.info("🎭 Mock experiment completed - workflow validated!")
             logger.info("=" * 100)
+            
+            if not MOCK_MODE:
+                logger.info("📊 Check the analysis results for comprehensive insights")
+                logger.info("📁 Raw results available in the configured output directory")
+            
             return 0
         else:
-            logger.error("❌ Experiments failed!")
+            logger.error("❌ Some experiments failed. Check logs for details.")
             return 1
             
     except KeyboardInterrupt:
         logger.info("🛑 Experiments interrupted by user")
-        return 1
+        return 0
     except Exception as e:
-        logger.error(f"💥 Unexpected error: {e}", exc_info=True)
+        logger.error(f"💥 Fatal error: {e}", exc_info=True)
         return 1
 
 
 if __name__ == "__main__":
-    print("🧠 Gemini Thinking LLM Game Theory Experiment Framework")
-    print("🚀 Running strategic reasoning experiments with thinking analysis...")
-    print()
-    
     exit_code = asyncio.run(main())
     sys.exit(exit_code)

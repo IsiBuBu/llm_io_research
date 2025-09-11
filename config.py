@@ -52,6 +52,91 @@ def load_config_file() -> Dict[str, Any]:
         raise RuntimeError(f"Failed to load config file: {e}")
 
 
+def get_output_dir() -> str:
+    """Get output directory from configuration"""
+    config = load_config_file()
+    output_config = config.get('output', {})
+    return output_config.get('results_dir', 'results')
+
+
+def get_prompt_variables(game_config: GameConfig, player_id: str = "A", 
+                        current_round: int = 1, **dynamic_vars) -> Dict[str, Any]:
+    """Get all variables needed for prompt formatting"""
+
+    constants = game_config.constants
+    
+    # Base variables
+    variables = {
+        'player_id': player_id,
+        'current_round': current_round,
+        'number_of_players': constants.get('number_of_players', 3),
+    }
+    
+    # Add all constants
+    variables.update(constants)
+    
+    # Game-specific variable mappings
+    if game_config.game_name == 'salop':
+        variables.update({
+            'market_size': constants.get('market_size', 1000),
+            'marginal_cost': constants.get('marginal_cost', 8),
+            'fixed_cost': constants.get('fixed_cost', 100),
+            'transport_cost': constants.get('transport_cost', 1.5),
+            'v': constants.get('v', 30)
+        })
+    
+    elif game_config.game_name == 'green_porter':
+        variables.update({
+            'time_horizon': constants.get('time_horizon', 50),
+            'base_demand': constants.get('base_demand', 120),
+            'marginal_cost': constants.get('marginal_cost', 20),
+            'demand_shock_std': constants.get('demand_shock_std', 5),
+            'trigger_price': constants.get('trigger_price', 55),
+            'punishment_duration': constants.get('punishment_duration', 3),
+            'collusive_quantity': constants.get('collusive_quantity', 17),
+            'cournot_quantity': constants.get('cournot_quantity', 25),
+            'discount_factor': constants.get('discount_factor', 0.95),
+            'current_market_state': dynamic_vars.get('current_market_state', 'Collusive'),
+            'price_history': dynamic_vars.get('price_history', [])
+        })
+    
+    elif game_config.game_name == 'spulber':
+        variables.update({
+            'market_size': constants.get('market_size', 100),
+            'demand_intercept': constants.get('demand_intercept', 100),
+            'rival_cost_mean': constants.get('rival_cost_mean', 10),
+            'rival_cost_std': constants.get('rival_cost_std', 2.0),
+            'your_cost': constants.get('private_values', {}).get('challenger_cost', 8)
+        })
+    
+    elif game_config.game_name == 'athey_bagwell':
+        cost_types = constants.get('cost_types', {'low': 15, 'high': 25})
+        variables.update({
+            'time_horizon': constants.get('time_horizon', 50),
+            'cost_types': cost_types,  # Keep as dict for template access like {cost_types[high]}
+            'persistence_probability': constants.get('persistence_probability', 0.7),
+            'market_price': constants.get('market_price', 30),
+            'market_size': constants.get('market_size', 100),
+            'discount_factor': constants.get('discount_factor', 0.95),
+            'your_cost_type': dynamic_vars.get('your_cost_type', 'high'),
+            'all_reports_history_detailed': dynamic_vars.get('all_reports_history_detailed', [])
+        })
+    
+    # Add any additional dynamic variables
+    variables.update(dynamic_vars)
+    
+    return variables
+
+
+# Backward compatibility alias
+def generate_prompt_variables(game_config: GameConfig, 
+                            dynamic_vars: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Backward compatibility wrapper for get_prompt_variables"""
+    if dynamic_vars is None:
+        dynamic_vars = {}
+    return get_prompt_variables(game_config, **dynamic_vars)
+
+
 def get_game_config(game_name: str, experiment_type: str, 
                    condition_name: Optional[str] = None) -> GameConfig:
     """
@@ -134,91 +219,13 @@ def get_all_experimental_configs() -> List[GameConfig]:
     return all_configs
 
 
-def get_prompt_variables(game_config: GameConfig, player_id: str = "A", 
-                        current_round: int = 1, **dynamic_vars) -> Dict[str, Any]:
-    """Get all variables needed for prompt formatting"""
-
-    constants = game_config.constants
-    
-    # Base variables
-    variables = {
-        'player_id': player_id,
-        'current_round': current_round,
-        'number_of_players': constants.get('number_of_players', 3),
-    }
-    
-    # Add all constants
-    variables.update(constants)
-    
-    # Game-specific variable mappings
-    if game_config.game_name == 'salop':
-        variables.update({
-            'market_size': constants.get('market_size', 1000),
-            'marginal_cost': constants.get('marginal_cost', 8),
-            'fixed_cost': constants.get('fixed_cost', 100),
-            'transport_cost': constants.get('transport_cost', 1.5),
-            'v': constants.get('v', 30)
-        })
-    
-    elif game_config.game_name == 'green_porter':
-        variables.update({
-            'time_horizon': constants.get('time_horizon', 50),
-            'base_demand': constants.get('base_demand', 120),
-            'marginal_cost': constants.get('marginal_cost', 20),
-            'demand_shock_std': constants.get('demand_shock_std', 5),
-            'trigger_price': constants.get('trigger_price', 55),
-            'punishment_duration': constants.get('punishment_duration', 3),
-            'collusive_quantity': constants.get('collusive_quantity', 17),
-            'cournot_quantity': constants.get('cournot_quantity', 25),
-            'discount_factor': constants.get('discount_factor', 0.95),
-            'current_market_state': dynamic_vars.get('current_market_state', 'Collusive'),
-            'price_history': dynamic_vars.get('price_history', [])
-        })
-    
-    elif game_config.game_name == 'spulber':
-        variables.update({
-            'market_size': constants.get('market_size', 100),
-            'demand_intercept': constants.get('demand_intercept', 100),
-            'rival_cost_mean': constants.get('rival_cost_mean', 10),
-            'rival_cost_std': constants.get('rival_cost_std', 2.0),
-            'your_cost': constants.get('private_values', {}).get('challenger_cost', 8)
-        })
-    
-    elif game_config.game_name == 'athey_bagwell':
-        cost_types = constants.get('cost_types', {'low': 15, 'high': 25})
-        variables.update({
-            'time_horizon': constants.get('time_horizon', 50),
-            'cost_types': cost_types,  # Keep as dict for template access like {cost_types[high]}
-            'persistence_probability': constants.get('persistence_probability', 0.7),
-            'market_price': constants.get('market_price', 30),
-            'market_size': constants.get('market_size', 100),
-            'discount_factor': constants.get('discount_factor', 0.95),
-            'your_cost_type': dynamic_vars.get('your_cost_type', 'high'),
-            'all_reports_history_detailed': dynamic_vars.get('all_reports_history_detailed', [])
-        })
-    
-    # Add any additional dynamic variables
-    variables.update(dynamic_vars)
-    
-    return variables
-
-
-# Backward compatibility alias
-def generate_prompt_variables(game_config: GameConfig, 
-                            dynamic_vars: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    """Backward compatibility wrapper for get_prompt_variables"""
-    if dynamic_vars is None:
-        dynamic_vars = {}
-    return get_prompt_variables(game_config, **dynamic_vars)
-
-
 def get_model_config(model_name: str) -> Dict[str, Any]:
     """Get configuration for a specific model"""
     config = load_config_file()
     model_configs = config.get('models', {}).get('model_configs', {})
     
     if model_name not in model_configs:
-        raise ValueError(f"Model {model_name} not found in config.json")
+        raise ValueError(f"Model '{model_name}' not found in configuration")
     
     return model_configs[model_name]
 
@@ -347,7 +354,7 @@ def is_thinking_enabled(model_name: str) -> bool:
         
         if not model_config.get('thinking_available', False):
             return False
-        
+
         thinking_config = model_config.get('thinking_config', {})
         thinking_budget = thinking_config.get('thinking_budget', 0)
         

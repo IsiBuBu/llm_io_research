@@ -206,7 +206,7 @@
   },
   "output": {
     "results_dir": "results",
-    "analysis_dir": "analysis_output",
+    "analysis_dir": "analysis",
     "save_raw_responses": true,
     "save_thinking_traces": true
   },

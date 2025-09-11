@@ -1,0 +1,158 @@
+{
+  "game_name": "green_porter",
+  "experiment_type": "structural_variations",
+  "condition_name": "15rounds",
+  "challenger_model": "gemini_2_0_flash_lite",
+  "challenger_display_name": "Gemini 2.0 Flash-Lite (No Thinking)",
+  "defender_model": "gemini_2_0_flash_lite",
+  "defender_display_name": "Gemini 2.0 Flash-Lite (No Thinking)",
+  "challenger_thinking_enabled": false,
+  "defender_thinking_enabled": false,
+  "simulation_results": [
+    {
+      "simulation_id": 0,
+      "game_name": "green_porter",
+      "experiment_type": "structural_variations",
+      "condition_name": "15rounds",
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2"
+      ],
+      "actions": {
+        "challenger": {
+          "quantity": 2.8,
+          "raw_response": "{\"quantity\": 2.8}",
+          "parsing_method": "json",
+          "player_id": "challenger",
+          "parsing_success": true
+        },
+        "defender_1": {
+          "quantity": 6.6,
+          "raw_response": "{\"quantity\": 6.6}",
+          "parsing_method": "json",
+          "player_id": "defender_1",
+          "parsing_success": true
+        },
+        "defender_2": {
+          "quantity": 5.0,
+          "raw_response": "{\"quantity\": 5.0}",
+          "parsing_method": "json",
+          "player_id": "defender_2",
+          "parsing_success": true
+        }
+      },
+      "payoffs": {
+        "challenger": 208.37673284354727,
+        "defender_1": 491.1737274169329,
+        "defender_2": 372.1013086491916
+      },
+      "game_data": {
+        "all_rounds": [
+          {
+            "round": 1,
+            "actions": {
+              "challenger": {
+                "quantity": 2.8,
+                "raw_response": "{\"quantity\": 2.8}",
+                "parsing_method": "json",
+                "player_id": "challenger",
+                "parsing_success": true
+              },
+              "defender_1": {
+                "quantity": 6.6,
+                "raw_response": "{\"quantity\": 6.6}",
+                "parsing_method": "json",
+                "player_id": "defender_1",
+                "parsing_success": true
+              },
+              "defender_2": {
+                "quantity": 5.0,
+                "raw_response": "{\"quantity\": 5.0}",
+                "parsing_method": "json",
+                "player_id": "defender_2",
+                "parsing_success": true
+              }
+            },
+            "payoffs": {
+              "challenger": 208.37673284354727,
+              "defender_1": 491.1737274169329,
+              "defender_2": 372.1013086491916
+            },
+            "game_state": {
+              "current_period": 1,
+              "market_state": "Collusive",
+              "punishment_timer": 0,
+              "demand_shocks": [
+                8.82026172983832
+              ],
+              "price_history": [],
+              "quantity_history": {},
+              "profit_history": {},
+              "state_history": [],
+              "total_periods": 1
+            }
+          }
+        ],
+        "num_rounds": 1,
+        "final_round_actions": {
+          "challenger": {
+            "quantity": 2.8,
+            "raw_response": "{\"quantity\": 2.8}",
+            "parsing_method": "json",
+            "player_id": "challenger",
+            "parsing_success": true
+          },
+          "defender_1": {
+            "quantity": 6.6,
+            "raw_response": "{\"quantity\": 6.6}",
+            "parsing_method": "json",
+            "player_id": "defender_1",
+            "parsing_success": true
+          },
+          "defender_2": {
+            "quantity": 5.0,
+            "raw_response": "{\"quantity\": 5.0}",
+            "parsing_method": "json",
+            "player_id": "defender_2",
+            "parsing_success": true
+          }
+        },
+        "final_round_payoffs": {
+          "challenger": 208.37673284354727,
+          "defender_1": 491.1737274169329,
+          "defender_2": 372.1013086491916
+        }
+      }
+    }
+  ],
+  "competition_metadata": {
+    "game_config": {
+      "game_name": "green_porter",
+      "experiment_type": "structural_variations",
+      "condition_name": "15rounds",
+      "constants": {
+        "base_demand": 120,
+        "marginal_cost": 20,
+        "collusive_quantity": 17,
+        "cournot_quantity": 25,
+        "number_of_players": 3,
+        "time_horizon": 1,
+        "demand_shock_std": 5,
+        "trigger_price": 55,
+        "punishment_duration": 3,
+        "discount_factor": 0.95
+      }
+    },
+    "challenger_model_config": "gemini_2_0_flash_lite",
+    "defender_model_config": "gemini_2_0_flash_lite",
+    "num_simulations_planned": 1,
+    "mock_mode": true,
+    "num_simulations_completed": 1,
+    "success_rate": 1.0,
+    "total_duration_seconds": 0.044107
+  },
+  "start_time": "2025-09-11T16:34:37.986997",
+  "end_time": "2025-09-11T16:34:38.031104",
+  "total_duration": 0.044107
+}

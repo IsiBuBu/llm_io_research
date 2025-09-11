@@ -1,0 +1,43 @@
+{
+  "timestamp": "20250911_163444",
+  "total_competitions": 4,
+  "mock_mode": true,
+  "challenger_models": [
+    "gemini_2_0_flash_lite"
+  ],
+  "defender_model": "gemini_2_0_flash_lite",
+  "results_summary": [
+    {
+      "game_name": "athey_bagwell",
+      "experiment_type": "baseline",
+      "condition_name": "baseline",
+      "challenger_model": "gemini_2_0_flash_lite",
+      "simulations_completed": 1,
+      "duration": 1.681522
+    },
+    {
+      "game_name": "athey_bagwell",
+      "experiment_type": "structural_variations",
+      "condition_name": "15rounds",
+      "challenger_model": "gemini_2_0_flash_lite",
+      "simulations_completed": 1,
+      "duration": 0.034249
+    },
+    {
+      "game_name": "athey_bagwell",
+      "experiment_type": "structural_variations",
+      "condition_name": "50rounds",
+      "challenger_model": "gemini_2_0_flash_lite",
+      "simulations_completed": 1,
+      "duration": 0.067191
+    },
+    {
+      "game_name": "athey_bagwell",
+      "experiment_type": "ablation_studies",
+      "condition_name": "low_persistence",
+      "challenger_model": "gemini_2_0_flash_lite",
+      "simulations_completed": 1,
+      "duration": 1.692654
+    }
+  ]
+}
