@@ -85,8 +85,8 @@
     }
   },
   "experiment_config": {
-    "main_experiment_simulations": 10,
-    "ablation_experiment_simulations": 10,
+    "main_experiment_simulations": 1,
+    "ablation_experiment_simulations": 1,
     "include_thoughts": true,
     "save_intermediate_results": true,
     "checkpoint_enabled": true
