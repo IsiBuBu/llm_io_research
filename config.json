@@ -84,123 +84,141 @@
       "max_retries": 3
     }
   },
-
   "experiment_config": {
-    "main_experiment_simulations": 20,
-    "ablation_experiment_simulations": 20,
-    "parallel_workers": 4,
-    "random_seed": 42,
-    "checkpoint_frequency": 10
+    "main_experiment_simulations": 50,
+    "ablation_experiment_simulations": 50,
+    "include_thoughts": true,
+    "save_intermediate_results": true,
+    "checkpoint_enabled": true
   },
-
   "game_configs": {
     "salop": {
       "baseline": {
+        "transport_cost": 1.5,
         "number_of_players": 3,
+        "v": 30,
         "marginal_cost": 8,
         "fixed_cost": 100,
-        "transport_cost": 1.5,
-        "v": 30,
         "market_size": 1000
       },
       "structural_variations": {
-        "five_players": { 
-          "number_of_players": 5 
+        "3player": {
+          "number_of_players": 3
+        },
+        "5player": {
+          "number_of_players": 5
         }
       },
       "ablation_studies": {
-        "low_differentiation": { 
-          "transport_cost": 0.5 
+        "low_transport": {
+          "transport_cost": 0.5,
+          "description": "Low transport cost increases competition"
         }
       }
     },
-
     "green_porter": {
       "baseline": {
-        "number_of_players": 3,
-        "time_horizon": 2,
         "base_demand": 120,
         "marginal_cost": 20,
+        "collusive_quantity": 17,
+        "cournot_quantity": 25,
+        "number_of_players": 3,
+        "time_horizon": 50,
         "demand_shock_std": 5,
         "trigger_price": 55,
         "punishment_duration": 3,
-        "collusive_quantity": 17,
-        "cournot_quantity": 25,
         "discount_factor": 0.95
       },
       "structural_variations": {
-        "short_horizon": { 
-          "time_horizon": 1
+        "15rounds": {
+          "time_horizon": 15
+        },
+        "50rounds": {
+          "time_horizon": 50
         }
       },
       "ablation_studies": {
-        "high_noise": { 
-          "demand_shock_std": 10 
-        },
-        "low_patience": { 
-          "discount_factor": 0.50 
+        "high_demand_volatility": {
+          "demand_shock_std": 10,
+          "description": "High demand shock variance increases uncertainty"
         }
       }
     },
-
     "spulber": {
       "baseline": {
-        "number_of_players": 3,
-        "market_size": 100,
         "demand_intercept": 100,
+        "number_of_players": 3,
         "rival_cost_mean": 10,
-        "rival_cost_std": 2.0,
-        "private_values": {
-          "challenger_cost": 8,
-          "defender_cost": 10
-        }
+        "rival_cost_std": 2.0
+      },
+      "challenger_config": {
+        "your_cost": 8
+      },
+      "defender_config": {
+        "their_cost": 10
       },
       "structural_variations": {
-        "five_players": { 
-          "number_of_players": 5 
+        "3player": {
+          "number_of_players": 3
+        },
+        "5player": {
+          "number_of_players": 5
         }
       },
       "ablation_studies": {
-        "high_uncertainty": { 
-          "rival_cost_std": 4.0 
+        "wide_cost_range": {
+          "rival_cost_std": 4.0,
+          "description": "Very wide cost range increases uncertainty"
         }
       }
     },
-
     "athey_bagwell": {
       "baseline": {
         "number_of_players": 3,
-        "time_horizon": 2,
-        "cost_types": { 
-          "low": 15, 
-          "high": 25 
-        },
+        "time_horizon": 50,
         "persistence_probability": 0.7,
+        "high_cost_value": 25,
+        "low_cost_value": 15,
         "market_price": 30,
         "market_size": 100,
         "discount_factor": 0.95
       },
       "structural_variations": {
-        "short_horizon": { 
-          "time_horizon": 1 
+        "15rounds": {
+          "time_horizon": 15
+        },
+        "50rounds": {
+          "time_horizon": 50
         }
       },
       "ablation_studies": {
-        "low_persistence": { 
-          "persistence_probability": 0.2 
-        },
-        "low_patience": { 
-          "discount_factor": 0.50 
+        "low_persistence": {
+          "persistence_probability": 0.2,
+          "description": "Low cost persistence reduces reputational stakes"
         }
       }
     }
   },
-
   "logging": {
     "level": "INFO",
-    "save_detailed_logs": true,
-    "output_format": ["json"],
-    "log_directory": "logs",
-    "max_log_files": 10
+    "file": "experiments.log",
+    "console": true
+  },
+  "output": {
+    "results_dir": "results",
+    "analysis_dir": "analysis_output",
+    "save_raw_responses": true,
+    "save_thinking_traces": true
+  },
+  "api_config": {
+    "rate_limit_delay": 1.0,
+    "max_retries": 3,
+    "timeout": 30
+  },
+  "checkpoint_config": {
+    "enabled": true,
+    "save_frequency": 10,
+    "checkpoint_dir": "checkpoints",
+    "resume_from_checkpoint": false
   }
 }
