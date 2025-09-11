@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Updated LLM Game Theory Experiment Runner - Four-folder structure with dynamic metrics
-Executes comprehensive experiments using the new competition API and experimental matrix
+LLM Game Theory Experiment Runner - Executes Gemini thinking experiments from config.json
+Orchestrates complete experimental pipeline with thinking analysis
+NOW SUPPORTS MOCK MODE: Use --mock flag to run with simulated LLM responses
 """
 
 import asyncio
@@ -11,14 +12,15 @@ import time
 import argparse
 from pathlib import Path
 from datetime import datetime
-from typing import List, Optional
 
 from config import (
     load_config_file, validate_config, get_challenger_models, get_defender_model,
     get_experiment_config, create_experiment_summary, get_model_display_name,
-    is_thinking_enabled, get_model_config, get_all_game_configs, print_experiment_matrix
+    is_thinking_enabled, get_model_config, get_all_game_configs
 )
 from competition import Competition
+from analysis.results_analyzer import ResultsAnalyzer
+from agents import create_agent, validate_agent_setup, test_agent_connectivity
 
 # Global flag for mock mode
 MOCK_MODE = False
@@ -27,16 +29,14 @@ MOCK_MODE = False
 def parse_arguments():
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(
-        description="LLM Game Theory Experiment Runner - Four Folder Structure",
+        description="LLM Game Theory Experiment Runner",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python runner.py                    # Run complete experimental matrix
+  python runner.py                    # Run normal experiments with real LLM calls
   python runner.py --mock             # Run with mock responses (no API calls)
-  python runner.py --analysis-only    # Skip experiments, run analysis only
-  python runner.py --games salop      # Run only Salop experiments
+  python runner.py --mock --quick     # Run quick mock tests
   python runner.py --verbose          # Enable verbose logging
-  python runner.py --matrix           # Show experimental matrix and exit
         """
     )
     
@@ -47,15 +47,15 @@ Examples:
     )
     
     parser.add_argument(
-        '--analysis-only',
-        action='store_true', 
-        help='Skip experiments and run analysis only on existing results'
-    )
-    
-    parser.add_argument(
         '--verbose', '-v',
         action='store_true',
         help='Enable verbose logging'
+    )
+    
+    parser.add_argument(
+        '--quick',
+        action='store_true',
+        help='Run with reduced simulation counts for quick testing'
     )
     
     parser.add_argument(
@@ -65,179 +65,219 @@ Examples:
         help='Run only specific games (default: all games)'
     )
     
-    parser.add_argument(
-        '--matrix',
-        action='store_true',
-        help='Display experimental matrix and exit'
-    )
-    
     return parser.parse_args()
 
 
-def setup_logging(verbose: bool = False) -> None:
-    """Setup logging based on config.json settings"""
+def setup_logging(verbose: bool = False) -> tuple:
+    """Setup logging to write all logs to logs folder"""
+    global MOCK_MODE
+    
     config = load_config_file()
     logging_config = config.get('logging', {})
     
-    level = logging.DEBUG if verbose else getattr(logging, logging_config.get('level', 'INFO'))
+    # Create logs directory if it doesn't exist
+    logs_dir = Path("logs")
+    logs_dir.mkdir(exist_ok=True)
     
+    # Generate log file with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    mode_suffix = "_mock" if MOCK_MODE else ""
+    log_file = logs_dir / f"gemini_thinking_experiment_{timestamp}{mode_suffix}.log"
+    
+    # Configure logging level
+    log_level = logging_config.get('level', 'DEBUG' if verbose else 'INFO')
+    log_format = "%(asctime)s | %(levelname)-8s | %(name)-30s | %(message)s"
+    
+    # Remove any existing handlers to avoid duplication
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+    
+    # Set up handlers - both console and file
+    handlers = [
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler(log_file, mode='w', encoding='utf-8')
+    ]
+    
+    # Configure root logger
     logging.basicConfig(
-        level=level,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        level=getattr(logging, log_level.upper()),
+        format=log_format,
+        handlers=handlers,
+        force=True
     )
-
-
-def setup_four_folder_structure():
-    """Create four-folder results structure"""
-    results_dir = Path("results")
-    games = ['salop', 'green_porter', 'spulber', 'athey_bagwell']
     
-    for game_name in games:
-        game_dir = results_dir / game_name
-        game_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Create model subdirectories
-        challenger_models = get_challenger_models()
-        for model in challenger_models:
-            model_dir = game_dir / model
-            model_dir.mkdir(parents=True, exist_ok=True)
+    # Reduce external library noise unless verbose
+    if not verbose:
+        logging.getLogger("urllib3").setLevel(logging.WARNING)
+        logging.getLogger("requests").setLevel(logging.WARNING)
+        logging.getLogger("google").setLevel(logging.WARNING)
+        logging.getLogger("httpx").setLevel(logging.WARNING)
+        logging.getLogger("httpcore").setLevel(logging.WARNING)
+    
+    # Get logger for main application
+    logger = logging.getLogger(__name__)
+    logger.info(f"Gemini Thinking Experiment started. Log file: {log_file}")
+    
+    if MOCK_MODE:
+        logger.info("🎭 MOCK MODE ENABLED - All LLM responses will be simulated")
+        logger.info("💡 No API calls will be made, no costs will be incurred")
+    
+    return logger, log_file
+
+
+async def test_agent(model_name: str) -> dict:
+    """Test a single agent configuration"""
+    test_prompt = "You are playing an economic game. Choose a price between 0.1 and 2.0. Respond with a JSON format: {\"answer\": your_answer}"
+    
+    try:
+        from agents import test_agent_connectivity
+        return await test_agent_connectivity(model_name, "test", mock_mode=MOCK_MODE)
+    except Exception as e:
+        return {
+            'model_name': model_name,
+            'success': False,
+            'error': str(e)
+        }
+
+
+async def test_all_agents() -> dict:
+    """Test connectivity for all configured agents"""
+    logger = logging.getLogger(__name__)
+    
+    challenger_models = get_challenger_models()
+    defender_model = get_defender_model()
+    all_models = challenger_models + [defender_model]
+    
+    logger.info(f"Testing connectivity for {len(all_models)} models...")
+    
+    # Test all models in parallel
+    test_tasks = [test_agent(model) for model in all_models]
+    results = await asyncio.gather(*test_tasks, return_exceptions=True)
+    
+    # Process results
+    test_summary = {}
+    for i, result in enumerate(results):
+        model_name = all_models[i]
+        if isinstance(result, Exception):
+            test_summary[model_name] = {
+                'success': False,
+                'error': str(result)
+            }
+        else:
+            test_summary[model_name] = result
+    
+    return test_summary
 
 
 async def validate_system_setup() -> bool:
-    """Validate system setup for experiments"""
+    """Validate system configuration and API connectivity"""
     logger = logging.getLogger(__name__)
     
-    try:
-        # Validate config
-        if not validate_config():
-            return False
-        
-        # Validate agent setup (skip in mock mode)
-        if not MOCK_MODE:
-            challenger_models = get_challenger_models()
-            defender_model = get_defender_model()
-            logger.info(f"Validating models: {challenger_models + [defender_model]}")
-            # Agent validation logic would go here
-        
-        # Setup folder structure
-        setup_four_folder_structure()
-        
+    # Validate configuration file
+    if not validate_config():
+        logger.error("❌ Configuration validation failed.")
+        return False
+    
+    logger.info("✅ Configuration validation passed")
+    
+    # Test agent connectivity (skip in mock mode)
+    if MOCK_MODE:
+        logger.info("🎭 Skipping API connectivity tests in mock mode")
         return True
-        
-    except Exception as e:
-        logger.error(f"System setup validation failed: {e}")
+    
+    logger.info("🔍 Testing API connectivity...")
+    test_results = await test_all_agents()
+    
+    success_count = 0
+    total_count = len(test_results)
+    
+    for model_name, result in test_results.items():
+        if result.get('success', False):
+            logger.info(f"  ✅ {model_name}: Connected successfully")
+            success_count += 1
+        else:
+            logger.error(f"  ❌ {model_name}: {result.get('error', 'Unknown error')}")
+    
+    if success_count == total_count:
+        logger.info(f"✅ All {total_count} agents connected successfully")
+        return True
+    else:
+        logger.error(f"❌ Only {success_count}/{total_count} agents connected successfully")
         return False
 
 
-def display_experiment_overview(selected_games: Optional[List[str]] = None):
-    """Display comprehensive experiment overview with new matrix"""
+def display_experiment_overview():
+    """Display experiment configuration overview"""
     logger = logging.getLogger(__name__)
     
-    logger.info("🧠 GEMINI THINKING LLM GAME THEORY EXPERIMENTS")
-    logger.info("📁 Four-Folder Structure with Dynamic Metrics Integration")
-    if MOCK_MODE:
-        logger.info("🎭 MOCK MODE - Testing workflow without API calls")
-    logger.info("=" * 80)
-    
-    # Model overview
     challenger_models = get_challenger_models()
     defender_model = get_defender_model()
+    experiment_config = get_experiment_config()
     
-    logger.info(f"📱 MODELS ({len(challenger_models) + 1} total):")
+    logger.info("=" * 100)
+    logger.info("GEMINI THINKING EXPERIMENT OVERVIEW")
+    logger.info("=" * 100)
     
-    logger.info("  🏆 CHALLENGERS:")
+    logger.info(f"🤖 Models:")
+    logger.info(f"    • Challenger models: {len(challenger_models)}")
     for model in challenger_models:
         display_name = get_model_display_name(model)
-        thinking_status = "🧠 ON" if is_thinking_enabled(model) else "⚡ OFF"
-        logger.info(f"    • {display_name} (Thinking: {thinking_status})")
+        thinking_status = "✓" if is_thinking_enabled(model) else "✗"
+        logger.info(f"      - {display_name} (thinking: {thinking_status})")
     
-    defender_display_name = get_model_display_name(defender_model)
-    defender_thinking_status = "🧠 ON" if is_thinking_enabled(defender_model) else "⚡ OFF"
-    logger.info(f"  🛡️ DEFENDER: {defender_display_name} (Thinking: {defender_thinking_status})")
+    defender_display = get_model_display_name(defender_model)
+    thinking_status = "✓" if is_thinking_enabled(defender_model) else "✗"
+    logger.info(f"    • Defender model: {defender_display} (thinking: {thinking_status})")
     
-    # Games overview with condition breakdown
-    logger.info("🎮 EXPERIMENTAL MATRIX:")
-    games_to_run = selected_games or ['salop', 'green_porter', 'spulber', 'athey_bagwell']
-    total_conditions = 0
+    logger.info(f"🎮 Games: salop, green_porter, spulber, athey_bagwell")
+    logger.info(f"🔬 Simulations per condition: {experiment_config.get('main_experiment_simulations', 50)}")
     
-    for game_name in games_to_run:
+    total_competitions = 0
+    for game_name in ['salop', 'green_porter', 'spulber', 'athey_bagwell']:
         game_configs = get_all_game_configs(game_name)
-        game_conditions = len(game_configs)
-        total_conditions += game_conditions
-        
-        # Show dynamic game info
-        if game_name in ['green_porter', 'athey_bagwell']:
-            logger.info(f"    📁 {game_name.upper()}: {game_conditions} conditions (3 players, dynamic metrics)")
-        else:
-            logger.info(f"    📁 {game_name.upper()}: {game_conditions} conditions (3/5 players)")
+        total_competitions += len(game_configs) * len(challenger_models)
     
-    # Detailed experimental summary
-    total_competitions = total_conditions * len(challenger_models)
-    experiment_config = get_experiment_config()
-    sims_per_competition = experiment_config.get('main_experiment_simulations', 50)
-    estimated_simulations = total_competitions * sims_per_competition
+    logger.info(f"📊 Total competitions: {total_competitions}")
     
-    logger.info("📊 EXPERIMENT SUMMARY:")
-    logger.info(f"    • Games to run: {len(games_to_run)}")
-    logger.info(f"    • Total conditions: {total_conditions}")
-    logger.info(f"    • Total competitions: {total_competitions}")
-    logger.info(f"    • Simulations per condition: {sims_per_competition}")
-    logger.info(f"    • Total simulations: {estimated_simulations}")
-    logger.info(f"    • Output structure: results/[game]/[model]/[condition]_game_output.json")
+    if MOCK_MODE:
+        logger.info("🎭 Mode: MOCK MODE")
+        logger.info("    • Mock mode: Fast execution, no API costs")
     
-    if not MOCK_MODE:
-        # More accurate time estimation
-        estimated_seconds_per_sim = 15  # Conservative estimate with thinking
-        estimated_time_hours = (estimated_simulations * estimated_seconds_per_sim) / 3600
-        logger.info(f"    • Estimated time: ~{estimated_time_hours:.1f} hours")
-        logger.info(f"    • With dynamic metrics integrated into game output")
-    else:
-        logger.info("    • Mock mode: Fast execution for testing")
-    
-    logger.info("=" * 80)
+    logger.info("=" * 100)
 
 
-async def run_game_experiments(game_name: str, competition: Competition, 
-                             selected_games: Optional[List[str]] = None) -> bool:
-    """Run experiments for a single game using new competition API"""
+async def run_game_experiments(game_name: str, competition: Competition) -> bool:
+    """Run all experiments for a specific game"""
     logger = logging.getLogger(__name__)
-    
-    # Skip if game not selected
-    if selected_games and game_name not in selected_games:
-        logger.info(f"⏭️ Skipping {game_name} (not in selected games)")
-        return True
     
     logger.info(f"🎮 Starting {game_name.upper()} experiments...")
     
     try:
-        # Get all configurations for this game using the matrix approach
-        game_configs = get_all_game_configs(game_name)
         challenger_models = get_challenger_models()
+        defender_model = get_defender_model()
+        
+        # Get all configurations for this game
+        game_configs = get_all_game_configs(game_name)
         
         total_competitions = len(game_configs) * len(challenger_models)
         completed = 0
-        successful = 0
         
         for game_config in game_configs:
             for challenger_model in challenger_models:
-                
-                logger.info(f"🚀 Running {completed+1}/{total_competitions}: "
-                          f"{challenger_model} - {game_config.condition_name}")
-                
-                # Create output directory path
-                output_dir = f"results/{game_name}/{challenger_model}"
+                logger.info(f"🔄 Competition {completed+1}/{total_competitions}: "
+                          f"{challenger_model} vs {defender_model} "
+                          f"({game_config.experiment_type}:{game_config.condition_name})")
                 
                 try:
-                    # Use new competition API
-                    success = await competition.run_single_competition(
-                        game_config=game_config,
+                    result = await competition.run_competition(
+                        game_name=game_config.game_name,
+                        experiment_type=game_config.experiment_type,
+                        condition_name=game_config.condition_name,
                         challenger_model=challenger_model,
-                        output_dir=output_dir
+                        defender_model=defender_model
                     )
                     
-                    if success:
-                        successful += 1
+                    if result:
                         logger.info(f"✅ Competition completed successfully")
                     else:
                         logger.warning(f"⚠️ Competition completed with issues")
@@ -246,134 +286,97 @@ async def run_game_experiments(game_name: str, competition: Competition,
                     
                 except Exception as e:
                     logger.error(f"❌ Competition failed: {e}")
-                    completed += 1
-                    continue
+                    return False
         
-        success_rate = successful / total_competitions if total_competitions > 0 else 0
-        logger.info(f"🎯 {game_name.upper()} experiments completed! "
-                   f"Success rate: {success_rate:.1%} ({successful}/{total_competitions})")
-        
-        # Consider it successful if at least 80% of competitions succeeded
-        return success_rate >= 0.8
+        logger.info(f"🎉 {game_name.upper()} experiments completed!")
+        return True
         
     except Exception as e:
-        logger.error(f"💥 {game_name.upper()} experiments failed: {e}", exc_info=True)
+        logger.error(f"❌ {game_name.upper()} experiments failed: {e}")
+        return False
+
+async def run_all_experiments() -> bool:
+    """Run all game experiments"""
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Get models from config
+        challenger_models = get_challenger_models()
+        defender_model = get_defender_model()
+        
+        logger.info(f"📱 Models loaded: {len(challenger_models)} challengers, defender: {defender_model}")
+        
+        # FIXED: Initialize competition with proper arguments
+        competition = Competition(challenger_models, defender_model, mock_mode=MOCK_MODE)
+        
+        # Run experiments for all games
+        games_to_run = ['salop', 'green_porter', 'spulber', 'athey_bagwell']
+        logger.info(f"🎯 Running experiments for games: {', '.join(games_to_run)}")
+        
+        # Run experiments for each game
+        all_success = True
+        for game_name in games_to_run:
+            try:
+                success = await run_game_experiments(game_name, competition)
+                if not success:
+                    all_success = False
+                    logger.error(f"❌ {game_name} experiments failed")
+                else:
+                    logger.info(f"✅ {game_name} experiments completed successfully")
+            except Exception as e:
+                logger.error(f"❌ {game_name} experiments failed with error: {e}")
+                all_success = False
+        
+        if all_success:
+            logger.info("🎯 All game experiments completed successfully!")
+        else:
+            logger.error("❌ Some experiments failed")
+            
+        return all_success
+        
+    except Exception as e:
+        logger.error(f"💥 run_all_experiments failed: {e}", exc_info=True)
         return False
 
 
-async def run_all_experiments(selected_games: Optional[List[str]] = None) -> bool:
-    """Run experiments for all games using four-folder structure"""
+async def run_analysis() -> bool:
+    """Run post-experiment analysis"""
     logger = logging.getLogger(__name__)
     
-    # Get models from config
-    challenger_models = get_challenger_models()
-    defender_model = get_defender_model()
-    
-    # Initialize competition engine with new API
-    competition = Competition(
-        challenger_models=challenger_models,
-        defender_model=defender_model,
-        mock_mode=MOCK_MODE
-    )
-    
-    # Run experiments for each game
-    games = selected_games or ['salop', 'green_porter', 'spulber', 'athey_bagwell']
-    
-    for game_name in games:
-        success = await run_game_experiments(game_name, competition, selected_games)
-        if not success:
-            logger.error(f"❌ {game_name} experiments failed, stopping pipeline")
-            return False
-    
-    logger.info("🎯 All game experiments completed successfully!")
-    return True
-
-
-async def run_comprehensive_analysis() -> bool:
-    """Run comprehensive analysis with four-folder structure"""
-    logger = logging.getLogger(__name__)
-    
-    # Skip analysis in mock mode since results are simulated
     if MOCK_MODE:
-        logger.info("📊 Skipping analysis in mock mode")
+        logger.info("🎭 Skipping analysis in mock mode")
         return True
     
-    logger.info("📊 Starting comprehensive four-folder analysis...")
-    logger.info("🔬 Including dynamic game metrics and correlation analysis")
+    logger.info("📊 Starting post-experiment analysis...")
     
     try:
-        # Import the updated analyzer that handles four-folder structure
-        from analysis.results_analyzer import analyze_four_folder_experiment
-        
-        challenger_models = get_challenger_models()
+        analyzer = ResultsAnalyzer()
         
         # Run comprehensive analysis
-        analysis_report = analyze_four_folder_experiment(
-            results_dir="results",
-            challenger_models=challenger_models,
-            output_dir="analysis_output"
-        )
+        await analyzer.run_full_analysis()
         
-        logger.info("✅ Comprehensive analysis completed!")
-        logger.info("📁 Analysis outputs:")
-        logger.info("    • comprehensive_analysis_report.json - Complete results")
-        logger.info("    • analysis_summary.md - Publication summary")
-        logger.info("    • results/[game]/[model]/ - Individual game outputs with dynamic metrics")
-        
-        # Show analysis breakdown
-        games_analyzed = analysis_report.experiment_metadata.get('games_analyzed', [])
-        for game_name in games_analyzed:
-            if game_name in ['green_porter', 'athey_bagwell']:
-                logger.info(f"    📊 {game_name}: Performance + Magic + Dynamic metrics")
-            else:
-                logger.info(f"    📊 {game_name}: Performance + Magic metrics")
-        
+        logger.info("✅ Analysis completed successfully")
         return True
         
     except Exception as e:
-        logger.error(f"💥 Analysis failed: {e}", exc_info=True)
+        logger.error(f"❌ Analysis failed: {e}")
         return False
 
 
 async def main() -> int:
-    """Main entry point with four-folder structure support"""
+    """Main execution function"""
     global MOCK_MODE
     
     # Parse command line arguments
     args = parse_arguments()
     MOCK_MODE = args.mock
     
-    # Setup logging
-    setup_logging(verbose=args.verbose)
-    logger = logging.getLogger(__name__)
+    # Setup logging first
+    logger, log_file = setup_logging(verbose=args.verbose)
     
     logger.info("🧠 Gemini Thinking LLM Game Theory Experiment Framework")
-    logger.info("📁 Four-Folder Structure with Comprehensive Dynamic Metrics")
-    logger.info("📊 Loading configuration and validating setup...")
-    
-    # Handle matrix display mode
-    if args.matrix:
-        if validate_config():
-            print_experiment_matrix()
-            return 0
-        else:
-            logger.error("❌ Configuration validation failed")
-            return 1
-    
-    # Handle analysis-only mode
-    if args.analysis_only:
-        logger.info("📊 Running analysis only...")
-        if validate_config():
-            success = await run_comprehensive_analysis()
-            if success:
-                logger.info("✅ Analysis completed successfully!")
-                return 0
-            else:
-                logger.error("❌ Analysis failed!")
-                return 1
-        else:
-            logger.error("❌ Configuration validation failed")
-            return 1
+    logger.info("🚀 Running strategic reasoning experiments with thinking analysis...")
+    logger.info(f"📝 Log file: {log_file}")
     
     # Validate configuration
     if not validate_config():
@@ -386,26 +389,14 @@ async def main() -> int:
         return 1
     
     # Display experiment overview
-    display_experiment_overview(args.games)
-    
-    # Calculate experiment scope for confirmation
-    games = args.games or ['salop', 'green_porter', 'spulber', 'athey_bagwell']
-    total_conditions = sum(len(get_all_game_configs(game)) for game in games)
-    challenger_models = get_challenger_models()
-    total_competitions = total_conditions * len(challenger_models)
-    experiment_config = get_experiment_config()
-    total_simulations = total_competitions * experiment_config.get('main_experiment_simulations', 50)
+    display_experiment_overview()
     
     # Ask for user confirmation (optional in mock mode)
     if not MOCK_MODE:
-        estimated_seconds_per_sim = 15
-        estimated_time_hours = (total_simulations * estimated_seconds_per_sim) / 3600
+        experiment_config = get_experiment_config()
+        estimated_time_hours = (experiment_config.get('main_experiment_simulations', 50) * 4 * 7) / 3600  # Rough estimate
         
-        logger.info(f"⏱️ EXPERIMENT SCOPE:")
-        logger.info(f"    • {total_competitions} competitions across {len(games)} games")
-        logger.info(f"    • {total_simulations} total simulations")
-        logger.info(f"    • Estimated time: ~{estimated_time_hours:.1f} hours")
-        logger.info(f"    • Dynamic metrics integrated for Green & Porter and Athey & Bagwell")
+        logger.info(f"⏱️ ESTIMATED EXPERIMENT TIME: ~{estimated_time_hours:.1f} hours")
         logger.info("🚀 Starting experiments in 5 seconds... (Press Ctrl+C to abort)")
         try:
             await asyncio.sleep(5)
@@ -413,30 +404,26 @@ async def main() -> int:
             logger.info("🛑 Experiment aborted by user")
             return 0
     else:
-        logger.info("🚀 Starting mock experiments with four-folder structure...")
+        logger.info("🚀 Starting mock experiments...")
     
     # Run all experiments
     try:
-        success = await run_all_experiments(args.games)
+        success = await run_all_experiments()
         
         if success:
-            # Run comprehensive analysis
+            # Run analysis (skipped in mock mode)
             if not MOCK_MODE:
-                analysis_success = await run_comprehensive_analysis()
+                analysis_success = await run_analysis()
                 if not analysis_success:
                     logger.warning("⚠️ Analysis failed, but experiments completed successfully")
             
             logger.info("=" * 100)
             logger.info("🎉 GEMINI THINKING EXPERIMENTS COMPLETED SUCCESSFULLY!")
             if not MOCK_MODE:
-                logger.info("📁 Results organized in four folders: results/[game]/[model]/")
                 logger.info("📊 Analysis results available in analysis_output/")
-                logger.info("🔬 Review analysis_summary.md for key findings")
-                logger.info("📈 Dynamic game metrics integrated in game output files")
-                logger.info("🔗 Correlation analysis between performance, magic, and dynamic metrics")
+                logger.info("🔬 Review publication_summary.md for key findings")
             else:
-                logger.info("🎭 Mock experiment completed - four-folder workflow validated!")
-                logger.info("📁 Check results/ folder structure")
+                logger.info("🎭 Mock experiment completed - workflow validated!")
             logger.info("=" * 100)
             return 0
         else:
@@ -453,8 +440,7 @@ async def main() -> int:
 
 if __name__ == "__main__":
     print("🧠 Gemini Thinking LLM Game Theory Experiment Framework")
-    print("📁 Four-Folder Structure with Comprehensive Dynamic Metrics")
-    print("🚀 Running strategic reasoning experiments with round-by-round analysis...")
+    print("🚀 Running strategic reasoning experiments with thinking analysis...")
     print()
     
     exit_code = asyncio.run(main())
