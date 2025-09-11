@@ -1,95 +1,92 @@
 {
   "models": {
     "challenger_models": [
-      "gemini_2_0_flash_lite"
+      "gemini_2_0_flash",
+      "gemini_2_0_flash_lite",
+      "gemini_2_5_flash_thinking_off",
+      "gemini_2_5_flash_lite_thinking_off",
+      "gemini_2_5_flash_thinking_low",
+      "gemini_2_5_flash_thinking_high",
+      "gemini_2_5_flash_lite_thinking_low",
+      "gemini_2_5_flash_lite_thinking_high"
     ],
-    "defender_model": "gemini_2_0_flash_lite",
-    "model_configs": {
-      "gemini_2_5_pro": {
-        "model_name": "gemini-2.5-pro",
-        "display_name": "Gemini 2.5 Pro (Thinking On - Default)",
-        "timeout": 45,
-        "temperature": 0.1,
-        "thinking_available": true,
-        "thinking_config": {
-          "thinking_budget": -1,
-          "include_thoughts": false
-        }
-      },
-      "gemini_2_5_flash_thinking_on": {
-        "model_name": "gemini-2.5-flash",
-        "display_name": "Gemini 2.5 Flash (Thinking On - Dynamic)",
-        "timeout": 30,
-        "temperature": 0.1,
-        "thinking_available": true,
-        "thinking_config": {
-          "thinking_budget": -1,
-          "include_thoughts": false
-        }
-      },
-      "gemini_2_5_flash_thinking_off": {
-        "model_name": "gemini-2.5-flash",
-        "display_name": "Gemini 2.5 Flash (Thinking Off)",
-        "timeout": 30,
-        "temperature": 0.1,
-        "thinking_available": true,
-        "thinking_config": {
-          "thinking_budget": 0,
-          "include_thoughts": false
-        }
-      },
-      "gemini_2_5_flash_lite_thinking_on": {
-        "model_name": "gemini-2.5-flash-lite",
-        "display_name": "Gemini 2.5 Flash-Lite (Thinking On - Dynamic)",
-        "timeout": 30,
-        "temperature": 0.1,
-        "thinking_available": true,
-        "thinking_config": {
-          "thinking_budget": -1,
-          "include_thoughts": false
-        }
-      },
-      "gemini_2_5_flash_lite_thinking_off": {
-        "model_name": "gemini-2.5-flash-lite",
-        "display_name": "Gemini 2.5 Flash-Lite (Thinking Off - Default)",
-        "timeout": 30,
-        "temperature": 0.1,
-        "thinking_available": true,
-        "thinking_config": {
-          "thinking_budget": 0,
-          "include_thoughts": false
-        }
-      },
-      "gemini_2_0_flash": {
-        "model_name": "gemini-2.0-flash",
-        "display_name": "Gemini 2.0 Flash (No Thinking)",
-        "timeout": 30,
-        "temperature": 0.1,
-        "thinking_available": false
-      },
-      "gemini_2_0_flash_lite": {
-        "model_name": "gemini-2.0-flash-lite",
-        "display_name": "Gemini 2.0 Flash-Lite (No Thinking)",
-        "timeout": 30,
-        "temperature": 0.1,
-        "thinking_available": false
+    "defender_model": "gemini_2_0_flash_lite"
+  },
+  "model_configs": {
+    "gemini_2_0_flash": {
+      "provider": "google",
+      "model_name": "gemini-2.0-flash",
+      "display_name": "Gemini 2.0 Flash",
+      "thinking_available": false
+    },
+    "gemini_2_0_flash_lite": {
+      "provider": "google",
+      "model_name": "gemini-2.0-flash-lite",
+      "display_name": "Gemini 2.0 Flash-Lite",
+      "thinking_available": false
+    },
+    "gemini_2_5_flash_thinking_off": {
+      "provider": "google",
+      "model_name": "gemini-2.5-flash",
+      "display_name": "Gemini 2.5 Flash (Thinking Off)",
+      "thinking_available": true,
+      "thinking_config": {
+        "thinking_budget": 0
+      }
+    },
+    "gemini_2_5_flash_lite_thinking_off": {
+      "provider": "google",
+      "model_name": "gemini-2.5-flash-lite",
+      "display_name": "Gemini 2.5 Flash-Lite (Thinking Off)",
+      "thinking_available": true,
+      "thinking_config": {
+        "thinking_budget": 0
+      }
+    },
+    "gemini_2_5_flash_thinking_low": {
+      "provider": "google",
+      "model_name": "gemini-2.5-flash",
+      "display_name": "Gemini 2.5 Flash (Low Budget)",
+      "thinking_available": true,
+      "thinking_config": {
+        "thinking_budget": 1024,
+        "include_thoughts": true
+      }
+    },
+    "gemini_2_5_flash_thinking_high": {
+      "provider": "google",
+      "model_name": "gemini-2.5-flash",
+      "display_name": "Gemini 2.5 Flash (High Budget)",
+      "thinking_available": true,
+      "thinking_config": {
+        "thinking_budget": 8192,
+        "include_thoughts": true
+      }
+    },
+    "gemini_2_5_flash_lite_thinking_low": {
+      "provider": "google",
+      "model_name": "gemini-2.5-flash-lite",
+      "display_name": "Gemini 2.5 Flash-Lite (Low Budget)",
+      "thinking_available": true,
+      "thinking_config": {
+        "thinking_budget": 1024,
+        "include_thoughts": true
+      }
+    },
+    "gemini_2_5_flash_lite_thinking_high": {
+      "provider": "google",
+      "model_name": "gemini-2.5-flash-lite",
+      "display_name": "Gemini 2.5 Flash-Lite (High Budget)",
+      "thinking_available": true,
+      "thinking_config": {
+        "thinking_budget": 8192,
+       "include_thoughts": true
       }
     }
   },
-
-  "api": {
-    "google": {
-      "api_key_env": "GEMINI_API_KEY",
-      "timeout": 60,
-      "max_retries": 3
-    }
-  },
   "experiment_config": {
-    "main_experiment_simulations": 1,
-    "ablation_experiment_simulations": 1,
-    "include_thoughts": true,
-    "save_intermediate_results": true,
-    "checkpoint_enabled": true
+    "main_experiment_simulations": 50,
+    "ablation_experiment_simulations": 50
   },
   "game_configs": {
     "salop": {
@@ -131,10 +128,10 @@
       },
       "structural_variations": {
         "15rounds": {
-          "time_horizon": 1
+          "time_horizon": 15
         },
         "50rounds": {
-          "time_horizon": 2
+          "time_horizon": 50
         }
       },
       "ablation_studies": {
@@ -149,13 +146,11 @@
         "demand_intercept": 100,
         "number_of_players": 3,
         "rival_cost_mean": 10,
-        "rival_cost_std": 2.0
+        "rival_cost_std": 2.0,
+        "type": "normal"
       },
       "challenger_config": {
         "your_cost": 8
-      },
-      "defender_config": {
-        "their_cost": 10
       },
       "structural_variations": {
         "3player": {
@@ -167,8 +162,7 @@
       },
       "ablation_studies": {
         "wide_cost_range": {
-          "rival_cost_std": 4.0,
-          "description": "Very wide cost range increases uncertainty"
+          "rival_cost_std": 4.0
         }
       }
     },
@@ -185,10 +179,10 @@
       },
       "structural_variations": {
         "15rounds": {
-          "time_horizon": 1
+          "time_horizon": 15
         },
         "50rounds": {
-          "time_horizon": 2
+          "time_horizon": 50
         }
       },
       "ablation_studies": {
@@ -206,19 +200,11 @@
   },
   "output": {
     "results_dir": "results",
-    "analysis_dir": "analysis",
-    "save_raw_responses": true,
-    "save_thinking_traces": true
+    "analysis_dir": "analysis_output"
   },
   "api_config": {
     "rate_limit_delay": 1.0,
     "max_retries": 3,
     "timeout": 30
-  },
-  "checkpoint_config": {
-    "enabled": true,
-    "save_frequency": 10,
-    "checkpoint_dir": "checkpoints",
-    "resume_from_checkpoint": false
   }
 }

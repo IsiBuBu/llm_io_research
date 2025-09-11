@@ -18,7 +18,8 @@ You are Firm in a {number_of_players}-firm cartel operating over many periods. T
 ## Current Game State
 - **Period:** {current_round}
 - **Your true cost this period:** {your_cost_type}
-- **History of all firms' past reports:** {all_reports_history_detailed}
+- **History of all your past reports:** {your_reports_history_detailed}
+- **History of all other firms' past reports:** {all_other_reports_history_detailed}
 
 ## Your Task
 Decide whether to report your cost as "high" or "low" for this period to maximize your total long-term profit.
