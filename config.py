@@ -1,12 +1,12 @@
 """
-Configuration Management - Updated for Gemini-only experiments with thinking support
+Configuration Management - Updated for new config.json structure
 Handles game configs, model configs, and prompt variable generation
 """
 
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Union
+from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 
 
@@ -28,10 +28,7 @@ class GameConfig:
         }
     
     def get(self, key: str, default: Any = None) -> Any:
-        """
-        Provide .get() method for backward compatibility
-        Delegates to constants dictionary
-        """
+        """Provide .get() method for backward compatibility"""
         return self.constants.get(key, default)
 
 
@@ -52,89 +49,87 @@ def load_config_file() -> Dict[str, Any]:
         raise RuntimeError(f"Failed to load config file: {e}")
 
 
-def get_output_dir() -> str:
-    """Get output directory from configuration"""
+def get_challenger_models() -> List[str]:
+    """Get list of challenger models"""
     config = load_config_file()
-    output_config = config.get('output', {})
-    return output_config.get('results_dir', 'results')
+    return config.get('models', {}).get('challenger_models', [])
 
 
-def get_prompt_variables(game_config: GameConfig, player_id: str = "A", 
-                        current_round: int = 1, **dynamic_vars) -> Dict[str, Any]:
-    """Get all variables needed for prompt formatting"""
-
-    constants = game_config.constants
-    
-    # Base variables
-    variables = {
-        'player_id': player_id,
-        'current_round': current_round,
-        'number_of_players': constants.get('number_of_players', 3),
-    }
-    
-    # Add all constants
-    variables.update(constants)
-    
-    # Game-specific variable mappings
-    if game_config.game_name == 'salop':
-        variables.update({
-            'market_size': constants.get('market_size', 1000),
-            'marginal_cost': constants.get('marginal_cost', 8),
-            'fixed_cost': constants.get('fixed_cost', 100),
-            'transport_cost': constants.get('transport_cost', 1.5),
-            'v': constants.get('v', 30)
-        })
-    
-    elif game_config.game_name == 'green_porter':
-        variables.update({
-            'time_horizon': constants.get('time_horizon', 50),
-            'base_demand': constants.get('base_demand', 120),
-            'marginal_cost': constants.get('marginal_cost', 20),
-            'demand_shock_std': constants.get('demand_shock_std', 5),
-            'trigger_price': constants.get('trigger_price', 55),
-            'punishment_duration': constants.get('punishment_duration', 3),
-            'collusive_quantity': constants.get('collusive_quantity', 17),
-            'cournot_quantity': constants.get('cournot_quantity', 25),
-            'discount_factor': constants.get('discount_factor', 0.95),
-            'current_market_state': dynamic_vars.get('current_market_state', 'Collusive'),
-            'price_history': dynamic_vars.get('price_history', [])
-        })
-    
-    elif game_config.game_name == 'spulber':
-        variables.update({
-            'market_size': constants.get('market_size', 100),
-            'demand_intercept': constants.get('demand_intercept', 100),
-            'rival_cost_mean': constants.get('rival_cost_mean', 10),
-            'rival_cost_std': constants.get('rival_cost_std', 2.0),
-            'your_cost': constants.get('private_values', {}).get('challenger_cost', 8)
-        })
-    
-    elif game_config.game_name == 'athey_bagwell':
-        cost_types = constants.get('cost_types', {'low': 15, 'high': 25})
-        variables.update({
-            'time_horizon': constants.get('time_horizon', 50),
-            'cost_types': cost_types,  # Keep as dict for template access like {cost_types[high]}
-            'persistence_probability': constants.get('persistence_probability', 0.7),
-            'market_price': constants.get('market_price', 30),
-            'market_size': constants.get('market_size', 100),
-            'discount_factor': constants.get('discount_factor', 0.95),
-            'your_cost_type': dynamic_vars.get('your_cost_type', 'high'),
-            'all_reports_history_detailed': dynamic_vars.get('all_reports_history_detailed', [])
-        })
-    
-    # Add any additional dynamic variables
-    variables.update(dynamic_vars)
-    
-    return variables
+def get_defender_model() -> str:
+    """Get defender model name"""
+    config = load_config_file()
+    return config.get('models', {}).get('defender_model', 'gemini_2_0_flash_lite')
 
 
-# Backward compatibility alias
-def generate_prompt_variables(game_config: GameConfig, 
-                            dynamic_vars: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    """Backward compatibility wrapper for get_prompt_variables"""
-    if dynamic_vars is None:
-        dynamic_vars = {}
-    return get_prompt_variables(game_config, **dynamic_vars)
+def get_model_config(model_name: str) -> Dict[str, Any]:
+    """Get configuration for a specific model"""
+    config = load_config_file()
+    model_configs = config.get('models', {}).get('model_configs', {})
+    
+    if model_name not in model_configs:
+        raise ValueError(f"Model '{model_name}' not found in configuration")
+    
+    return model_configs[model_name]
+
+
+def get_model_display_name(model_name: str) -> str:
+    """Get display name for a model"""
+    try:
+        model_config = get_model_config(model_name)
+        return model_config.get('display_name', model_name)
+    except Exception:
+        return model_name
+
+
+def is_thinking_enabled(model_name: str) -> bool:
+    """Check if thinking is enabled for a model"""
+    try:
+        model_config = get_model_config(model_name)
+        
+        if not model_config.get('thinking_available', False):
+            return False
+
+        thinking_config = model_config.get('thinking_config', {})
+        thinking_budget = thinking_config.get('thinking_budget', 0)
+        
+        # Thinking is enabled if budget > 0
+        return thinking_budget > 0
+        
+    except Exception:
+        return False
+
+
+def get_thinking_config(model_name: str) -> Optional[Dict[str, Any]]:
+    """Get thinking configuration for a model"""
+    try:
+        model_config = get_model_config(model_name)
+        
+        if not model_config.get('thinking_available', False):
+            return None
+        
+        return model_config.get('thinking_config')
+        
+    except Exception:
+        return None
+
+
+def get_experiment_config() -> Dict[str, Any]:
+    """Get experiment configuration"""
+    config = load_config_file()
+    return config.get('experiment_config', {})
+
+
+def get_simulation_count(experiment_type: str) -> int:
+    """Get number of simulations for experiment type"""
+    config = load_config_file()
+    experiment_config = config.get('experiment_config', {})
+    
+    if experiment_type in ['baseline', 'structural_variations']:
+        return experiment_config.get('main_experiment_simulations', 50)
+    elif experiment_type == 'ablation_studies':
+        return experiment_config.get('ablation_experiment_simulations', 50)
+    else:
+        return experiment_config.get('main_experiment_simulations', 50)
 
 
 def get_game_config(game_name: str, experiment_type: str, 
@@ -219,45 +214,90 @@ def get_all_experimental_configs() -> List[GameConfig]:
     return all_configs
 
 
-def get_model_config(model_name: str) -> Dict[str, Any]:
-    """Get configuration for a specific model"""
+def get_output_dir() -> str:
+    """Get output directory from configuration"""
     config = load_config_file()
-    model_configs = config.get('models', {}).get('model_configs', {})
-    
-    if model_name not in model_configs:
-        raise ValueError(f"Model '{model_name}' not found in configuration")
-    
-    return model_configs[model_name]
-
-
-def get_challenger_models() -> List[str]:
-    """Get list of challenger models"""
-    config = load_config_file()
-    return config.get('models', {}).get('challenger_models', [])
-
-
-def get_defender_model() -> str:
-    """Get defender model name"""
-    config = load_config_file()
-    return config.get('models', {}).get('defender_model', 'gemini_2_0_flash_lite')
-
-
-def get_experiment_config() -> Dict[str, Any]:
-    """Get experiment configuration"""
-    config = load_config_file()
-    return config.get('experiment_config', {})
+    output_config = config.get('output', {})
+    return output_config.get('results_dir', 'results')
 
 
 def get_api_config() -> Dict[str, Any]:
     """Get API configuration"""
     config = load_config_file()
-    return config.get('api', {})
+    return config.get('api_config', {})
 
 
 def get_logging_config() -> Dict[str, Any]:
     """Get logging configuration"""
     config = load_config_file()
     return config.get('logging', {})
+
+
+def get_prompt_variables(game_config: GameConfig, player_id: str = "A", 
+                        current_round: int = 1, **dynamic_vars) -> Dict[str, Any]:
+    """Get all variables needed for prompt formatting"""
+    constants = game_config.constants
+    
+    # Base variables
+    variables = {
+        'player_id': player_id,
+        'current_round': current_round,
+        'game_name': game_config.game_name,
+        'experiment_type': game_config.experiment_type,
+        'condition_name': game_config.condition_name,
+    }
+    
+    # Add all game constants
+    variables.update(constants)
+    
+    # Game-specific variables
+    if game_config.game_name == 'salop':
+        variables.update({
+            'transport_cost': constants.get('transport_cost', 1.5),
+            'number_of_players': constants.get('number_of_players', 3),
+            'v': constants.get('v', 30),
+            'marginal_cost': constants.get('marginal_cost', 8),
+            'fixed_cost': constants.get('fixed_cost', 100),
+            'market_size': constants.get('market_size', 1000)
+        })
+    
+    elif game_config.game_name == 'green_porter':
+        variables.update({
+            'base_demand': constants.get('base_demand', 120),
+            'marginal_cost': constants.get('marginal_cost', 20),
+            'collusive_quantity': constants.get('collusive_quantity', 17),
+            'cournot_quantity': constants.get('cournot_quantity', 25),
+            'time_horizon': constants.get('time_horizon', 50),
+            'demand_shock_std': constants.get('demand_shock_std', 5),
+            'trigger_price': constants.get('trigger_price', 55),
+            'punishment_duration': constants.get('punishment_duration', 3),
+            'discount_factor': constants.get('discount_factor', 0.95)
+        })
+    
+    elif game_config.game_name == 'spulber':
+        variables.update({
+            'demand_intercept': constants.get('demand_intercept', 100),
+            'rival_cost_mean': constants.get('rival_cost_mean', 10),
+            'rival_cost_std': constants.get('rival_cost_std', 2.0),
+            'type': constants.get('type', 'normal'),
+            'your_cost': constants.get('your_cost', 8)
+        })
+    
+    elif game_config.game_name == 'athey_bagwell':
+        variables.update({
+            'time_horizon': constants.get('time_horizon', 50),
+            'persistence_probability': constants.get('persistence_probability', 0.7),
+            'high_cost_value': constants.get('high_cost_value', 25),
+            'low_cost_value': constants.get('low_cost_value', 15),
+            'market_price': constants.get('market_price', 30),
+            'market_size': constants.get('market_size', 100),
+            'discount_factor': constants.get('discount_factor', 0.95)
+        })
+    
+    # Add any additional dynamic variables
+    variables.update(dynamic_vars)
+    
+    return variables
 
 
 def validate_config() -> bool:
@@ -268,7 +308,7 @@ def validate_config() -> bool:
         config = load_config_file()
         
         # Check required sections
-        required_sections = ['models', 'api', 'game_configs', 'experiment_config']
+        required_sections = ['models', 'game_configs', 'experiment_config']
         for section in required_sections:
             if section not in config:
                 logger.error(f"Missing required section: {section}")
@@ -315,17 +355,6 @@ def validate_config() -> bool:
                 logger.error(f"Missing baseline config for game: {game}")
                 return False
         
-        # Validate API config
-        api_config = config.get('api', {})
-        if 'google' not in api_config:
-            logger.error("Missing Google API configuration")
-            return False
-        
-        google_config = api_config['google']
-        if 'api_key_env' not in google_config:
-            logger.error("Missing Google API key environment variable name")
-            return False
-        
         logger.info("Configuration validation passed")
         return True
         
@@ -334,64 +363,8 @@ def validate_config() -> bool:
         return False
 
 
-def get_simulation_count(experiment_type: str) -> int:
-    """Get number of simulations for experiment type"""
-    config = load_config_file()
-    experiment_config = config.get('experiment_config', {})
-    
-    if experiment_type in ['baseline', 'structural_variations']:
-        return experiment_config.get('main_experiment_simulations', 50)
-    elif experiment_type == 'ablation_studies':
-        return experiment_config.get('ablation_experiment_simulations', 20)
-    else:
-        return experiment_config.get('main_experiment_simulations', 50)
-
-
-def is_thinking_enabled(model_name: str) -> bool:
-    """Check if thinking is enabled for a model"""
-    try:
-        model_config = get_model_config(model_name)
-        
-        if not model_config.get('thinking_available', False):
-            return False
-
-        thinking_config = model_config.get('thinking_config', {})
-        thinking_budget = thinking_config.get('thinking_budget', 0)
-        
-        # Thinking is enabled if budget > 0 or -1 (dynamic)
-        return thinking_budget != 0
-        
-    except Exception:
-        return False
-
-
-def get_thinking_config(model_name: str) -> Optional[Dict[str, Any]]:
-    """Get thinking configuration for a model"""
-    try:
-        model_config = get_model_config(model_name)
-        
-        if not model_config.get('thinking_available', False):
-            return None
-        
-        return model_config.get('thinking_config')
-        
-    except Exception:
-        return None
-
-
-def get_model_display_name(model_name: str) -> str:
-    """Get display name for a model"""
-    try:
-        model_config = get_model_config(model_name)
-        return model_config.get('display_name', model_name)
-    except Exception:
-        return model_name
-
-
 def create_experiment_summary() -> Dict[str, Any]:
     """Create summary of experimental configuration"""
-    config = load_config_file()
-    
     challenger_models = get_challenger_models()
     defender_model = get_defender_model()
     
