@@ -1,5 +1,5 @@
 """
-Base Game Classes - Fixed version with proper parameter validation
+Base Game Classes - Fixed version with proper parameter validation and enhanced parsing
 Provides abstract base classes for economic games with robust error handling
 """
 
@@ -43,6 +43,218 @@ def validate_action_bounds(action: Dict[str, Any], bounds: Dict[str, tuple]) -> 
                 validated[field] = max(min_val, min(max_val, float(value)))
     
     return validated
+
+
+def validate_game_params(game_state, game_config, method_name=""):
+    """Validate that parameters are correct types"""
+    if game_state is not None and not isinstance(game_state, dict):
+        raise TypeError(
+            f"ERROR in {method_name}: game_state must be Dict, got {type(game_state)}. "
+            f"This suggests GameConfig was passed instead of game_state. "
+            f"Check parameter order!"
+        )
+    
+    if game_config is not None and not isinstance(game_config, GameConfig):
+        raise TypeError(
+            f"ERROR in {method_name}: game_config must be GameConfig, got {type(game_config)}. "
+            f"Check parameter order!"
+        )
+
+
+class PriceParsingMixin:
+    """Mixin for games that need price parsing (Salop, Spulber)"""
+    
+    def parse_price_response(self, response: str, player_id: str, call_id: str) -> Optional[Dict[str, Any]]:
+        """Parse price/bid decision from LLM response"""
+        
+        # Try JSON parsing first
+        json_action = self.robust_json_parse(response)
+        if json_action:
+            for price_field in ['price', 'bid']:
+                if price_field in json_action:
+                    price = json_action[price_field]
+                    if isinstance(price, (int, float)) and price >= 0:
+                        return {price_field: float(price), 'raw_response': response, 'parsing_method': 'json'}
+        
+        # Try numeric extraction
+        for field in ['price', 'bid']:
+            price = extract_numeric_value(response, field)
+            if price is not None and price > 0:
+                return {field: price, 'parsing_method': 'regex', 'raw_response': response}
+        
+        # Try simple number extraction - first reasonable number found
+        number_patterns = [r'\$?(\d+\.?\d*)', r'(\d+\.\d+)']
+        
+        for pattern in number_patterns:
+            matches = re.findall(pattern, response)
+            if matches:
+                try:
+                    price = float(matches[0])
+                    if price > 0:
+                        return {'price': price, 'parsing_method': 'number_extraction', 'raw_response': response}
+                except ValueError:
+                    continue
+        
+        return None
+
+
+class QuantityParsingMixin:
+    """Mixin for games that need quantity parsing (Green-Porter)"""
+    
+    def parse_quantity_response(self, response: str, player_id: str, call_id: str) -> Optional[Dict[str, Any]]:
+        """Parse quantity decision from LLM response"""
+        
+        # Try JSON parsing first
+        json_action = self.robust_json_parse(response)
+        if json_action:
+            if 'quantity' in json_action:
+                quantity = json_action['quantity']
+                if isinstance(quantity, (int, float)) and quantity >= 0:
+                    return {'quantity': float(quantity), 'raw_response': response, 'parsing_method': 'json'}
+        
+        # Try numeric extraction
+        quantity = extract_numeric_value(response, 'quantity')
+        if quantity is not None and quantity >= 0:
+            return {'quantity': quantity, 'parsing_method': 'regex', 'raw_response': response}
+        
+        # Try simple number extraction
+        number_patterns = [r'(\d+\.?\d*)', r'(\d+\.\d+)']
+        
+        for pattern in number_patterns:
+            matches = re.findall(pattern, response)
+            if matches:
+                try:
+                    quantity = float(matches[0])
+                    if quantity >= 0:
+                        return {'quantity': quantity, 'parsing_method': 'number_extraction', 'raw_response': response}
+                except ValueError:
+                    continue
+        
+        return None
+
+
+class ReportParsingMixin:
+    """Enhanced mixin for games that need report parsing (Athey-Bagwell)"""
+    
+    def parse_report_response(self, response: str, player_id: str, call_id: str) -> Optional[Dict[str, Any]]:
+        """Parse cost report decision from LLM response with enhanced robustness"""
+        
+        if not response or not isinstance(response, str):
+            return None
+        
+        # Log the response for debugging
+        self.logger.debug(f"[{call_id}] Parsing response from {player_id}: {response[:200]}...")
+        
+        # Clean and normalize the response
+        text_lower = response.lower().strip()
+        
+        # Strategy 1: Try JSON parsing first
+        json_action = self.robust_json_parse(response)
+        if json_action:
+            for report_field in ['report', 'cost_report', 'decision', 'action']:
+                if report_field in json_action:
+                    report = json_action[report_field]
+                    if isinstance(report, str) and report.lower() in ['high', 'low']:
+                        return {'report': report.lower(), 'raw_response': response, 'parsing_method': 'json'}
+        
+        # Strategy 2: Look for explicit report patterns with various formats
+        report_patterns = [
+            # JSON-like patterns
+            r'"?report"?\s*[:\s=]\s*"?(high|low)"?',
+            r'"?cost_report"?\s*[:\s=]\s*"?(high|low)"?',
+            r'"?decision"?\s*[:\s=]\s*"?(high|low)"?',
+            r'"?action"?\s*[:\s=]\s*"?(high|low)"?',
+            
+            # Natural language patterns
+            r'report(?:ing)?\s+(?:a\s+)?(high|low)\s+cost',
+            r'(?:my\s+)?cost\s+(?:is\s+)?(high|low)',
+            r'(?:i\s+(?:will\s+)?)?report\s+(high|low)',
+            r'(?:i\s+(?:am\s+)?)?report(?:ing)?\s+(high|low)',
+            r'(?:i\s+)?choose\s+(?:to\s+report\s+)?(high|low)',
+            r'(?:i\s+)?select\s+(high|low)',
+            r'(?:my\s+)?decision\s+(?:is\s+)?(high|low)',
+            
+            # Answer patterns
+            r'answer\s*[:\s]\s*(high|low)',
+            r'response\s*[:\s]\s*(high|low)',
+            r'final\s+(?:answer|decision)\s*[:\s]\s*(high|low)',
+            
+            # Direct declaration patterns
+            r'(high|low)\s+cost(?:\s+report)?',
+            r'report\s*[:\s]\s*(high|low)',
+        ]
+        
+        for pattern in report_patterns:
+            match = re.search(pattern, text_lower, re.IGNORECASE)
+            if match:
+                report_value = match.group(1).lower()
+                self.logger.debug(f"[{call_id}] Found report '{report_value}' using pattern: {pattern}")
+                return {'report': report_value, 'parsing_method': 'regex', 'raw_response': response}
+        
+        # Strategy 3: Simple word detection with context validation
+        high_words = ['high']
+        low_words = ['low']
+        
+        # Count occurrences in relevant context
+        high_count = 0
+        low_count = 0
+        
+        # Look for words in decision-making context
+        decision_context_patterns = [
+            r'(?:report|decision|choose|select|answer|cost)\s+\w*\s*(high|low)',
+            r'(high|low)\s+(?:cost|report|decision)',
+        ]
+        
+        for pattern in decision_context_patterns:
+            matches = re.findall(pattern, text_lower)
+            for match in matches:
+                if match == 'high':
+                    high_count += 1
+                elif match == 'low':
+                    low_count += 1
+        
+        # If no context matches, do simple word counting
+        if high_count == 0 and low_count == 0:
+            high_count = len(re.findall(r'\bhigh\b', text_lower))
+            low_count = len(re.findall(r'\blow\b', text_lower))
+        
+        # Decide based on counts
+        if high_count > low_count and high_count > 0:
+            self.logger.debug(f"[{call_id}] Found 'high' by word detection (high: {high_count}, low: {low_count})")
+            return {'report': 'high', 'parsing_method': 'word_detection', 'raw_response': response}
+        elif low_count > high_count and low_count > 0:
+            self.logger.debug(f"[{call_id}] Found 'low' by word detection (high: {high_count}, low: {low_count})")
+            return {'report': 'low', 'parsing_method': 'word_detection', 'raw_response': response}
+        
+        # Strategy 4: Fallback patterns for common LLM response formats
+        fallback_patterns = [
+            r'based\s+on\s+.*?(high|low)',
+            r'therefore\s+.*?(high|low)',
+            r'so\s+(?:i\s+)?(?:will\s+)?.*?(high|low)',
+            r'thus\s+.*?(high|low)',
+            r'consequently\s+.*?(high|low)',
+            r'(?:my|the)\s+choice\s+(?:is\s+)?(high|low)',
+            r'(?:i\s+)?(?:would\s+)?(?:like\s+to\s+)?(?:choose\s+)?(high|low)',
+        ]
+        
+        for pattern in fallback_patterns:
+            match = re.search(pattern, text_lower)
+            if match:
+                report_value = match.group(1).lower()
+                self.logger.debug(f"[{call_id}] Found report '{report_value}' using fallback pattern: {pattern}")
+                return {'report': report_value, 'parsing_method': 'fallback_regex', 'raw_response': response}
+        
+        # Strategy 5: Last resort - look for any occurrence of "high" or "low"
+        if 'low' in text_lower and 'high' not in text_lower:
+            self.logger.debug(f"[{call_id}] Last resort: found only 'low' in response")
+            return {'report': 'low', 'parsing_method': 'last_resort', 'raw_response': response}
+        elif 'high' in text_lower and 'low' not in text_lower:
+            self.logger.debug(f"[{call_id}] Last resort: found only 'high' in response")
+            return {'report': 'high', 'parsing_method': 'last_resort', 'raw_response': response}
+        
+        # If all strategies fail, log the response for debugging
+        self.logger.warning(f"[{call_id}] FAILED to parse report from {player_id}. Response: {response[:500]}")
+        return None
 
 
 class EconomicGame(ABC):
@@ -259,118 +471,6 @@ class DynamicGame(EconomicGame):
         current_round = game_state.get('current_round', 1)
         game_state['current_round'] = current_round + 1
         return game_state
-
-
-# Response Parsing Examples for Different Game Types
-
-class PriceParsingMixin:
-    """Mixin for games that need price parsing (Salop, Spulber)"""
-    
-    def parse_price_response(self, response: str, player_id: str, call_id: str) -> Optional[Dict[str, Any]]:
-        """Parse price/bid decision from LLM response"""
-        
-        # Try JSON parsing first
-        json_action = self.robust_json_parse(response)
-        if json_action:
-            for price_field in ['price', 'bid']:
-                if price_field in json_action:
-                    price = json_action[price_field]
-                    if isinstance(price, (int, float)) and price >= 0:
-                        return {price_field: float(price), 'raw_response': response, 'parsing_method': 'json'}
-        
-        # Try numeric extraction
-        for field in ['price', 'bid']:
-            price = extract_numeric_value(response, field)
-            if price is not None and price > 0:
-                return {field: price, 'parsing_method': 'regex', 'raw_response': response}
-        
-        # Try simple number extraction - first reasonable number found
-        number_patterns = [r'\$?(\d+\.?\d*)', r'(\d+\.?\d*)', r'(\d+\.\d+)']
-        
-        for pattern in number_patterns:
-            matches = re.findall(pattern, response)
-            if matches:
-                try:
-                    price = float(matches[0])
-                    if price > 0:
-                        return {'price': price, 'parsing_method': 'number_extraction', 'raw_response': response}
-                except ValueError:
-                    continue
-        
-        return None
-
-
-class QuantityParsingMixin:
-    """Mixin for games that need quantity parsing (Green-Porter)"""
-    
-    def parse_quantity_response(self, response: str, player_id: str, call_id: str) -> Optional[Dict[str, Any]]:
-        """Parse quantity decision from LLM response"""
-        
-        # Try JSON parsing first
-        json_action = self.robust_json_parse(response)
-        if json_action:
-            if 'quantity' in json_action:
-                quantity = json_action['quantity']
-                if isinstance(quantity, (int, float)) and quantity >= 0:
-                    return {'quantity': float(quantity), 'raw_response': response, 'parsing_method': 'json'}
-        
-        # Try numeric extraction
-        quantity = extract_numeric_value(response, 'quantity')
-        if quantity is not None and quantity >= 0:
-            return {'quantity': quantity, 'parsing_method': 'regex', 'raw_response': response}
-        
-        # Try simple number extraction
-        number_patterns = [r'(\d+\.?\d*)', r'(\d+\.\d+)']
-        
-        for pattern in number_patterns:
-            matches = re.findall(pattern, response)
-            if matches:
-                try:
-                    quantity = float(matches[0])
-                    if quantity >= 0:
-                        return {'quantity': quantity, 'parsing_method': 'number_extraction', 'raw_response': response}
-                except ValueError:
-                    continue
-        
-        return None
-
-
-class ReportParsingMixin:
-    """Mixin for games that need report parsing (Athey-Bagwell)"""
-    
-    def parse_report_response(self, response: str, player_id: str, call_id: str) -> Optional[Dict[str, Any]]:
-        """Parse cost report decision from LLM response"""
-        
-        # Try JSON parsing first
-        json_action = self.robust_json_parse(response)
-        if json_action:
-            if 'report' in json_action:
-                report = json_action['report']
-                if isinstance(report, str) and report.lower() in ['high', 'low']:
-                    return {'report': report.lower(), 'raw_response': response, 'parsing_method': 'json'}
-        
-        # Try text extraction
-        text_lower = response.lower()
-        
-        # Look for explicit report patterns
-        report_patterns = [
-            r'report["\']?\s*[:=]\s*["\']?(high|low)["\']?',
-            r'"report"["\']?\s*[:=]\s*["\']?(high|low)["\']?',
-            r"'report'[\"']?\s*[:=]\s*[\"']?(high|low)[\"']?"
-        ]
-        
-        for pattern in report_patterns:
-            match = re.search(pattern, text_lower)
-            if match:
-                return {'report': match.group(1), 'parsing_method': 'regex', 'raw_response': response}
-        
-        # Simple word detection
-        if 'low' in text_lower and 'high' not in text_lower:
-            return {'report': 'low', 'parsing_method': 'word_detection', 'raw_response': response}
-        elif 'high' in text_lower and 'low' not in text_lower:
-            return {'report': 'high', 'parsing_method': 'word_detection', 'raw_response': response}
-        
-        return None
 
 
 # Utility functions for game implementations
