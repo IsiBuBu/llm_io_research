@@ -6,9 +6,9 @@
       "gemini_2_5_flash_thinking_off",
       "gemini_2_5_flash_lite_thinking_off",
       "gemini_2_5_flash_thinking_low",
-      "gemini_2_5_flash_thinking_high",
+      "gemini_2_5_flash_thinking_medium",
       "gemini_2_5_flash_lite_thinking_low",
-      "gemini_2_5_flash_lite_thinking_high"
+      "gemini_2_5_flash_lite_thinking_medium"
     ],
     "defender_model": "gemini_2_0_flash_lite"
   },
@@ -56,7 +56,7 @@
     "gemini_2_5_flash_thinking_high": {
       "provider": "google",
       "model_name": "gemini-2.5-flash",
-      "display_name": "Gemini 2.5 Flash (High Budget)",
+      "display_name": "Gemini 2.5 Flash (Medium Budget)",
       "thinking_available": true,
       "thinking_config": {
         "thinking_budget": 8192,
@@ -76,7 +76,7 @@
     "gemini_2_5_flash_lite_thinking_high": {
       "provider": "google",
       "model_name": "gemini-2.5-flash-lite",
-      "display_name": "Gemini 2.5 Flash-Lite (High Budget)",
+      "display_name": "Gemini 2.5 Flash-Lite (Medium Budget)",
       "thinking_available": true,
       "thinking_config": {
         "thinking_budget": 8192,
@@ -99,10 +99,10 @@
         "market_size": 1000
       },
       "structural_variations": {
-        "3player": {
+        "few_players": {
           "number_of_players": 3
         },
-        "5player": {
+        "more_players": {
           "number_of_players": 5
         }
       },
@@ -120,17 +120,16 @@
         "collusive_quantity": 17,
         "cournot_quantity": 25,
         "number_of_players": 3,
-        "time_horizon": 50,
         "demand_shock_std": 5,
         "trigger_price": 55,
         "punishment_duration": 3,
         "discount_factor": 0.95
       },
       "structural_variations": {
-        "15rounds": {
+        "short_time_horizon": {
           "time_horizon": 15
         },
-        "50rounds": {
+        "long_time_horizon": {
           "time_horizon": 50
         }
       },
@@ -153,10 +152,10 @@
         "your_cost": 8
       },
       "structural_variations": {
-        "3player": {
+        "few_players": {
           "number_of_players": 3
         },
-        "5player": {
+        "more_players": {
           "number_of_players": 5
         }
       },
@@ -169,7 +168,6 @@
     "athey_bagwell": {
       "baseline": {
         "number_of_players": 3,
-        "time_horizon": 50,
         "persistence_probability": 0.7,
         "high_cost_value": 25,
         "low_cost_value": 15,
@@ -178,10 +176,10 @@
         "discount_factor": 0.95
       },
       "structural_variations": {
-        "15rounds": {
+        "short_time_horizon": {
           "time_horizon": 15
         },
-        "50rounds": {
+        "long_time_horizon": {
           "time_horizon": 50
         }
       },
@@ -200,7 +198,7 @@
   },
   "output": {
     "results_dir": "results",
-    "analysis_dir": "analysis_output"
+    "analysis_dir": "analysis"
   },
   "api_config": {
     "rate_limit_delay": 1.0,

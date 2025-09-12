@@ -1,76 +1,52 @@
+#!/usr/bin/env python3
 """
-Configuration Management - Updated for new config.json structure
-Handles game configs, model configs, and prompt variable generation
+Configuration management for Economics LLM Experiments
+
+Updated to work with the new config.json structure containing:
+- models and model_configs sections
+- game_configs (instead of games)  
+- experiment_config, logging, output, api_config
 """
 
 import json
-import logging
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 
-
 @dataclass
 class GameConfig:
-    """Configuration for a specific game experiment"""
-    game_name: str
-    experiment_type: str  # 'baseline', 'structural_variations', 'ablation_studies'
-    condition_name: str
+    """Game configuration data class"""
     constants: Dict[str, Any]
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for serialization"""
-        return {
-            'game_name': self.game_name,
-            'experiment_type': self.experiment_type,
-            'condition_name': self.condition_name,
-            'constants': self.constants
-        }
-    
-    def get(self, key: str, default: Any = None) -> Any:
-        """Provide .get() method for backward compatibility"""
-        return self.constants.get(key, default)
+    challenger_config: Optional[Dict[str, Any]] = None
 
-
-def load_config_file() -> Dict[str, Any]:
-    """Load configuration from config.json"""
-    config_path = Path("config.json")
+def load_config_file(config_path: str = "config.json") -> Dict[str, Any]:
+    """Load configuration from JSON file."""
+    config_file = Path(config_path)
+    if not config_file.exists():
+        raise FileNotFoundError(f"Config file not found: {config_path}")
     
-    if not config_path.exists():
-        raise FileNotFoundError(f"Configuration file not found: {config_path}")
-    
-    try:
-        with open(config_path, 'r', encoding='utf-8') as f:
-            config = json.load(f)
-        return config
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Invalid JSON in config file: {e}")
-    except Exception as e:
-        raise RuntimeError(f"Failed to load config file: {e}")
-
+    with open(config_file, 'r') as f:
+        return json.load(f)
 
 def get_challenger_models() -> List[str]:
-    """Get list of challenger models"""
+    """Get list of challenger model names"""
     config = load_config_file()
     return config.get('models', {}).get('challenger_models', [])
-
 
 def get_defender_model() -> str:
     """Get defender model name"""
     config = load_config_file()
-    return config.get('models', {}).get('defender_model', 'gemini_2_0_flash_lite')
-
+    return config.get('models', {}).get('defender_model', '')
 
 def get_model_config(model_name: str) -> Dict[str, Any]:
     """Get configuration for a specific model"""
     config = load_config_file()
-    model_configs = config.get('models', {}).get('model_configs', {})
+    model_configs = config.get('model_configs', {})
     
     if model_name not in model_configs:
-        raise ValueError(f"Model '{model_name}' not found in configuration")
+        raise ValueError(f"Model '{model_name}' not found in model_configs")
     
     return model_configs[model_name]
-
 
 def get_model_display_name(model_name: str) -> str:
     """Get display name for a model"""
@@ -79,7 +55,6 @@ def get_model_display_name(model_name: str) -> str:
         return model_config.get('display_name', model_name)
     except Exception:
         return model_name
-
 
 def is_thinking_enabled(model_name: str) -> bool:
     """Check if thinking is enabled for a model"""
@@ -98,7 +73,6 @@ def is_thinking_enabled(model_name: str) -> bool:
     except Exception:
         return False
 
-
 def get_thinking_config(model_name: str) -> Optional[Dict[str, Any]]:
     """Get thinking configuration for a model"""
     try:
@@ -112,12 +86,10 @@ def get_thinking_config(model_name: str) -> Optional[Dict[str, Any]]:
     except Exception:
         return None
 
-
 def get_experiment_config() -> Dict[str, Any]:
     """Get experiment configuration"""
     config = load_config_file()
     return config.get('experiment_config', {})
-
 
 def get_simulation_count(experiment_type: str) -> int:
     """Get number of simulations for experiment type"""
@@ -131,7 +103,6 @@ def get_simulation_count(experiment_type: str) -> int:
     else:
         return experiment_config.get('main_experiment_simulations', 50)
 
-
 def get_game_config(game_name: str, experiment_type: str, 
                    condition_name: Optional[str] = None) -> GameConfig:
     """
@@ -143,254 +114,192 @@ def get_game_config(game_name: str, experiment_type: str,
         condition_name: specific condition within experiment_type
     """
     config = load_config_file()
-    game_configs = config.get('game_configs', {}).get(game_name, {})
+    game_configs = config.get('game_configs', {})
     
-    # Start with baseline constants
-    constants = game_configs.get('baseline', {}).copy()
+    if game_name not in game_configs:
+        raise ValueError(f"Game '{game_name}' not found in game_configs")
     
-    # Override with experiment-specific constants
-    if experiment_type != 'baseline' and experiment_type in game_configs:
-        experiment_section = game_configs[experiment_type]
-        
-        if condition_name and condition_name in experiment_section:
-            # Specific condition overrides
-            condition_constants = experiment_section[condition_name]
-            constants.update(condition_constants)
-        elif isinstance(experiment_section, dict) and len(experiment_section) == 1:
-            # Single condition in experiment_type
-            single_condition = list(experiment_section.values())[0]
-            constants.update(single_condition)
-            condition_name = list(experiment_section.keys())[0]
-        else:
-            # Use first condition if multiple available
-            if experiment_section:
-                first_condition = list(experiment_section.keys())[0]
-                constants.update(experiment_section[first_condition])
-                condition_name = first_condition
+    game_data = game_configs[game_name]
     
-    # Set default condition name if not specified
-    if not condition_name:
-        condition_name = 'baseline' if experiment_type == 'baseline' else 'default'
+    # Get baseline configuration
+    baseline = game_data.get('baseline', {})
+    
+    # Add challenger config if it exists (for games like Spulber)
+    challenger_config = game_data.get('challenger_config')
+    if challenger_config:
+        constants = {**baseline, **challenger_config}
+    else:
+        constants = baseline.copy()
+    
+    # Apply experiment-specific modifications
+    if experiment_type == 'structural_variations' and condition_name:
+        structural_vars = game_data.get('structural_variations', {})
+        if condition_name in structural_vars:
+            constants.update(structural_vars[condition_name])
+    
+    elif experiment_type == 'ablation_studies' and condition_name:
+        ablations = game_data.get('ablation_studies', {})
+        if condition_name in ablations:
+            # Remove description field if it exists (it's not a game parameter)
+            ablation_params = {k: v for k, v in ablations[condition_name].items() 
+                             if k != 'description'}
+            constants.update(ablation_params)
     
     return GameConfig(
-        game_name=game_name,
-        experiment_type=experiment_type,
-        condition_name=condition_name,
-        constants=constants
+        constants=constants,
+        challenger_config=challenger_config
     )
 
-
-def get_all_game_configs(game_name: str) -> List[GameConfig]:
-    """Get all configurations for a specific game"""
+def get_all_game_names() -> List[str]:
+    """Get list of all available game names"""
     config = load_config_file()
-    game_config = config.get('game_configs', {}).get(game_name, {})
-    
-    configs = []
-    
-    # Add baseline
-    configs.append(get_game_config(game_name, 'baseline'))
-    
-    # Add structural variations
-    structural_variations = game_config.get('structural_variations', {})
-    for condition_name in structural_variations:
-        configs.append(get_game_config(game_name, 'structural_variations', condition_name))
-    
-    # Add ablation studies
-    ablation_studies = game_config.get('ablation_studies', {})
-    for condition_name in ablation_studies:
-        configs.append(get_game_config(game_name, 'ablation_studies', condition_name))
-    
-    return configs
+    return list(config.get('game_configs', {}).keys())
 
-
-def get_all_experimental_configs() -> List[GameConfig]:
-    """Get all experimental configurations across all games"""
-    all_configs = []
-    games = ['salop', 'green_porter', 'spulber', 'athey_bagwell']
-    
-    for game_name in games:
-        all_configs.extend(get_all_game_configs(game_name))
-    
-    return all_configs
-
-
-def get_output_dir() -> str:
-    """Get output directory from configuration"""
+def get_structural_variations(game_name: str) -> Dict[str, Any]:
+    """Get structural variations for a specific game"""
     config = load_config_file()
-    output_config = config.get('output', {})
-    return output_config.get('results_dir', 'results')
+    game_configs = config.get('game_configs', {})
+    
+    if game_name not in game_configs:
+        raise ValueError(f"Game '{game_name}' not found in game_configs")
+    
+    return game_configs[game_name].get('structural_variations', {})
 
-
-def get_api_config() -> Dict[str, Any]:
-    """Get API configuration"""
+def get_ablation_studies(game_name: str) -> Dict[str, Any]:
+    """Get ablation studies for a specific game"""
     config = load_config_file()
-    return config.get('api_config', {})
-
+    game_configs = config.get('game_configs', {})
+    
+    if game_name not in game_configs:
+        raise ValueError(f"Game '{game_name}' not found in game_configs")
+    
+    return game_configs[game_name].get('ablation_studies', {})
 
 def get_logging_config() -> Dict[str, Any]:
     """Get logging configuration"""
     config = load_config_file()
     return config.get('logging', {})
 
+def get_output_config() -> Dict[str, Any]:
+    """Get output configuration"""
+    config = load_config_file()
+    return config.get('output', {})
 
-def get_prompt_variables(game_config: GameConfig, player_id: str = "A", 
-                        current_round: int = 1, **dynamic_vars) -> Dict[str, Any]:
-    """Get all variables needed for prompt formatting"""
-    constants = game_config.constants
-    
-    # Base variables
-    variables = {
-        'player_id': player_id,
-        'current_round': current_round,
-        'game_name': game_config.game_name,
-        'experiment_type': game_config.experiment_type,
-        'condition_name': game_config.condition_name,
-    }
-    
-    # Add all game constants
-    variables.update(constants)
-    
-    # Game-specific variables
-    if game_config.game_name == 'salop':
-        variables.update({
-            'transport_cost': constants.get('transport_cost', 1.5),
-            'number_of_players': constants.get('number_of_players', 3),
-            'v': constants.get('v', 30),
-            'marginal_cost': constants.get('marginal_cost', 8),
-            'fixed_cost': constants.get('fixed_cost', 100),
-            'market_size': constants.get('market_size', 1000)
-        })
-    
-    elif game_config.game_name == 'green_porter':
-        variables.update({
-            'base_demand': constants.get('base_demand', 120),
-            'marginal_cost': constants.get('marginal_cost', 20),
-            'collusive_quantity': constants.get('collusive_quantity', 17),
-            'cournot_quantity': constants.get('cournot_quantity', 25),
-            'time_horizon': constants.get('time_horizon', 50),
-            'demand_shock_std': constants.get('demand_shock_std', 5),
-            'trigger_price': constants.get('trigger_price', 55),
-            'punishment_duration': constants.get('punishment_duration', 3),
-            'discount_factor': constants.get('discount_factor', 0.95)
-        })
-    
-    elif game_config.game_name == 'spulber':
-        variables.update({
-            'demand_intercept': constants.get('demand_intercept', 100),
-            'rival_cost_mean': constants.get('rival_cost_mean', 10),
-            'rival_cost_std': constants.get('rival_cost_std', 2.0),
-            'type': constants.get('type', 'normal'),
-            'your_cost': constants.get('your_cost', 8)
-        })
-    
-    elif game_config.game_name == 'athey_bagwell':
-        variables.update({
-            'time_horizon': constants.get('time_horizon', 50),
-            'persistence_probability': constants.get('persistence_probability', 0.7),
-            'high_cost_value': constants.get('high_cost_value', 25),
-            'low_cost_value': constants.get('low_cost_value', 15),
-            'market_price': constants.get('market_price', 30),
-            'market_size': constants.get('market_size', 100),
-            'discount_factor': constants.get('discount_factor', 0.95)
-        })
-    
-    # Add any additional dynamic variables
-    variables.update(dynamic_vars)
-    
-    return variables
+def get_api_config() -> Dict[str, Any]:
+    """Get API configuration"""
+    config = load_config_file()
+    return config.get('api_config', {})
 
+def get_baseline_time_horizon(game_name: str) -> Optional[int]:
+    """Get baseline time horizon for dynamic games"""
+    if game_name not in ['green_porter', 'athey_bagwell']:
+        return None
+    
+    config = load_config_file()
+    game_configs = config.get('game_configs', {})
+    
+    if game_name not in game_configs:
+        return None
+    
+    baseline = game_configs[game_name].get('baseline', {})
+    return baseline.get('time_horizon')
 
 def validate_config() -> bool:
-    """Validate configuration file"""
-    logger = logging.getLogger(__name__)
-    
+    """Validate that config.json has required structure"""
     try:
         config = load_config_file()
         
-        # Check required sections
-        required_sections = ['models', 'game_configs', 'experiment_config']
+        # Check required top-level sections
+        required_sections = ['models', 'model_configs', 'experiment_config', 'game_configs']
         for section in required_sections:
             if section not in config:
-                logger.error(f"Missing required section: {section}")
+                print(f"Missing required section: {section}")
                 return False
         
-        # Validate models section
+        # Check models section
         models = config.get('models', {})
-        if not models.get('challenger_models'):
-            logger.error("No challenger models configured")
+        if 'challenger_models' not in models or 'defender_model' not in models:
+            print("Missing challenger_models or defender_model in models section")
             return False
         
-        if not models.get('defender_model'):
-            logger.error("No defender model configured")
-            return False
+        # Check that all referenced models have configs
+        model_configs = config.get('model_configs', {})
+        all_models = models['challenger_models'] + [models['defender_model']]
         
-        model_configs = models.get('model_configs', {})
-        if not model_configs:
-            logger.error("No model configurations found")
-            return False
-        
-        # Validate all challenger models have configs
-        for model in models['challenger_models']:
+        for model in all_models:
             if model not in model_configs:
-                logger.error(f"Missing config for challenger model: {model}")
+                print(f"Model '{model}' referenced but not found in model_configs")
                 return False
         
-        # Validate defender model has config
-        defender = models['defender_model']
-        if defender not in model_configs:
-            logger.error(f"Missing config for defender model: {defender}")
+        # Check experiment_config
+        exp_config = config.get('experiment_config', {})
+        if 'main_experiment_simulations' not in exp_config:
+            print("Missing main_experiment_simulations in experiment_config")
             return False
         
-        # Validate game configs
+        # Check game_configs
         game_configs = config.get('game_configs', {})
-        required_games = ['salop', 'green_porter', 'spulber', 'athey_bagwell']
+        if not game_configs:
+            print("No games defined in game_configs")
+            return False
         
-        for game in required_games:
-            if game not in game_configs:
-                logger.error(f"Missing game config: {game}")
-                return False
-            
-            game_config = game_configs[game]
-            if 'baseline' not in game_config:
-                logger.error(f"Missing baseline config for game: {game}")
+        # Check each game has baseline
+        for game_name, game_data in game_configs.items():
+            if 'baseline' not in game_data:
+                print(f"Game '{game_name}' missing baseline configuration")
                 return False
         
-        logger.info("Configuration validation passed")
         return True
         
     except Exception as e:
-        logger.error(f"Configuration validation failed: {e}")
+        print(f"Config validation error: {e}")
         return False
 
+def print_config_summary():
+    """Print summary of current configuration"""
+    try:
+        config = load_config_file()
+        
+        print("="*60)
+        print("CONFIG SUMMARY")
+        print("="*60)
+        
+        # Models
+        models = config.get('models', {})
+        challenger_models = models.get('challenger_models', [])
+        defender_model = models.get('defender_model', '')
+        
+        print(f"Challenger models ({len(challenger_models)}):")
+        for model in challenger_models:
+            display_name = get_model_display_name(model)
+            thinking = "✓" if is_thinking_enabled(model) else "✗"
+            print(f"  - {model} ({display_name}) [Thinking: {thinking}]")
+        
+        print(f"\nDefender model: {defender_model} ({get_model_display_name(defender_model)})")
+        
+        # Experiment config
+        exp_config = get_experiment_config()
+        print(f"\nExperiment simulations:")
+        print(f"  - Main experiments: {exp_config.get('main_experiment_simulations', 'N/A')}")
+        print(f"  - Ablation studies: {exp_config.get('ablation_experiment_simulations', 'N/A')}")
+        
+        # Games
+        game_configs = config.get('game_configs', {})
+        print(f"\nGames ({len(game_configs)}):")
+        for game_name, game_data in game_configs.items():
+            struct_vars = len(game_data.get('structural_variations', {}))
+            ablations = len(game_data.get('ablation_studies', {}))
+            print(f"  - {game_name}: {struct_vars} structural variations, {ablations} ablations")
+        
+    except Exception as e:
+        print(f"Error printing config summary: {e}")
 
-def create_experiment_summary() -> Dict[str, Any]:
-    """Create summary of experimental configuration"""
-    challenger_models = get_challenger_models()
-    defender_model = get_defender_model()
-    
-    # Count total configurations
-    total_configs = 0
-    game_breakdown = {}
-    
-    for game_name in ['salop', 'green_porter', 'spulber', 'athey_bagwell']:
-        game_configs = get_all_game_configs(game_name)
-        game_breakdown[game_name] = len(game_configs)
-        total_configs += len(game_configs)
-    
-    # Calculate total competitions
-    total_competitions = total_configs * len(challenger_models)
-    
-    # Estimate simulations
-    experiment_config = get_experiment_config()
-    estimated_simulations = total_competitions * experiment_config.get('main_experiment_simulations', 50)
-    
-    return {
-        'challenger_models': challenger_models,
-        'defender_model': defender_model,
-        'total_games': 4,
-        'total_configs': total_configs,
-        'total_competitions': total_competitions,
-        'estimated_simulations': estimated_simulations,
-        'game_breakdown': game_breakdown,
-        'experiment_config': experiment_config
-    }
+if __name__ == "__main__":
+    # Validate and print config when run directly
+    print("Validating config.json...")
+    if validate_config():
+        print("✓ Configuration is valid")
+        print_config_summary()
+    else:
+        print("✗ Configuration has errors")
+        exit(1)
