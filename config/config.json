@@ -86,7 +86,8 @@
   },
   "experiment_config": {
     "main_experiment_simulations": 50,
-    "ablation_experiment_simulations": 50
+    "ablation_experiment_simulations": 50,
+    "random_seed": 42
   },
   "game_configs": {
     "salop": {

@@ -1,35 +1,45 @@
-"""
-Minimal game initialization for LLM game theory experiments
-"""
+# games/__init__.py
 
-from games.salop_game import SalopGame
-from games.spulber_game import SpulberGame
-from games.green_porter_game import GreenPorterGame
-from games.athey_bagwell_game import AtheyBagwellGame
+from .salop import SalopGame
+from .green_porter import GreenPorterGame
+from .spulber import SpulberGame
+from .athey_bagwell import AtheyBagwellGame
 
-# Game registry for easy instantiation
+# Game registry for easy, centralized instantiation
 GAMES = {
     'salop': SalopGame,
-    'spulber': SpulberGame, 
     'green_porter': GreenPorterGame,
+    'spulber': SpulberGame,
     'athey_bagwell': AtheyBagwellGame
 }
 
 def create_game(game_name: str):
-    """Create game instance by name"""
-    if game_name not in GAMES:
-        raise ValueError(f"Unknown game: {game_name}. Available: {list(GAMES.keys())}")
-    return GAMES[game_name]()
+    """
+    Factory function to create a game engine instance by name.
+    
+    Args:
+        game_name: The name of the game to create (e.g., 'salop').
 
-def get_available_games():
-    """Get list of available games"""
+    Returns:
+        An instance of the corresponding game class.
+        
+    Raises:
+        ValueError: If the game_name is not found in the registry.
+    """
+    game_class = GAMES.get(game_name)
+    if not game_class:
+        raise ValueError(f"Unknown game: '{game_name}'. Available games are: {list(GAMES.keys())}")
+    return game_class()
+
+def get_available_games() -> list:
+    """Returns a list of all available game names."""
     return list(GAMES.keys())
 
-# Make classes available at package level
+# Make classes and functions available at the package level
 __all__ = [
     'SalopGame',
-    'SpulberGame', 
     'GreenPorterGame',
+    'SpulberGame',
     'AtheyBagwellGame',
     'create_game',
     'get_available_games',
