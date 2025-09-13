@@ -4,9 +4,15 @@ import json
 import numpy as np
 import random
 from pathlib import Path
+import sys
+import logging
+# CORRECTED: Import Dict and Any for type hinting
+from typing import Dict, Any
 
-# Assuming the script is run from the root of the llm_io_research directory
-from config.config import get_game_config, get_output_config, get_experiment_config, GameConfig
+# Add the project root to the Python path to allow for package imports
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
+from config.config import get_game_config, get_output_dir, get_experiment_config, GameConfig
 
 def generate_spulber_data(game_config: GameConfig, num_sims: int) -> Dict[str, Any]:
     """Generates private cost data for all defenders in the Spulber game."""
@@ -70,14 +76,13 @@ def main():
     num_sims = exp_config.get("main_experiment_simulations", 50)
     datasets = {}
 
-    # Define the 6 datasets to be generated
     dataset_definitions = {
-        "spulber_structural_more_players": ("spulber", "structural_variations", "more_players", generate_spulber_data),
-        "spulber_ablation_wide_cost_range": ("spulber", "ablation_studies", "wide_cost_range", generate_spulber_data),
-        "green_porter_structural_long_time_horizon": ("green_porter", "structural_variations", "long_time_horizon", generate_green_porter_data),
-        "green_porter_ablation_high_demand_volatility": ("green_porter", "ablation_studies", "high_demand_volatility", generate_green_porter_data),
-        "athey_bagwell_structural_long_time_horizon": ("athey_bagwell", "structural_variations", "long_time_horizon", generate_athey_bagwell_data),
-        "athey_bagwell_ablation_low_persistence": ("athey_bagwell", "ablation_studies", "low_persistence", generate_athey_bagwell_data),
+        "spulber_structural-variations_more_players": ("spulber", "structural_variations", "more_players", generate_spulber_data),
+        "spulber_ablation-studies_wide_cost_range": ("spulber", "ablation_studies", "wide_cost_range", generate_spulber_data),
+        "green_porter_structural-variations_long_time_horizon": ("green_porter", "structural_variations", "long_time_horizon", generate_green_porter_data),
+        "green_porter_ablation-studies_high_demand_volatility": ("green_porter", "ablation_studies", "high_demand_volatility", generate_green_porter_data),
+        "athey_bagwell_structural-variations_long_time_horizon": ("athey_bagwell", "structural_variations", "long_time_horizon", generate_athey_bagwell_data),
+        "athey_bagwell_ablation-studies_low_persistence": ("athey_bagwell", "ablation_studies", "low_persistence", generate_athey_bagwell_data),
     }
 
     for name, (game, exp_type, cond, func) in dataset_definitions.items():
@@ -85,9 +90,8 @@ def main():
         config = get_game_config(game, exp_type, cond)
         datasets[name] = func(config, num_sims)
 
-    # Save the master datasets file
-    output_dir = Path(get_output_config().get("results_dir", "results")).parent / "data"
-    output_dir.mkdir(exist_ok=True, parents=True)
+    output_dir = Path("data")
+    output_dir.mkdir(exist_ok=True)
     output_path = output_dir / "master_datasets.json"
 
     with open(output_path, 'w') as f:

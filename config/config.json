@@ -53,7 +53,7 @@
         "include_thoughts": true
       }
     },
-    "gemini_2_5_flash_thinking_high": {
+    "gemini_2_5_flash_thinking_medium": {
       "provider": "google",
       "model_name": "gemini-2.5-flash",
       "display_name": "Gemini 2.5 Flash (Medium Budget)",
@@ -73,7 +73,7 @@
         "include_thoughts": true
       }
     },
-    "gemini_2_5_flash_lite_thinking_high": {
+    "gemini_2_5_flash_lite_thinking_medium": {
       "provider": "google",
       "model_name": "gemini-2.5-flash-lite",
       "display_name": "Gemini 2.5 Flash-Lite (Medium Budget)",
@@ -85,8 +85,8 @@
     }
   },
   "experiment_config": {
-    "main_experiment_simulations": 50,
-    "ablation_experiment_simulations": 50,
+    "main_experiment_simulations": 10,
+    "ablation_experiment_simulations": 5,
     "random_seed": 42
   },
   "game_configs": {
@@ -124,7 +124,8 @@
         "demand_shock_std": 5,
         "trigger_price": 55,
         "punishment_duration": 3,
-        "discount_factor": 0.95
+        "discount_factor": 0.95,
+        "time_horizon": 50
       },
       "structural_variations": {
         "short_time_horizon": {
@@ -170,11 +171,14 @@
       "baseline": {
         "number_of_players": 3,
         "persistence_probability": 0.7,
-        "high_cost_value": 25,
-        "low_cost_value": 15,
+        "cost_types": {
+          "high": 25,
+          "low": 15
+        },
         "market_price": 30,
         "market_size": 100,
-        "discount_factor": 0.95
+        "discount_factor": 0.95,
+        "time_horizon": 50
       },
       "structural_variations": {
         "short_time_horizon": {

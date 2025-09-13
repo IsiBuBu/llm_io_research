@@ -60,6 +60,23 @@ class ExperimentResults:
     # Nested dict structure: {challenger_model: {condition_name: PlayerMetrics}}
     results: Dict[str, Dict[str, PlayerMetrics]] = field(default_factory=dict)
 
+# --- MISSING CLASS DEFINITION ---
+@dataclass
+class MetricStorage:
+    """Utilities for saving and loading metrics results."""
+    
+    @staticmethod
+    def save_player_metrics(metrics: PlayerMetrics, filepath: str):
+        """Save player metrics to a JSON file."""
+        # Implementation for saving metrics would go here
+        pass
+
+    @staticmethod
+    def load_player_metrics(filepath: str) -> PlayerMetrics:
+        """Load player metrics from a JSON file."""
+        # Implementation for loading metrics would go here
+        pass
+
 # --- Base Class for Metric Calculators ---
 
 class MetricCalculator:

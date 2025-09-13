@@ -9,10 +9,6 @@ from games.base_game import DynamicGame, ReportParsingMixin
 class AtheyBagwellGame(DynamicGame, ReportParsingMixin):
     """
     Implements the Athey & Bagwell (2008) game of collusion with persistent cost shocks.
-
-    This class manages a multi-round game where players have private, persistent
-    cost information ("high" or "low") and must make public reports. Payoffs
-    are determined by the Market Allocation Algorithm based on these reports.
     """
 
     def __init__(self):
@@ -26,16 +22,13 @@ class AtheyBagwellGame(DynamicGame, ReportParsingMixin):
         num_players = constants.get('number_of_players', 3)
         player_ids = ['challenger'] + [f'defender_{i}' for i in range(1, num_players)]
 
-        # Generate persistent cost sequences for all players for the entire game
         np.random.seed(simulation_id)
         cost_sequences = {}
         for player_id in player_ids:
             costs = ['high' if np.random.rand() < 0.5 else 'low']
             for _ in range(1, time_horizon):
-                if np.random.rand() < persistence:
-                    costs.append(costs[-1])  # Cost persists
-                else:
-                    costs.append('low' if costs[-1] == 'high' else 'high') # Cost flips
+                next_cost = costs[-1] if np.random.rand() < persistence else ('low' if costs[-1] == 'high' else 'high')
+                costs.append(next_cost)
             cost_sequences[player_id] = costs
             
         return {
@@ -45,21 +38,27 @@ class AtheyBagwellGame(DynamicGame, ReportParsingMixin):
         }
 
     def generate_player_prompt(self, player_id: str, game_state: Dict, game_config: GameConfig) -> str:
-        """Generates a prompt for a player with their private cost and public report history."""
+        """Generates a prompt for a player with their private cost and separated public report history."""
         current_period = game_state['current_period']
         true_cost = game_state['cost_sequences'][player_id][current_period - 1]
         
-        # Format history for the prompt
-        history_str = "; ".join([f"Period {t+1}: " + ", ".join([f"{pid}: {reports[t]}" for pid, reports in game_state['report_history'].items()]) for t in range(current_period - 1)])
-        if not history_str:
-            history_str = "No previous reports."
+        report_history = game_state.get('report_history', {})
+        your_history = report_history.get(player_id, [])
+        other_history = {pid: reports for pid, reports in report_history.items() if pid != player_id}
+
+        your_history_str = ", ".join(your_history) or "N/A"
+        
+        other_history_lines = []
+        for i in range(current_period - 1):
+            line = f"Period {i+1}: " + ", ".join([f"{pid}: {reports[i]}" for pid, reports in other_history.items() if i < len(reports)])
+            other_history_lines.append(line)
+        other_history_str = "; ".join(other_history_lines) or "No other player reports yet."
 
         variables = get_prompt_variables(
-            game_config,
-            player_id=player_id,
-            current_round=current_period,
-            current_cost_type=true_cost,
-            all_reports_history_detailed=history_str
+            game_config, player_id=player_id, current_round=current_period,
+            your_cost_type=true_cost,
+            your_reports_history_detailed=your_history_str,
+            all_other_reports_history_detailed=other_history_str
         )
         return self.prompt_template.format(**variables)
 
@@ -70,55 +69,46 @@ class AtheyBagwellGame(DynamicGame, ReportParsingMixin):
     def calculate_payoffs(self, actions: Dict[str, Any], game_config: GameConfig, game_state: Optional[Dict] = None) -> Dict[str, float]:
         """Calculates payoffs using the Market Allocation Algorithm from t.txt."""
         constants = game_config.constants
-        costs = {'low': constants.get('low_cost_value', 15), 'high': constants.get('high_cost_value', 25)}
+        costs = constants.get('cost_types', {'low': 15, 'high': 25})
         market_price = constants.get('market_price', 30)
         market_size = constants.get('market_size', 100)
-        num_players = len(actions)
         
         reports = {pid: action.get('report', 'high') for pid, action in actions.items()}
         low_reporters = [pid for pid, report in reports.items() if report == 'low']
         
-        # Market Allocation Algorithm
         market_shares = {}
         if len(low_reporters) == 1:
-            winner_id = low_reporters[0]
-            for pid in actions:
-                market_shares[pid] = 1.0 if pid == winner_id else 0.0
+            for pid in actions: market_shares[pid] = 1.0 if pid == low_reporters[0] else 0.0
         elif len(low_reporters) > 1:
             share = 1.0 / len(low_reporters)
-            for pid in actions:
-                market_shares[pid] = share if pid in low_reporters else 0.0
-        else: # N_low = 0
-            share = 1.0 / num_players
-            for pid in actions:
-                market_shares[pid] = share
+            for pid in actions: market_shares[pid] = share if pid in low_reporters else 0.0
+        else:
+            for pid in actions: market_shares[pid] = 1.0 / len(actions)
 
         payoffs = {}
         current_period = game_state['current_period']
-        for player_id in actions:
-            true_cost_type = game_state['cost_sequences'][player_id][current_period - 1]
-            true_cost = costs[true_cost_type]
-            # Profit = (Price - True Cost) * Market Share * Market Size
-            profit = (market_price - true_cost) * market_shares[player_id] * market_size
-            payoffs[player_id] = profit
+        for pid in actions:
+            true_cost = costs[game_state['cost_sequences'][pid][current_period - 1]]
+            payoffs[pid] = (market_price - true_cost) * market_shares[pid] * market_size
             
-        game_state['last_market_shares'] = market_shares # Store for logging
+        game_state['last_market_shares'] = market_shares
         return payoffs
 
     def update_game_state(self, game_state: Dict, actions: Dict[str, Any], game_config: GameConfig) -> Dict:
         """Updates report histories and advances the game to the next period."""
         for pid, action in actions.items():
             game_state['report_history'][pid].append(action.get('report', 'high'))
-        
         game_state['current_period'] += 1
         return game_state
 
     def get_game_data_for_logging(self, actions: Dict[str, Any], payoffs: Dict[str, float], game_config: GameConfig, game_state: Optional[Dict] = None) -> Dict[str, Any]:
-        """Gathers round-specific outcomes for detailed logging."""
-        current_period = game_state.get('current_period', 1) -1
+        """Gathers round-specific outcomes, including actions, for detailed logging."""
+        period = game_state.get('current_period', 1)
+        # CORRECTED: Added 'actions': actions to the returned dictionary.
         return {
-            "period": current_period,
-            "player_true_costs": {pid: seq[current_period-1] for pid, seq in game_state.get('cost_sequences', {}).items()},
+            "period": period,
+            "actions": actions, # This was the missing key
+            "player_true_costs": {pid: seq[period-1] for pid, seq in game_state.get('cost_sequences', {}).items()},
             "game_outcomes": {
                 "player_market_shares": game_state.get('last_market_shares', {}),
                 "player_profits": payoffs

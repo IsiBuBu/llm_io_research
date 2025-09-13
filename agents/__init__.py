@@ -4,7 +4,7 @@ import logging
 from typing import Dict, Any
 
 # Import the base and specific agent classes from the other files in this directory
-from .base_agent import BaseLLMAgent
+from .base_agent import BaseLLMAgent, AgentResponse
 from .llm_agent import GeminiAgent
 from .random_agent import RandomAgent
 
