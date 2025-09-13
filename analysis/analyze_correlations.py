@@ -4,9 +4,10 @@ import json
 import logging
 import pandas as pd
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, asdict
 from scipy.stats import pearsonr
+import numpy as np
 
 from metrics.metric_utils import ExperimentResults
 
@@ -42,8 +43,7 @@ class CorrelationAnalyzer:
         self.hypotheses = self._define_hypotheses()
 
     def _define_hypotheses(self) -> List[CorrelationHypothesis]:
-        """Loads correlation hypotheses, ideally from a config or defined here."""
-        # This structure is derived directly from the t.txt documentation
+        """Loads correlation hypotheses using the exact metric names from the analysis."""
         return [
             # Salop
             CorrelationHypothesis('Judgment vs. Win Rate', 'salop', 'judgment', 'win_rate', 'positive'),
@@ -59,7 +59,7 @@ class CorrelationAnalyzer:
             # Athey & Bagwell
             CorrelationHypothesis('Reasoning vs. Win Rate', 'athey_bagwell', 'reasoning', 'win_rate', 'positive'),
             CorrelationHypothesis('Cooperation vs. HHI', 'athey_bagwell', 'cooperation', 'hhi', 'negative'),
-            CorrelationHypothesis('Deception vs. Average Profit', 'athey_bagwell', 'deception', 'deception_rate', 'positive'),
+            CorrelationHypothesis('Deception vs. Average Profit', 'athey_bagwell', 'deception', 'average_profit', 'positive'),
             CorrelationHypothesis('Deception vs. Profit Volatility', 'athey_bagwell', 'deception', 'profit_volatility', 'positive'),
         ]
 
@@ -68,44 +68,31 @@ class CorrelationAnalyzer:
         self.logger.info("Starting correlation analysis across all games.")
         all_correlation_results = []
 
-        for metrics_file in self.analysis_dir.glob("*_metrics_analysis.json"):
-            game_name = metrics_file.stem.replace("_metrics_analysis", "")
-            self.logger.info(f"--- Analyzing correlations for: {game_name.upper()} ---")
-            
-            with open(metrics_file, 'r') as f:
-                data = json.load(f)
-            
-            game_hypotheses = [h for h in self.hypotheses if h.game_name == game_name]
-            if not game_hypotheses:
-                self.logger.warning(f"No hypotheses defined for {game_name}. Skipping.")
-                continue
+        try:
+            perf_df_raw = pd.read_csv(self.analysis_dir / "performance_metrics.csv")
+            magic_df_raw = pd.read_csv(self.analysis_dir / "magic_behavioral_metrics.csv")
+        except FileNotFoundError:
+            self.logger.error("Summary CSV files not found. Please ensure Steps 1 & 2 of the analysis ran correctly.")
+            return
 
-            # Create a tidy DataFrame for easy correlation calculation
-            df = self._create_tidy_dataframe(data)
+        # Pivot each dataframe so that metrics become columns
+        perf_df = perf_df_raw.pivot_table(index=['game', 'model', 'condition'], columns='metric', values='value').reset_index()
+        magic_df = magic_df_raw.pivot_table(index=['game', 'model', 'condition'], columns='metric', values='value').reset_index()
+
+        # Merge the two pivoted dataframes
+        merged_df = pd.merge(perf_df, magic_df, on=['game', 'model', 'condition'])
+
+        for game_name in merged_df['game'].unique():
+            self.logger.info(f"--- Analyzing correlations for: {game_name.upper()} ---")
+            game_df = merged_df[merged_df['game'] == game_name]
+            game_hypotheses = [h for h in self.hypotheses if h.game_name == game_name]
 
             for hypothesis in game_hypotheses:
-                try:
-                    result = self._test_hypothesis(hypothesis, df)
-                    if result:
-                        all_correlation_results.append(result.to_dict())
-                except Exception as e:
-                    self.logger.error(f"Could not test hypothesis '{hypothesis.name}' for {game_name}: {e}")
+                result = self._test_hypothesis(hypothesis, game_df)
+                if result:
+                    all_correlation_results.append(result.to_dict())
 
         self._save_results(all_correlation_results)
-
-    def _create_tidy_dataframe(self, data: Dict[str, Any]) -> pd.DataFrame:
-        """Converts the nested JSON metrics data into a flat pandas DataFrame."""
-        records = []
-        for model, conditions in data.get('results', {}).items():
-            for condition, metrics in conditions.items():
-                record = {'model': model, 'condition': condition}
-                for metric_type in ['performance_metrics', 'magic_metrics']:
-                    for name, metric_data in metrics.get(metric_type, {}).items():
-                        # Use the base name of the metric (e.g., 'rationality')
-                        base_name = name.split('_')[0]
-                        record[base_name] = metric_data['value']
-                records.append(record)
-        return pd.DataFrame(records)
 
     def _test_hypothesis(self, hypothesis: CorrelationHypothesis, df: pd.DataFrame) -> Optional[CorrelationResult]:
         """Performs Pearson correlation test for a single hypothesis."""
@@ -113,15 +100,19 @@ class CorrelationAnalyzer:
         perf_col = hypothesis.performance_metric
         
         if magic_col not in df.columns or perf_col not in df.columns:
-            self.logger.warning(f"Missing required columns '{magic_col}' or '{perf_col}' for hypothesis '{hypothesis.name}'.")
+            self.logger.warning(f"Missing required columns '{magic_col}' or '{perf_col}' for hypothesis '{hypothesis.name}'. Skipping.")
             return None
 
-        # Drop rows with missing data for this specific test
         subset_df = df[[magic_col, perf_col]].dropna()
-        if len(subset_df) < 3: # Need at least 3 data points for a meaningful correlation
-            self.logger.info(f"Not enough data points ({len(subset_df)}) for hypothesis '{hypothesis.name}'.")
+        if len(subset_df) < 3:
+            self.logger.info(f"Not enough data points ({len(subset_df)}) for hypothesis '{hypothesis.name}'. Skipping.")
             return None
             
+        # Check for constant input which makes correlation undefined
+        if len(subset_df[magic_col].unique()) == 1 or len(subset_df[perf_col].unique()) == 1:
+             self.logger.warning(f"One of the inputs for hypothesis '{hypothesis.name}' is constant. Correlation is not defined. Skipping.")
+             return None
+
         corr, p_value = pearsonr(subset_df[magic_col], subset_df[perf_col])
         
         return CorrelationResult(

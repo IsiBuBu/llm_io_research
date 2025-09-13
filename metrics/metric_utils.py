@@ -50,6 +50,7 @@ class PlayerMetrics:
     condition_name: str
     performance_metrics: Dict[str, MetricResult] = field(default_factory=dict)
     magic_metrics: Dict[str, MetricResult] = field(default_factory=dict)
+    dynamic_metrics: Dict[str, Any] = field(default_factory=dict)
 
 @dataclass
 class ExperimentResults:

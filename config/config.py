@@ -92,18 +92,54 @@ def get_simulation_count(experiment_type: str) -> int:
     return exp_config.get('main_experiment_simulations', 50)
 
 def get_all_game_configs(game_name: str) -> List[GameConfig]:
-    """Generates all GameConfig instances for a given game."""
+    """
+    Generates a full factorial set of GameConfig instances for a given game,
+    creating a cross-product of every structural variation with every ablation study.
+    """
     configs = []
     game_data = load_config()['game_configs'][game_name]
-    struct_vars = game_data.get('structural_variations', {})
-    if not struct_vars:
-        configs.append(get_game_config(game_name, 'structural_variations', 'baseline'))
-    else:
-        for condition in struct_vars:
-            configs.append(get_game_config(game_name, 'structural_variations', condition))
-    for condition in game_data.get('ablation_studies', {}):
-        configs.append(get_game_config(game_name, 'ablation_studies', condition))
+    baseline_constants = game_data.get('baseline', {}).copy()
+    baseline_constants.update(game_data.get('challenger_config', {}))
+
+    structural_variations = game_data.get('structural_variations', {'baseline': {}})
+    ablation_studies = game_data.get('ablation_studies', {})
+
+    # If there are no defined structural variations, use a placeholder to ensure baseline and ablations run
+    if not structural_variations:
+        structural_variations = {'baseline': {}}
+
+    for struct_name, struct_params in structural_variations.items():
+        # 1. Create the main experiment for the structural variation
+        struct_constants = baseline_constants.copy()
+        struct_constants.update(struct_params)
+        configs.append(GameConfig(
+            game_name=game_name,
+            experiment_type='structural_variations',
+            condition_name=struct_name,
+            constants=struct_constants
+        ))
+
+        # 2. Create an ablation study for this specific structural variation
+        for ablation_name, ablation_data in ablation_studies.items():
+            # Start with the constants from the current structural variation
+            ablation_constants = struct_constants.copy()
+            
+            # Layer the ablation parameters on top
+            ablation_params = {k: v for k, v in ablation_data.items() if k != 'description'}
+            ablation_constants.update(ablation_params)
+            
+            # Create a more descriptive, combined condition name
+            combined_condition_name = f"{struct_name}_{ablation_name}"
+            
+            configs.append(GameConfig(
+                game_name=game_name,
+                experiment_type='ablation_studies',
+                condition_name=combined_condition_name,
+                constants=ablation_constants
+            ))
+
     return configs
+
 
 def get_game_config(game_name: str, experiment_type: str, condition_name: str) -> GameConfig:
     """Constructs a complete GameConfig by merging baseline and experiment-specific parameters."""
