@@ -22,7 +22,7 @@ from config.config import (
     get_simulation_count
 )
 from games import create_game
-from agents import create_agent
+from agents import create_agent, AgentResponse
 from metrics.metric_utils import GameResult, create_game_result
 
 class Competition:
@@ -96,9 +96,13 @@ class Competition:
             return await self._run_static_game(game, agents, config, game_state, challenger_model)
 
     async def _run_static_game(self, game, agents, config, game_state, challenger_model: str):
-        actions = await self._get_all_actions(game, agents, config, game_state)
+        actions, responses = await self._get_all_actions(game, agents, config, game_state)
         payoffs = game.calculate_payoffs(actions, config, game_state)
         game_data = game.get_game_data_for_logging(actions, payoffs, config, game_state)
+        
+        # Add LLM metadata to game_data
+        game_data['llm_metadata'] = {pid: resp.__dict__ for pid, resp in responses.items()}
+
         return create_game_result(game_state['simulation_id'], config.game_name, config.experiment_type, config.condition_name, challenger_model, list(agents.keys()), actions, payoffs, game_data)
 
     async def _run_dynamic_game(self, game, agents, config, game_state, challenger_model: str):
@@ -106,21 +110,27 @@ class Competition:
         all_rounds_data = []
 
         for _ in range(time_horizon):
-            actions = await self._get_all_actions(game, agents, config, game_state)
+            actions, responses = await self._get_all_actions(game, agents, config, game_state)
             payoffs = game.calculate_payoffs(actions, config, game_state)
             round_data = game.get_game_data_for_logging(actions, payoffs, config, game_state)
+            
+            # Add LLM metadata to round_data
+            round_data['llm_metadata'] = {pid: resp.__dict__ for pid, resp in responses.items()}
+
             all_rounds_data.append(round_data)
             game_state = game.update_game_state(game_state, actions, config)
         
         final_payoffs = {p_id: sum(r.get('payoffs', {}).get(p_id, 0) for r in all_rounds_data) for p_id in agents}
         return create_game_result(game_state['simulation_id'], config.game_name, config.experiment_type, config.condition_name, challenger_model, list(agents.keys()), all_rounds_data[-1]['actions'], final_payoffs, {"rounds": all_rounds_data, **game_state})
 
-    async def _get_all_actions(self, game, agents, config, game_state) -> Dict[str, Any]:
-        """Gets actions from all agents concurrently."""
-        tasks = [agent.get_response(game.generate_player_prompt(pid, game_state, config), f"{config.game_name}-{game_state.get('simulation_id', 'N/A')}") for pid, agent in agents.items()]
-        responses = await asyncio.gather(*tasks)
-        actions = {pid: game.parse_llm_response(resp.content, pid, f"{config.game_name}-{game_state.get('simulation_id', 'N/A')}") or {} for pid, resp in zip(agents.keys(), responses)}
-        return actions
+    async def _get_all_actions(self, game, agents, config, game_state) -> (Dict[str, Any], Dict[str, AgentResponse]):
+        """Gets actions and full responses from all agents concurrently."""
+        tasks = {pid: agent.get_response(game.generate_player_prompt(pid, game_state, config), f"{config.game_name}-{game_state.get('simulation_id', 'N/A')}") for pid, agent in agents.items()}
+        responses = await asyncio.gather(*tasks.values())
+        
+        response_map = dict(zip(agents.keys(), responses))
+        actions = {pid: game.parse_llm_response(resp.content, pid, f"{config.game_name}-{game_state.get('simulation_id', 'N/A')}") or {} for pid, resp in response_map.items()}
+        return actions, response_map
 
     def _save_competition_result(self, challenger, config, results):
         """Saves the results of a set of simulations to a JSON file."""

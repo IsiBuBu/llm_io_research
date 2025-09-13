@@ -18,9 +18,13 @@ class AgentResponse:
     model: str
     success: bool
     error: Optional[str] = None
+    thoughts: Optional[str] = None
     tokens_used: int = 0
+    output_tokens: int = 0
     thinking_tokens: int = 0
     response_time: float = 0.0
+    temperature: float = 0.0
+    max_tokens: int = 0
 
 # --- Abstract Base Class for All Agents ---
 

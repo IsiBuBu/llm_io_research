@@ -19,7 +19,6 @@ class MetricResult:
     game_name: str
     experiment_type: str
     condition_name: str
-    raw_data: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the MetricResult to a dictionary."""
@@ -104,12 +103,12 @@ class MetricCalculator:
 
 # --- Factory Functions for Creating Data Objects ---
 
-def create_metric_result(name: str, value: float, description: str, metric_type: str, game_name: str, experiment_type: str, condition_name: str, **raw_data) -> MetricResult:
+def create_metric_result(name: str, value: float, description: str, metric_type: str, game_name: str, experiment_type: str, condition_name: str) -> MetricResult:
     """Convenience factory for creating MetricResult objects."""
     return MetricResult(
         name=name, value=value, description=description, metric_type=metric_type,
         game_name=game_name, experiment_type=experiment_type, 
-        condition_name=condition_name, raw_data=raw_data
+        condition_name=condition_name
     )
 
 def create_game_result(simulation_id: int, game_name: str, experiment_type: str, condition_name: str, challenger_model: str, players: List[str], actions: Dict[str, Any], payoffs: Dict[str, float], game_data: Dict[str, Any]) -> GameResult:

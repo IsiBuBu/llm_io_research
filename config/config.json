@@ -1,14 +1,7 @@
 {
   "models": {
     "challenger_models": [
-      "gemini_2_0_flash",
-      "gemini_2_0_flash_lite",
-      "gemini_2_5_flash_thinking_off",
-      "gemini_2_5_flash_lite_thinking_off",
-      "gemini_2_5_flash_thinking_low",
-      "gemini_2_5_flash_thinking_medium",
-      "gemini_2_5_flash_lite_thinking_low",
-      "gemini_2_5_flash_lite_thinking_medium"
+      "gemini_2_5_flash_lite_thinking_low"
     ],
     "defender_model": "gemini_2_0_flash_lite"
   },
@@ -17,13 +10,15 @@
       "provider": "google",
       "model_name": "gemini-2.0-flash",
       "display_name": "Gemini 2.0 Flash",
-      "thinking_available": false
+      "thinking_available": false,
+      "temperature": 0.0
     },
     "gemini_2_0_flash_lite": {
       "provider": "google",
       "model_name": "gemini-2.0-flash-lite",
       "display_name": "Gemini 2.0 Flash-Lite",
-      "thinking_available": false
+      "thinking_available": false,
+      "temperature": 0.7
     },
     "gemini_2_5_flash_thinking_off": {
       "provider": "google",
@@ -32,7 +27,8 @@
       "thinking_available": true,
       "thinking_config": {
         "thinking_budget": 0
-      }
+      },
+      "temperature": 0.7
     },
     "gemini_2_5_flash_lite_thinking_off": {
       "provider": "google",
@@ -41,7 +37,8 @@
       "thinking_available": true,
       "thinking_config": {
         "thinking_budget": 0
-      }
+      },
+      "temperature": 0.7
     },
     "gemini_2_5_flash_thinking_low": {
       "provider": "google",
@@ -51,7 +48,8 @@
       "thinking_config": {
         "thinking_budget": 1024,
         "include_thoughts": true
-      }
+      },
+      "temperature": 0.7
     },
     "gemini_2_5_flash_thinking_medium": {
       "provider": "google",
@@ -61,7 +59,8 @@
       "thinking_config": {
         "thinking_budget": 8192,
         "include_thoughts": true
-      }
+      },
+      "temperature": 0.7
     },
     "gemini_2_5_flash_lite_thinking_low": {
       "provider": "google",
@@ -71,7 +70,8 @@
       "thinking_config": {
         "thinking_budget": 1024,
         "include_thoughts": true
-      }
+      },
+      "temperature": 0.7
     },
     "gemini_2_5_flash_lite_thinking_medium": {
       "provider": "google",
@@ -81,12 +81,13 @@
       "thinking_config": {
         "thinking_budget": 8192,
        "include_thoughts": true
-      }
+      },
+      "temperature": 0.7
     }
   },
   "experiment_config": {
-    "main_experiment_simulations": 10,
-    "ablation_experiment_simulations": 5,
+    "main_experiment_simulations": 1,
+    "ablation_experiment_simulations": 1,
     "random_seed": 42
   },
   "game_configs": {
@@ -129,10 +130,10 @@
       },
       "structural_variations": {
         "short_time_horizon": {
-          "time_horizon": 15
+          "time_horizon": 1
         },
         "long_time_horizon": {
-          "time_horizon": 50
+          "time_horizon": 2
         }
       },
       "ablation_studies": {
@@ -182,10 +183,10 @@
       },
       "structural_variations": {
         "short_time_horizon": {
-          "time_horizon": 15
+          "time_horizon": 1
         },
         "long_time_horizon": {
-          "time_horizon": 50
+          "time_horizon": 2
         }
       },
       "ablation_studies": {

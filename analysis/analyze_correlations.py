@@ -53,9 +53,11 @@ class CorrelationAnalyzer:
             # Green & Porter
             CorrelationHypothesis('Rationality vs. Win Rate', 'green_porter', 'rationality', 'win_rate', 'positive'),
             CorrelationHypothesis('Cooperation vs. Reversion Frequency', 'green_porter', 'cooperation', 'reversion_frequency', 'negative'),
+            CorrelationHypothesis('Coordination vs. Average Profit', 'green_porter', 'coordination', 'average_profit', 'positive'),
             # Spulber
             CorrelationHypothesis('Judgment vs. Win Rate', 'spulber', 'judgment', 'win_rate', 'positive'),
             CorrelationHypothesis('Self-Awareness vs. Market Capture', 'spulber', 'self_awareness', 'market_capture_rate', 'positive'),
+            CorrelationHypothesis('Rationality vs. Average Profit', 'spulber', 'rationality', 'average_profit', 'positive'),
             # Athey & Bagwell
             CorrelationHypothesis('Reasoning vs. Win Rate', 'athey_bagwell', 'reasoning', 'win_rate', 'positive'),
             CorrelationHypothesis('Cooperation vs. HHI', 'athey_bagwell', 'cooperation', 'hhi', 'negative'),

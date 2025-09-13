@@ -6,9 +6,10 @@ import time
 import os
 from typing import Dict, Any
 
-# Third-party imports - CORRECTED
-import google.generativeai as genai
-from google.generativeai.types import GenerationConfig
+# Third-party imports
+
+from google import genai
+from google.genai import types
 
 # Local application imports
 from .base_agent import BaseLLMAgent, AgentResponse
@@ -62,19 +63,22 @@ class GeminiAgent(BaseLLMAgent):
         start_time = time.time()
         max_retries = self.api_config.get('max_retries', 3)
         delay = self.api_config.get('rate_limit_delay', 1.0)
+        max_tokens = self.model_config.get('max_tokens', 8192)
+        temperature = self.model_config.get('temperature', 0.0)
 
-        # CORRECTED: ThinkingConfig is now passed as a dictionary within GenerationConfig
-        thinking_conf_dict = {}
-        if self.thinking_config and self.thinking_config.get('thinking_budget', 0) > 0:
-            thinking_conf_dict = {
-                "thinking_budget": self.thinking_config['thinking_budget'],
-                "include_thoughts": self.thinking_config.get('include_thoughts', True)
-            }
+        # CORRECTED: Use types.GenerateContentConfig and pass thinking_config correctly,
+        # which requires the updated library.
+        thinking_conf = None
+        if self.thinking_config and self.thinking_config.get('thinking_budget', 0) != 0:
+            thinking_conf = types.ThinkingConfig(
+                thinking_budget=self.thinking_config['thinking_budget'],
+                include_thoughts=self.thinking_config.get('include_thoughts', True)
+            )
 
-        gen_config = GenerationConfig(
-            temperature=self.model_config.get('temperature', 0.0),
-            max_output_tokens=self.model_config.get('max_tokens', 1024),
-            **thinking_conf_dict # Unpack the thinking config here
+        gen_config = types.GenerateContentConfig(
+            temperature=temperature,
+            max_output_tokens=max_tokens,
+            thinking_config=thinking_conf
         )
 
         for attempt in range(max_retries):
@@ -85,17 +89,43 @@ class GeminiAgent(BaseLLMAgent):
                     generation_config=gen_config
                 )
                 
+                if not response.parts:
+                    finish_reason = response.candidates[0].finish_reason if response.candidates else "UNKNOWN"
+                    error_message = f"Response contained no valid parts. Finish reason: {finish_reason.name}"
+                    self.logger.warning(f"[{call_id}] Attempt {attempt + 1}/{max_retries} for {self.player_id} failed: {error_message}")
+                    if attempt < max_retries - 1:
+                        await asyncio.sleep(delay * (2 ** attempt))
+                        continue
+                    else:
+                        return AgentResponse(content="", model=self.model_name, success=False, error=error_message, response_time=time.time()-start_time)
+
                 usage = response.usage_metadata
+                
+                # Extract thought summary if available
+                thought_summary = ""
+                answer_text = ""
+                for part in response.candidates[0].content.parts:
+                    if not part.text:
+                        continue
+                    if hasattr(part, 'thought') and part.thought:
+                        thought_summary += part.text
+                    else:
+                        answer_text += part.text
+
                 return AgentResponse(
-                    content=response.text,
+                    content=answer_text,
                     model=self.model_name,
                     success=True,
-                    tokens_used=usage.total_token_count,
+                    thoughts=thought_summary if thought_summary else None,
+                    tokens_used=usage.total_token_count if usage else 0,
+                    output_tokens=usage.candidates_token_count if usage else 0,
                     thinking_tokens=getattr(usage, 'thoughts_token_count', 0),
-                    response_time=time.time() - start_time
+                    response_time=time.time() - start_time,
+                    temperature=temperature,
+                    max_tokens=max_tokens
                 )
             except Exception as e:
-                self.logger.warning(f"[{call_id}] Attempt {attempt + 1}/{max_retries} for {self.player_id} failed: {e}")
+                self.logger.warning(f"[{call_id}] Attempt {attempt + 1}/{max_retries} for {self.player_id} failed: {e}", exc_info=True)
                 if attempt < max_retries - 1:
                     await asyncio.sleep(delay * (2 ** attempt))
                 else:
