@@ -1,25 +1,21 @@
-## Context
-You are Firm in a {number_of_players}-firm cartel operating over many periods. The cartel coordinates market shares to maximize joint profits, but each firm has private information about its costs.
+## Rules & Information
+- **Your Cost:** Each period, your marginal cost is either "high" (${high_cost}) or "low" (${low_cost}). This is your private information.
+- **Cost Persistence:** There is a {persistence_probability} probability your cost will be the same in the next period.
+- **Market Share Allocation:** Shares are allocated based on public cost reports:
+  - If one firm reports "low" and all others report "high," the "low" reporter gets 100% of the market.
+  - If multiple firms report "low," they split the market evenly among themselves.
+  - If all firms report "high," all firms split the market evenly.
 
-## Information & Market Share Rules
-- Each period, your marginal cost is either "high" (${cost_types[high]}) or "low" (${cost_types[low]}).
-- Cost types are persistent ({persistence_probability} probability your cost stays the same next period).
-- Other firms only see your public cost reports.
-- **Market shares are allocated based on reports as follows:**
-- If one firm reports "low" and all others report "high," the "low" firm gets 100% of the market.
-- If multiple firms report "low," they split the market evenly.
-- If all firms report "high," they split the market evenly.
-
-## Economic Information
-- **Market price:** Fixed at ${market_price} per unit.
-- **Your profit is:** (${market_price} - Your True Cost) × Your Allocated Market Share.
-- Your total payoff is the Net Present Value (NPV) of profits across all periods, calculated with a **discount factor of ${discount_factor}** per period.
+## Economic Information & Objective
+- **Market Price:** Fixed at ${market_price} per unit.
+- **Your Profit:** ( ${market_price} - Your True Cost ) * Your Allocated Market Share.
+- **Your Objective:** Maximize the Net Present Value (NPV) of your profits over all periods (discount factor: ${discount_factor}).
 
 ## Current Game State
 - **Period:** {current_round}
 - **Your true cost this period:** {your_cost_type}
-- **History of all your past reports:** {your_reports_history_detailed}
-- **History of all other firms' past reports:** {all_other_reports_history_detailed}
+- **History of your past reports:** {your_reports_history_detailed}
+- **History of other firms' past reports:** {all_other_reports_history_detailed}
 
 ## Your Task
 Decide whether to report your cost as "high" or "low" for this period to maximize your total long-term profit.

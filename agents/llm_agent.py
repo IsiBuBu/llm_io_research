@@ -6,8 +6,7 @@ import time
 import os
 from typing import Dict, Any
 
-# Third-party imports
-
+# Third-party imports as per documentation
 from google import genai
 from google.genai import types
 
@@ -37,8 +36,7 @@ class GeminiAgent(BaseLLMAgent):
             api_key = os.getenv("GEMINI_API_KEY")
             if not api_key:
                 raise ValueError("GEMINI_API_KEY environment variable not set.")
-            genai.configure(api_key=api_key)
-            return genai.GenerativeModel(self.model_config['model_name'])
+            return genai.Client(api_key=api_key)
         except ImportError:
             self.logger.error("google-generativeai is not installed. Please run 'pip install google-generativeai'.")
             raise
@@ -63,11 +61,7 @@ class GeminiAgent(BaseLLMAgent):
         start_time = time.time()
         max_retries = self.api_config.get('max_retries', 3)
         delay = self.api_config.get('rate_limit_delay', 1.0)
-        max_tokens = self.model_config.get('max_tokens', 8192)
-        temperature = self.model_config.get('temperature', 0.0)
-
-        # CORRECTED: Use types.GenerateContentConfig and pass thinking_config correctly,
-        # which requires the updated library.
+        
         thinking_conf = None
         if self.thinking_config and self.thinking_config.get('thinking_budget', 0) != 0:
             thinking_conf = types.ThinkingConfig(
@@ -76,23 +70,27 @@ class GeminiAgent(BaseLLMAgent):
             )
 
         gen_config = types.GenerateContentConfig(
-            temperature=temperature,
-            max_output_tokens=max_tokens,
-            thinking_config=thinking_conf
+            temperature=self.model_config.get('temperature', 0.0),
+            max_output_tokens=self.model_config.get('max_tokens', 8192),
+            thinking_config=thinking_conf,
+            response_mime_type="application/json"
         )
 
         for attempt in range(max_retries):
             try:
                 response = await asyncio.to_thread(
-                    self.client.generate_content,
+                    self.client.models.generate_content,
+                    model=self.model_config['model_name'],
                     contents=prompt,
-                    generation_config=gen_config
+                    config=gen_config
                 )
                 
-                if not response.parts:
-                    finish_reason = response.candidates[0].finish_reason if response.candidates else "UNKNOWN"
-                    error_message = f"Response contained no valid parts. Finish reason: {finish_reason.name}"
+                if not response.candidates or not response.candidates[0].content.parts:
+                    finish_reason = response.candidates[0].finish_reason.name if response.candidates else "NO_CANDIDATES"
+                    error_message = f"Response contained no valid parts. Finish reason: {finish_reason}"
                     self.logger.warning(f"[{call_id}] Attempt {attempt + 1}/{max_retries} for {self.player_id} failed: {error_message}")
+                    if "SAFETY" in finish_reason:
+                         return AgentResponse(content="", model=self.model_name, success=False, error=error_message, response_time=time.time()-start_time)
                     if attempt < max_retries - 1:
                         await asyncio.sleep(delay * (2 ** attempt))
                         continue
@@ -100,20 +98,19 @@ class GeminiAgent(BaseLLMAgent):
                         return AgentResponse(content="", model=self.model_name, success=False, error=error_message, response_time=time.time()-start_time)
 
                 usage = response.usage_metadata
-                
-                # Extract thought summary if available
                 thought_summary = ""
                 answer_text = ""
+
                 for part in response.candidates[0].content.parts:
                     if not part.text:
                         continue
-                    if hasattr(part, 'thought') and part.thought:
-                        thought_summary += part.text
+                    if part.thought:
+                        thought_summary = part.text
                     else:
-                        answer_text += part.text
+                        answer_text = part.text
 
                 return AgentResponse(
-                    content=answer_text,
+                    content=answer_text.strip(),
                     model=self.model_name,
                     success=True,
                     thoughts=thought_summary if thought_summary else None,
@@ -121,8 +118,8 @@ class GeminiAgent(BaseLLMAgent):
                     output_tokens=usage.candidates_token_count if usage else 0,
                     thinking_tokens=getattr(usage, 'thoughts_token_count', 0),
                     response_time=time.time() - start_time,
-                    temperature=temperature,
-                    max_tokens=max_tokens
+                    temperature=gen_config.temperature,
+                    max_tokens=gen_config.max_output_tokens
                 )
             except Exception as e:
                 self.logger.warning(f"[{call_id}] Attempt {attempt + 1}/{max_retries} for {self.player_id} failed: {e}", exc_info=True)
@@ -136,4 +133,5 @@ class GeminiAgent(BaseLLMAgent):
                         error=str(e),
                         response_time=time.time() - start_time
                     )
+        
         return AgentResponse(content="", model=self.model_name, success=False, error="Max retries exceeded")

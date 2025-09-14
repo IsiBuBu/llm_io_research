@@ -81,8 +81,10 @@ def main():
         "spulber_ablation-studies_wide_cost_range": ("spulber", "ablation_studies", "wide_cost_range", generate_spulber_data),
         "green_porter_structural-variations_long_time_horizon": ("green_porter", "structural_variations", "long_time_horizon", generate_green_porter_data),
         "green_porter_ablation-studies_high_demand_volatility": ("green_porter", "ablation_studies", "high_demand_volatility", generate_green_porter_data),
+        "green_porter_ablation-studies_low_patience": ("green_porter", "ablation_studies", "low_patience", generate_green_porter_data),
         "athey_bagwell_structural-variations_long_time_horizon": ("athey_bagwell", "structural_variations", "long_time_horizon", generate_athey_bagwell_data),
         "athey_bagwell_ablation-studies_low_persistence": ("athey_bagwell", "ablation_studies", "low_persistence", generate_athey_bagwell_data),
+        "athey_bagwell_ablation-studies_low_patience": ("athey_bagwell", "ablation_studies", "low_patience", generate_athey_bagwell_data),
     }
 
     for name, (game, exp_type, cond, func) in dataset_definitions.items():
