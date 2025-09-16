@@ -43,27 +43,41 @@ class CorrelationAnalyzer:
         self.hypotheses = self._define_hypotheses()
 
     def _define_hypotheses(self) -> List[CorrelationHypothesis]:
-        """Loads correlation hypotheses using the exact metric names from the analysis."""
-        return [
-            # Salop
-            CorrelationHypothesis('Judgment vs. Win Rate', 'salop', 'judgment', 'win_rate', 'positive'),
-            CorrelationHypothesis('Self-Awareness vs. Market Share', 'salop', 'self_awareness', 'market_share', 'positive'),
-            CorrelationHypothesis('Rationality vs. Average Profit', 'salop', 'rationality', 'average_profit', 'positive'),
-            CorrelationHypothesis('Judgment vs. Profit Volatility', 'salop', 'judgment', 'profit_volatility', 'negative'),
-            # Green & Porter
-            CorrelationHypothesis('Rationality vs. Win Rate', 'green_porter', 'rationality', 'win_rate', 'positive'),
-            CorrelationHypothesis('Cooperation vs. Reversion Frequency', 'green_porter', 'cooperation', 'reversion_frequency', 'negative'),
-            CorrelationHypothesis('Coordination vs. Average Profit', 'green_porter', 'coordination', 'average_profit', 'positive'),
-            # Spulber
-            CorrelationHypothesis('Judgment vs. Win Rate', 'spulber', 'judgment', 'win_rate', 'positive'),
-            CorrelationHypothesis('Self-Awareness vs. Market Capture', 'spulber', 'self_awareness', 'market_capture_rate', 'positive'),
-            CorrelationHypothesis('Rationality vs. Average Profit', 'spulber', 'rationality', 'average_profit', 'positive'),
-            # Athey & Bagwell
-            CorrelationHypothesis('Reasoning vs. Win Rate', 'athey_bagwell', 'reasoning', 'win_rate', 'positive'),
-            CorrelationHypothesis('Cooperation vs. HHI', 'athey_bagwell', 'cooperation', 'hhi', 'negative'),
-            CorrelationHypothesis('Deception vs. Average Profit', 'athey_bagwell', 'deception', 'average_profit', 'positive'),
-            CorrelationHypothesis('Deception vs. Profit Volatility', 'athey_bagwell', 'deception', 'profit_volatility', 'positive'),
-        ]
+        """Dynamically generates all possible correlation hypotheses for each game."""
+        hypotheses = []
+        
+        game_metrics = {
+            'salop': {
+                'magic': ['rationality', 'judgment', 'self_awareness'],
+                'performance': ['win_rate', 'average_profit', 'profit_volatility', 'market_share']
+            },
+            'green_porter': {
+                'magic': ['cooperation', 'coordination', 'rationality'],
+                'performance': ['win_rate', 'average_profit', 'profit_volatility', 'reversion_frequency']
+            },
+            'spulber': {
+                'magic': ['rationality', 'judgment', 'self_awareness'],
+                'performance': ['win_rate', 'average_profit', 'profit_volatility', 'market_capture_rate']
+            },
+            'athey_bagwell': {
+                'magic': ['deception', 'reasoning', 'cooperation'],
+                'performance': ['win_rate', 'average_profit', 'profit_volatility', 'hhi']
+            }
+        }
+        
+        for game, metrics in game_metrics.items():
+            for magic_metric in metrics['magic']:
+                for perf_metric in metrics['performance']:
+                    hypotheses.append(
+                        CorrelationHypothesis(
+                            name=f"{magic_metric.title()} vs. {perf_metric.replace('_', ' ').title()}",
+                            game_name=game,
+                            magic_metric=magic_metric,
+                            performance_metric=perf_metric,
+                            expected_direction='any'
+                        )
+                    )
+        return hypotheses
 
     def analyze_all_correlations(self):
         """Runs correlation analysis for all games with analyzed metrics."""
