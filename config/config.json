@@ -1,11 +1,18 @@
 {
   "models": {
     "challenger_models": [
-      "gemini_2_5_flash_lite_thinking_low"
+      "gemini_2_5_flash_lite_thinking_low",
+      "random_agent"
     ],
     "defender_model": "gemini_2_0_flash_lite"
   },
   "model_configs": {
+    "random_agent": {
+      "provider": "baseline",
+      "model_name": "random_agent",
+      "display_name": "Random Player",
+      "thinking_available": false
+    },
     "gemini_2_0_flash": {
       "provider": "google",
       "model_name": "gemini-2.0-flash",
@@ -86,15 +93,14 @@
     }
   },
   "experiment_config": {
-    "main_experiment_simulations": 1,
-    "ablation_experiment_simulations": 1,
+    "main_experiment_simulations": 50,
+    "ablation_experiment_simulations": 20,
     "random_seed": 42
   },
   "game_configs": {
     "salop": {
       "baseline": {
         "transport_cost": 1.5,
-        "number_of_players": 3,
         "v": 30,
         "marginal_cost": 8,
         "fixed_cost": 100,
@@ -121,7 +127,7 @@
         "marginal_cost": 20,
         "collusive_quantity": 17,
         "cournot_quantity": 25,
-        "number_of_players": 3,
+        "demand_shock_mean": 0,
         "demand_shock_std": 5,
         "trigger_price": 55,
         "punishment_duration": 3,
@@ -129,11 +135,11 @@
         "time_horizon": 50
       },
       "structural_variations": {
-        "short_time_horizon": {
-          "time_horizon": 1
+        "few_players": {
+          "number_of_players": 3
         },
-        "long_time_horizon": {
-          "time_horizon": 2
+        "more_players": {
+          "number_of_players": 5
         }
       },
       "ablation_studies": {
@@ -146,7 +152,6 @@
     "spulber": {
       "baseline": {
         "demand_intercept": 100,
-        "number_of_players": 3,
         "rival_cost_mean": 10,
         "rival_cost_std": 2.0,
         "type": "normal"
@@ -170,7 +175,6 @@
     },
     "athey_bagwell": {
       "baseline": {
-        "number_of_players": 3,
         "persistence_probability": 0.7,
         "cost_types": {
           "high": 25,
@@ -182,11 +186,11 @@
         "time_horizon": 50
       },
       "structural_variations": {
-        "short_time_horizon": {
-          "time_horizon": 1
+        "few_players": {
+          "number_of_players": 3
         },
-        "long_time_horizon": {
-          "time_horizon": 2
+        "more_players": {
+          "number_of_players": 5
         }
       },
       "ablation_studies": {

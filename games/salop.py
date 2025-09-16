@@ -48,40 +48,36 @@ class SalopGame(StaticGame, PriceParsingMixin):
 
         prices = {pid: action.get('price', v) for pid, action in actions.items() if isinstance(action, dict)}
         
-        # Ensure consistent player order for calculations
         player_ids = sorted(prices.keys())
         payoffs = {}
+        quantities = {}
         
         for i, player_id in enumerate(player_ids):
             p_i = prices[player_id]
             p_left = prices[player_ids[(i - 1 + num_firms) % num_firms]]
             p_right = prices[player_ids[(i + 1) % num_firms]]
 
-            # 1. Calculate competitive boundaries (x_left, x_right)
             x_left = (p_left - p_i) / (2 * transport_cost) + (1 / (2 * num_firms))
             x_right = (p_right - p_i) / (2 * transport_cost) + (1 / (2 * num_firms))
 
-            # 2. Calculate monopoly boundary (x_max)
             x_max = (v - p_i) / transport_cost
 
-            # 3. Determine final market reach on each side
             reach_left = max(0, min(x_left, x_max))
             reach_right = max(0, min(x_right, x_max))
             
-            # 4. Calculate quantity sold
             quantity_sold = (reach_left + reach_right) * market_size
+            quantities[player_id] = quantity_sold
             
-            # 5. Calculate profit
             profit = (p_i - marginal_cost) * quantity_sold - fixed_cost
             payoffs[player_id] = profit
             
+        # Store quantities for logging
+        game_state['player_quantities'] = quantities
         return payoffs
 
     def get_game_data_for_logging(self, actions: Dict[str, Any], payoffs: Dict[str, float], game_config: GameConfig, game_state: Optional[Dict] = None) -> Dict[str, Any]:
         """Gathers all relevant data from the Salop game for detailed logging."""
-        player_prices = {pid: action.get('price') for pid, action in actions.items() if isinstance(action, dict) and 'price' in action}
-        
         return {
-            "player_prices": player_prices,
-            "player_profits": payoffs
+            "constants": game_config.constants,
+            "player_quantities": game_state.get('player_quantities', {})
         }

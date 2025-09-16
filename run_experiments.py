@@ -5,12 +5,12 @@ import logging
 import argparse
 import json
 import sys
+import numpy as np
 from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
 from typing import Dict, List, Any
 
-# Ensure the project root is in the Python path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from config.config import (
@@ -24,6 +24,11 @@ from config.config import (
 from games import create_game
 from agents import create_agent, AgentResponse
 from metrics.metric_utils import GameResult, create_game_result
+
+# Helper function for NPV calculation
+def calculate_npv(profit_stream: List[float], discount_factor: float) -> float:
+    """Calculates the Net Present Value of a stream of profits."""
+    return sum(profit * (discount_factor ** t) for t, profit in enumerate(profit_stream))
 
 class Competition:
     """Orchestrates a series of game simulations between LLM agents."""
@@ -69,18 +74,17 @@ class Competition:
         game_state = game.initialize_game_state(config, sim_id)
         game_state['simulation_id'] = sim_id
 
-        # CORRECTED: Key generation now matches data_generation script perfectly
         dataset_key = f"{config.game_name}_{config.experiment_type}_{config.condition_name}"
         if dataset_key in self.master_datasets:
             dataset = self.master_datasets[dataset_key]
             sim_specific_data = {}
             for key, value in dataset.items():
-                if isinstance(value, list):
+                if isinstance(value, list) and len(value) > sim_id:
                     sim_specific_data[key] = value[sim_id]
                 elif isinstance(value, dict):
                     player_data = {}
                     for player, data in value.items():
-                        player_data[player] = data[sim_id] if isinstance(data, list) else data
+                        player_data[player] = data[sim_id] if isinstance(data, list) and len(data) > sim_id else data
                     sim_specific_data[key] = player_data
             game_state['predefined_sequences'] = sim_specific_data
 
@@ -100,7 +104,6 @@ class Competition:
         payoffs = game.calculate_payoffs(actions, config, game_state)
         game_data = game.get_game_data_for_logging(actions, payoffs, config, game_state)
         
-        # Add LLM metadata to game_data
         game_data['llm_metadata'] = {pid: resp.__dict__ for pid, resp in responses.items()}
 
         return create_game_result(game_state['simulation_id'], config.game_name, config.experiment_type, config.condition_name, challenger_model, list(agents.keys()), actions, payoffs, game_data)
@@ -113,15 +116,35 @@ class Competition:
             actions, responses = await self._get_all_actions(game, agents, config, game_state)
             payoffs = game.calculate_payoffs(actions, config, game_state)
             round_data = game.get_game_data_for_logging(actions, payoffs, config, game_state)
-            
-            # Add LLM metadata to round_data
             round_data['llm_metadata'] = {pid: resp.__dict__ for pid, resp in responses.items()}
-
             all_rounds_data.append(round_data)
             game_state = game.update_game_state(game_state, actions, config)
         
-        final_payoffs = {p_id: sum(r.get('payoffs', {}).get(p_id, 0) for r in all_rounds_data) for p_id in agents}
-        return create_game_result(game_state['simulation_id'], config.game_name, config.experiment_type, config.condition_name, challenger_model, list(agents.keys()), all_rounds_data[-1]['actions'], final_payoffs, {"rounds": all_rounds_data, **game_state})
+        # --- POST-SIMULATION CALCULATIONS ---
+        profit_streams = defaultdict(list)
+        for round_data in all_rounds_data:
+            for p_id, profit in round_data.get('player_profits', {}).items():
+                profit_streams[p_id].append(profit)
+
+        final_npvs = {p_id: calculate_npv(stream, config.constants.get('discount_factor', 0.95)) for p_id, stream in profit_streams.items()}
+        
+        game_data = {"constants": config.constants, "rounds": all_rounds_data, "final_npvs": final_npvs}
+
+        if config.game_name == 'green_porter':
+            state_history = [r['market_state'] for r in all_rounds_data]
+            reversion_triggers = sum(1 for i in range(len(state_history) - 1) if state_history[i] == 'Collusive' and state_history[i+1] == 'Reversionary')
+            game_data['reversion_frequency'] = reversion_triggers / (time_horizon - 1) if time_horizon > 1 else 0
+        
+        if config.game_name == 'athey_bagwell':
+            hhi_per_round = []
+            for r in all_rounds_data:
+                shares = r.get('game_outcomes', {}).get('player_market_shares', {}).values()
+                hhi_per_round.append(sum((s * 100) ** 2 for s in shares))
+            game_data['average_hhi'] = np.mean(hhi_per_round) if hhi_per_round else 0
+
+        last_actions = all_rounds_data[-1]['actions'] if all_rounds_data else {}
+        return create_game_result(game_state['simulation_id'], config.game_name, config.experiment_type, config.condition_name, challenger_model, list(agents.keys()), last_actions, final_npvs, game_data)
+
 
     async def _get_all_actions(self, game, agents, config, game_state) -> (Dict[str, Any], Dict[str, AgentResponse]):
         """Gets actions and full responses from all agents concurrently."""
@@ -138,6 +161,7 @@ class Competition:
         challenger_dir.mkdir(parents=True, exist_ok=True)
         filepath = challenger_dir / f"{config.condition_name}_competition_result.json"
         
+        # Convert GameResult objects to dictionaries for JSON serialization
         dict_results = [res.__dict__ for res in results]
 
         output_data = {

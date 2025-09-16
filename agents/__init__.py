@@ -29,7 +29,6 @@ def create_agent(model_name: str, player_id: str, mock_mode: bool = False, **kwa
 
     # In mock mode, always return a fast, non-API-calling agent
     if mock_mode:
-        # The RandomAgent can serve as a simple mock agent for testing workflows.
         logger.info(f"🎭 MOCK MODE: Creating RandomAgent for {model_name} as {player_id}")
         return RandomAgent(model_name="random_mock", player_id=player_id)
 
@@ -37,6 +36,11 @@ def create_agent(model_name: str, player_id: str, mock_mode: bool = False, **kwa
     if 'gemini' in model_name.lower():
         logger.info(f"🤖 Creating real GeminiAgent for {model_name} as {player_id}")
         return GeminiAgent(model_name, player_id, **kwargs)
+    
+    # Add a condition to create the RandomAgent as a baseline challenger
+    elif model_name == 'random_agent':
+        logger.info(f"🎲 Creating RandomAgent baseline for {model_name} as {player_id}")
+        return RandomAgent(model_name=model_name, player_id=player_id)
     
     # Add other agent types here if needed in the future (e.g., OpenAI, Anthropic)
     # elif 'gpt' in model_name.lower():

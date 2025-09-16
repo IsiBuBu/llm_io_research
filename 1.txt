@@ -1,0 +1,147 @@
+Of course. Here are the updated tables for Research Question 1, with the values now representing the **mean** and the **95% confidence interval** in the format `Mean [Lower Bound, Upper Bound]`.
+
+This format provides a more rigorous representation of the statistical certainty of your results, indicating the range in which the true average performance of each model likely lies. The confidence intervals are calculated using the mean, standard deviation, and the number of simulations for each condition, as we discussed.
+
+---
+### **Table 1.1: Salop Performance Metrics by Market Structure**
+
+This table compares model performance in the Salop game, showing how outcomes like **Average Profit** and **Market Share** change as market concentration decreases (from 3 to 5 players). The metrics are defined in your project documentation.
+
+| Challenger Model | 3-Player Condition | | | | 5-Player Condition | | | |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| | **Win Rate** | **Avg. Profit** | **Profit Volatility** | **Market Share** | **Win Rate** | **Avg. Profit** | **Profit Volatility** | **Market Share** |
+| Gemini 2.5 Flash-Lite (Low Budget) | 0.XX [X.XX, X.XX] | XX.X [XX.X, XX.X] | XX.X [XX.X, XX.X] | 0.XX [X.XX, X.XX] | 0.XX [X.XX, X.XX] | XX.X [XX.X, XX.X] | XX.X [XX.X, XX.X] | 0.XX [X.XX, X.XX] |
+| *...other challenger models...* | ... | ... | ... | ... | ... | ... | ... | ... |
+| Random Player | 0.XX [X.XX, X.XX] | XX.X [XX.X, XX.X] | XX.X [XX.X, XX.X] | 0.XX [X.XX, X.XX] | 0.XX [X.XX, X.XX] | XX.X [XX.X, XX.X] | XX.X [XX.X, XX.X] | 0.XX [X.XX, X.XX] |
+
+---
+### **Table 1.2: Spulber Performance Metrics by Market Structure**
+
+This table shows performance in the Bertrand auction. The **Market Capture Rate** is a key game-specific metric that measures the frequency of submitting the winning (lowest) bid.
+
+| Challenger Model | 3-Player Condition | | | | 5-Player Condition | | | |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| | **Win Rate** | **Avg. Profit** | **Profit Volatility** | **Market Capture Rate** | **Win Rate** | **Avg. Profit** | **Profit Volatility** | **Market Capture Rate** |
+| Gemini 2.5 Flash-Lite (Low Budget) | 0.XX [X.XX, X.XX] | XX.X [XX.X, XX.X] | XX.X [XX.X, XX.X] | 0.XX [X.XX, X.XX] | 0.XX [X.XX, X.XX] | XX.X [XX.X, XX.X] | XX.X [XX.X, XX.X] | 0.XX [X.XX, X.XX] |
+| *...other challenger models...* | ... | ... | ... | ... | ... | ... | ... | ... |
+| Random Player | 0.XX [X.XX, X.XX] | XX.X [XX.X, XX.X] | XX.X [XX.X, XX.X] | 0.XX [X.XX, X.XX] | 0.XX [X.XX, X.XX] | XX.X [XX.X, XX.X] | XX.X [XX.X, XX.X] | 0.XX [X.XX, X.XX] |
+
+---
+### **Table 1.3: Green & Porter Performance Metrics by Market Structure**
+
+This table presents the results for the dynamic collusion game, focusing on long-term profitability measured by **Average NPV**. The **Reversion Frequency** metric quantifies how often the cartel entered a punishment "price war" phase.
+
+| Challenger Model | 3-Player Condition | | | | 5-Player Condition | | | |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| | **Win Rate** | **Avg. NPV** | **Profit Volatility** | **Reversion Freq.** | **Win Rate** | **Avg. NPV** | **Profit Volatility** | **Reversion Freq.** |
+| Gemini 2.5 Flash-Lite (Low Budget) | 0.XX [X.XX, X.XX] | XXX.X [XX.X, XX.X] | XXX.X [XX.X, XX.X] | 0.XX [X.XX, X.XX] | 0.XX [X.XX, X.XX] | XXX.X [XX.X, XX.X] | XXX.X [XX.X, XX.X] | 0.XX [X.XX, X.XX] |
+| *...other challenger models...* | ... | ... | ... | ... | ... | ... | ... | ... |
+| Random Player | 0.XX [X.XX, X.XX] | XXX.X [XX.X, XX.X] | XXX.X [XX.X, XX.X] | 0.XX [X.XX, X.XX] | 0.XX [X.XX, X.XX] | XXX.X [XX.X, XX.X] | XXX.X [XX.X, XX.X] | 0.XX [X.XX, X.XX] |
+
+---
+### **Table 1.4: Athey & Bagwell Performance Metrics by Market Structure**
+
+This table shows performance in the game of collusion with private information. The **Herfindahl-Hirschman Index (HHI)** is a key outcome metric that measures market concentration, indicating whether the cartel successfully allocated the entire market to a single "low-cost" firm.
+
+| Challenger Model | Short-Horizon 3-Player Condition | | | | 5-Player Condition | | | |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| | **Win Rate** | **Avg. NPV** | **Profit Volatility** | **HHI** | **Win Rate** | **Avg. NPV** | **Profit Volatility** | **HHI** |
+| Gemini 2.5 Flash-Lite (Low Budget) | 0.XX [X.XX, X.XX] | XXX.X [XX.X, XX.X] | XXX.X [XX.X, XX.X] | XXXX [XXXX, XXXX] | 0.XX [X.XX, X.XX] | XXX.X [XX.X, XX.X] | XXX.X [XX.X, XX.X] | XXXX [XXXX, XXXX] |
+| *...other challenger models...* | ... | ... | ... | ... | ... | ... | ... | ... |
+| Random Player | 0.XX [X.XX, X.XX] | XXX.X [XX.X, XX.X] | XXX.X [XX.X, XX.X] | XXXX [XXXX, XXXX] | 0.XX [X.XX, X.XX] | XXX.X [XX.X, XX.X] | XXX.X [XX.X, XX.X] | XXXX [XXXX, XXXX] |
+
+Of course. Here is a comprehensive guide to the visualizations for **Research Question 1: Economic and Game-Theoretic Performance**. This plan details how to generate each plot, what it should look like, and the specific data and variations it should cover to tell a clear and powerful story.
+
+### How to Generate the Plot Data
+
+All the necessary data for these plots can be generated by your existing analysis pipeline.
+1.  **Raw Data**: Run `run_experiments.py` to produce the detailed JSON results for each simulation.
+2.  **Aggregated Metrics**: Run `run_analysis.py`, which uses `analyze_metrics.py` to process the raw data and generate the crucial `performance_metrics.csv` file in the `analysis_output` directory.
+3.  **Visualization Script**: The logic for creating these plots would reside in `analysis/visualize_results.py`, which loads the processed CSV files and raw JSONs as needed.
+
+---
+1. High-Level Performance Overview
+
+These plots provide a broad summary of model performance across all games and do not need to be changed.
+
+Plot 1.1: Performance Across Games (Heatmap)
+
+Description: This plot remains the same. It compares each model's normalized Win Rate and Average Profit/NPV across all four games, using a single, consistent condition (e.g., the 3-player variation) to provide a high-level summary of "specialist" vs. "generalist" models.
+
+Plot 1.2: Performance vs. Theoretical Baselines (Grouped Bar Chart)
+
+Description: This plot's logic remains the same. You will create separate charts for each structural variation (e.g., one for 3-Player Salop, one for 5-Player Salop, one for 3-Player Green & Porter, etc.), as the theoretical benchmarks change with the game's structure.
+---
+### 2. Static Games (Salop & Spulber): Structural Variation Plots
+
+These plots dive into the specific pricing and bidding strategies in the static games.
+
+#### **Plot 2.1: Price/Bid Strategy vs. Economic Benchmarks**
+
+* **How to Get It**: This requires the raw JSON results, as you need the full distribution of every price choice from every simulation, not just the average.
+* **Axes**: Y-axis: Price/Bid ($); X-axis: Challenger Models.
+* **Look**: A **violin plot**. Add two horizontal lines across the plot: one for the calculated Nash Equilibrium price and one for the joint profit-maximizing (monopoly) price.
+* **Data**: The plot must include all challenger models and the Random Player. The Random Player's violin will be a uniform rectangle, providing a powerful visual baseline for non-strategic behavior.
+* **Structural Variations**: Create **two separate plots** for each game: one for the 3-Player condition and one for the 5-Player condition. This directly visualizes how pricing strategy distributions shift in response to increased competition.
+
+#### **Plot 2.2: Risk vs. Reward Profile**
+
+* **How to Get It**: Use the `performance_metrics.csv` file, extracting the `Average Profit` and `Profit Volatility` for each model and condition.
+* **Axes**: Y-axis: Average Profit (Reward); X-axis: Profit Volatility (Risk).
+* **Look**: A **scatter plot**.
+* **Data**: Each point represents a challenger model. Include all models.
+* **Structural Variations**: Plot both the 3-player and 5-player conditions **on the same chart**. Use different colors or shapes for each condition and draw an arrow from a model's 3-player result to its 5-player result. This elegantly shows how each model's risk-reward profile shifts under increased competition.
+
+---
+
+3. Dynamic Games (Green & Porter, Athey & Bagwell): Per-Round Plots (Updated)
+
+These plots are now updated to visualize how performance and market dynamics evolve in response to increased social complexity (moving from 3 to 5 players).
+
+Plot 3.1: Cumulative Profit Over Time
+
+How to Get It: Process the raw JSON results to get the profit for each player in each round. For each model, calculate the average cumulative NPV at each round across all simulations.
+
+Axes: Y-axis: "Cumulative NPV"; X-axis: "Game Round".
+
+Look: A line plot, with a distinct line for each challenger model.
+
+Data: Include all challenger models and the Random Player.
+
+Structural Variations: Create two separate plots for each game: one for the 3-Player condition and another for the 5-Player condition. This will clearly show how the long-term profitability trajectory changes in a more crowded and competitive market.
+
+Plot 3.2: Challenger's Profit Trajectory vs. Defenders
+
+How to Get It: From the raw JSONs, calculate the average profit per round for the challenger and the average profit per round for all defenders combined.
+
+Axes: Y-axis: "Profit"; X-axis: "Game Round".
+
+Look: A line plot with a shaded area. One line represents the challenger's average profit, the other represents the defenders' average profit. The shaded area visually represents the performance gap.
+
+Data: Generate a separate plot for each challenger model.
+
+Structural Variations: Create two plots for each challenger model: one for the 3-Player condition and one for the 5-Player condition, to show how the performance gap evolves under different levels of competition.
+
+Plot 3.3: Price War Severity and Duration (Green & Porter only)
+
+How to Get It: Parse the raw Green & Porter JSON results. Identify every sequence of consecutive "Reversionary" states to find price wars. Record the duration and severity of each war.
+
+Axes: Y-axis: "Price War Severity (Avg. Price Drop)"; X-axis: "Price War Duration (Rounds)".
+
+Look: A scatter plot.
+
+Data: Each point is a single price war. Color-code the points by the challenger model.
+
+Structural Variations: Combine data from both the 3-Player and 5-Player conditions onto a single plot. Use different shapes (e.g., circles for 3-player, squares for 5-player) to distinguish them. This will powerfully visualize if the increase in firms leads to more frequent, longer, or more severe price wars.
+
+Plot 3.4: Market Share Dominance (Athey & Bagwell only)
+
+How to Get It: From the raw Athey & Bagwell JSONs, calculate the average market share for the challenger and each defender at every round across all simulations.
+
+Axes: Y-axis: "Market Share (0% to 100%)"; X-axis: "Game Round".
+
+Look: A stacked area chart. Each colored band represents a player's share of the market.
+
+Data: Create a separate chart for each challenger model to see its impact on market dynamics.
+
+Structural Variations: Create two separate charts for each challenger model: one for the 3-Player condition and one for the 5-Player condition. This will directly show how market concentration and the challenger's ability to dominate the market are affected by the presence of more competitors.

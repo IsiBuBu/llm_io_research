@@ -1,0 +1,271 @@
+RQ1:
+
+1. High-Level Performance Overview
+
+Performance Across Games (Heatmap):
+
+Analysis: Compare each model's normalized Win Rate and Average Profit/NPV across all four games for a specific, consistent condition (e.g., 3-player, long-horizon). Normalizing scores allows for a fair comparison across games with different profit scales.
+
+Visualization: A heatmap where rows are the challenger LLMs and columns are the games. The color intensity represents the normalized score. This will immediately show if some models are "specialists" that excel in certain game types (e.g., static vs. dynamic) or "generalists" that perform consistently well.
+
+Performance vs. Theoretical Baselines (Bar Chart):
+
+Analysis: For each game and key condition, you will calculate the relevant theoretical benchmark for a primary performance metric (e.g., profit). You will then compare the average performance of each challenger LLM and the Random Player to this benchmark.
+
+Visualization: A grouped bar chart for each game. The y-axis will be "Average Profit as % of Theoretical Optimum." Each model, including the Random Player, will have a bar. This powerful plot immediately contextualizes performance, showing not just who won, but how close each LLM came to optimal play.
+
+2. Static Games (Salop & Spulber): Structural Variation Plots
+
+Price/Bid Strategy vs. Economic Benchmarks (Violin Plots):
+
+Analysis: Enhance your violin plots by adding horizontal lines for key theoretical prices. This directly shows the strategic positioning of each model's pricing strategy.
+
+Visualization: A violin plot of price distributions for the 3-Player vs. 5-Player conditions. Add two horizontal lines across the plot: one for the Nash Equilibrium price and one for the joint profit-maximizing (monopoly) price. This will instantly reveal if models are pricing too aggressively (below Nash), too cooperatively (closer to monopoly), or irrationally. The Random Player's violin will show a uniform distribution, providing a stark contrast.
+
+Risk vs. Reward Profile (Scatter Plot):
+
+Analysis: For each structural condition, plot each model's Profit Volatility (risk) against its Average Profit (reward).
+
+Visualization: A scatter plot with Average Profit on the y-axis and Profit Volatility on the x-axis. Each point would represent a challenger model's performance in a specific condition. You can use different colored points or shapes for the 3-player vs. 5-player conditions. You can draw arrows for each model to show how its risk-reward profile shifts when moving from a 3-player to a 5-player market. Do they become more conservative (lower risk, lower reward) or more aggressive?
+
+3. Dynamic Games (Green & Porter, Athey & Bagwell): Per-Round Plots
+
+Cumulative Profit Over Time (Line Plot):
+
+Analysis: Plot the average cumulative NPV for each model at each round of the game. Compare the trajectories in the short-horizon vs. long-horizon games.
+
+Visualization: A line plot with "Round" on the x-axis and "Cumulative NPV" on the y-axis. This shows which models are able to build and sustain a competitive advantage over time. You can see if some models perform well initially but are overtaken in the long run.
+
+Challenger's Profit Trajectory vs. Defenders (Line Plot with Shaded Area):
+
+Analysis: Plot the average round-by-round profit for the challenger LLM and compare it to the average profit of the defender LLMs. This shows the moment-to-moment performance dynamics.
+
+Visualization: A line plot with "Round" on the x-axis and "Profit" on the y-axis. Use one line for the challenger's average profit and another for the average profit of all defenders. Shading the area between the lines visually represents the challenger's performance gap (positive or negative) over time. Create one plot for the short-horizon and one for the long-horizon to compare.
+
+Price War Severity and Duration (Scatter Plot):
+
+Analysis: For Green & Porter, for every price war that occurs, measure its duration (number of rounds) and its severity (the average price drop below the trigger price).
+
+Visualization: A scatter plot where the x-axis is "Price War Duration" and the y-axis is "Price War Severity." Each point represents a single price war event, color-coded by the challenger model that was present in that simulation. This can reveal if certain models trigger longer or more punitive price wars than others.
+
+Market Share Dominance (Stacked Area Chart):
+
+Analysis: For the Athey & Bagwell game, track the average market share held by the challenger and each defender over all 50 rounds of the long-horizon game.
+
+Visualization: A stacked area chart where the x-axis is the round number and the y-axis represents 100% of the market share. The colored bands will show the evolution of market dominance. Does the challenger consistently capture the market, or is the market chaotic with shares frequently changing hands?
+
+Yes, you should absolutely include both of those analyses in Research Question 1. They are not redundant; in fact, they work together perfectly to tell a complete story about performance.
+
+The "Risk vs. Reward Profile" scatter plot is an excellent exploratory tool, while the "Sharpe Ratio" is a powerful conclusive metric. Here’s how they complement each other:
+
+## 1. Risk vs. Reward Profile (Scatter Plot)
+
+This plot should definitely be included in RQ1.
+
+Purpose: Its primary job is to visually categorize the strategic styles of the different LLMs. It's an exploratory tool that allows you to see the raw trade-offs between generating high profits and maintaining stable, predictable performance.
+
+What it shows: You can immediately identify different strategic archetypes from the plot:
+
+Top-Right Quadrant: "Aggressive Gamblers" (High Profit, High Volatility)
+
+Top-Left Quadrant: "Stable Performers" (High Profit, Low Volatility)
+
+Bottom-Left Quadrant: "Conservative Underperformers" (Low Profit, Low Volatility)
+
+Bottom-Right Quadrant: "Inefficient Gamblers" (Low Profit, High Volatility)
+
+## 2. "Sharpe Ratio" Equivalent (Calculated Metric)
+
+This metric should also be included in RQ1, likely presented in your main performance summary table.
+
+Purpose: While the scatter plot shows the landscape of strategies, the Sharpe Ratio provides a definitive answer to the question: "Which model was the most efficient?" It condenses the two dimensions of risk and reward into a single, powerful number representing risk-adjusted performance.
+
+What it shows: A model with a very high but volatile profit stream might look impressive on a simple profit chart, but a model with a slightly lower but extremely stable profit stream could have a higher Sharpe Ratio, identifying it as the more reliable and strategically sound performer.
+
+Direct Comparison of Structural Variations (Dumbbell Plot): To make the impact of your structural variations (e.g., 3-player vs. 5-player) even more explicit, consider a dumbbell plot.
+
+Visualization: For each game, the y-axis would list the challenger models. The x-axis would be a key performance metric like Average Profit. Each model would have a horizontal line (a "dumbbell") connecting two points: its average profit in the first condition (e.g., 3-player) and its average profit in the second (e.g., 5-player).
+
+Insight: The length of the line instantly and clearly visualizes how sensitive each model's performance is to the change in market structure. It directly answers: "How much did adding two more competitors hurt each model's bottom line?"
+
+RQ2:
+
+Of course. Based on our discussion, here is a comprehensive and focused list of all the high-impact plots for your Research Question 2.
+
+This plan is designed to visualize the "why" behind your performance results by exposing the underlying strategic tendencies and behavioral patterns of the LLMs. The visualizations focus on providing insights that are not immediately apparent from the summary tables alone.
+
+## Research Question 2: Strategic Capability Profile (The "Why") 🧠
+
+These visualizations are designed to expose the underlying strategic tendencies and behavioral patterns of the LLMs compared to established baselines.
+
+1. High-Level and Game-Specific Behavioral Profiles
+
+Overall MAgIC Profile (Radar Chart):
+
+Analysis: Create one summary radar chart that averages each model's scores for the seven core MAgIC paper metrics across all games for a consistent condition (e.g., 3-player, long-horizon) .
+
+Visualization: A single radar chart with seven axes: Judgment, Reasoning, Deception, Self-awareness, Cooperation, Coordination, and Rationality. This provides the definitive "at-a-glance" summary of each model's general strategic personality. The Random Player should be included as a reference point.
+
+Game-Specific Behavioral Profiles (Radar Charts):
+
+Analysis: Create a separate radar chart for each of the four games, using the specific, context-relevant metrics you identified. You should create two charts per game to compare the structural variations side-by-side.
+
+Visualization: Four pairs of radar charts (eight total). This allows you to dive deeper and argue, for example, that "While Model X is a strong cooperator in general, its deception capability is particularly pronounced in the Athey & Bagwell game, where information is paramount."
+
+2. Dynamic Games (Green & Porter, Athey & Bagwell): Per-Round Behavioral Plots
+
+Direct Action Comparison (Line Plot):
+
+Analysis: This directly addresses your request to see the LLM responses over time. For each game, plot the average raw action of each challenger model per round.
+
+Visualization:
+
+Green & Porter: A line plot of the average quantity produced each round. Include horizontal lines for the collusive_quantity and the Cournot_quantity as theoretical benchmarks. This will clearly show which models are successfully colluding, which are defecting, and how their actions compare to the Random Player baseline.
+
+Athey & Bagwell: A line plot of the proportion of "low" cost reports per round for each model. This directly visualizes their reporting strategy over time, which is perfect for testing end-game effects in the short-horizon game.
+
+Collusion Stability "Survival Curve" (Line Plot):
+
+Analysis: For Green & Porter, plot the proportion of simulations still in the 'Collusive' state at the start of each round. Compare the short-horizon vs. long-horizon games.
+
+Visualization: A line plot where the y-axis is "Proportion of Games in Collusion" (from 1 down to 0). This creates a powerful visual of cartel stability, showing how much more quickly collusion decays when the end of the game is near.
+
+Deception and End-Game Effects (Line Plot):
+
+Analysis: For Athey & Bagwell, plot the rate of Deception Events per round. Critically, overlay the plot for the short_time_horizon game on top of the first 15 rounds of the long_time_horizon game.
+
+Visualization: This plot is essential. A sharp, distinct spike in deception in the final rounds of the short-horizon game (and the absence of such a spike in the long-horizon game) provides clear, compelling evidence of sophisticated end-game reasoning.
+
+Reporting Strategy Matrix (Heatmap):
+
+Analysis: For Athey & Bagwell, create a transition matrix showing what each model reports, conditioned on its true private cost.
+
+Visualization: A heatmap for each model. The rows are "True Cost" ('High', 'Low'). The columns are "Reported Cost" ('High', 'Low'). The cell color and value would show the probability of reporting a certain cost given a true cost. This provides a crystal-clear summary of each model's honesty and deception strategy. For a perfectly honest model, the diagonal would be 100%. The Deception Rate is the value in the (True High, Reported Low) cell.
+
+Suggested Refinement (Optional):
+
+Nuanced Direct Action Plot for Athey & Bagwell: To add more detail to your "Direct Action Comparison" plot for Athey & Bagwell, you could refine it slightly.
+
+Visualization: Instead of one line per model showing the overall proportion of "low" reports, create two lines for each model:
+
+The rate of reporting "low" when their true cost was low (measuring honesty/confidence).
+
+The rate of reporting "low" when their true cost was high (this is the deception rate over time).
+
+Insight: This single plot would simultaneously visualize both honesty and deception over time, allowing you to see if, for example, models become less honest and more deceptive as the end of the game approaches.
+
+Pressure on Collusion" Analysis (Box Plot)
+
+This plot visualizes how close each model pushes the cartel to the breaking point during periods of cooperation, distinguishing between stable and greedy cooperators.
+
+Analysis: For every period that a simulation is in the "Collusive" state, calculate the "Price Cushion," defined as (Market Price - trigger_price). This value represents how far the market price is from triggering a price war. A larger positive cushion indicates safer, more stable collusion, while a cushion near zero indicates a high risk of accidental reversion.
+
+Visualization: A box plot (or violin plot) for each challenger model.
+
+Y-axis: "Price Cushion ($)"
+
+X-axis: Challenger Model
+
+Data: The distribution of all "Price Cushion" values from all collusive periods across all simulations for that model. A horizontal line at y=0 clearly marks the trigger point.
+
+RQ3:
+
+Narrowing RQ3's Focus
+
+I'm grappling with RQ3. It's gotten unwieldy, packed with master correlations, inter-correlations, predictive models, and interaction effects. My goal now is to distill it down, to refine the question's scope. I'm seeking a more streamlined approach for enhanced clarity and impact.
+
+Simplifying RQ3's Approach
+
+I've realized RQ3 is trying to do too much. It's gotten messy with all those correlations and models. My solution? A two-part structure. First, a solid correlation analysis using tables and heatmaps. Second, a single, powerful "deep dive" using a predictive model and SHAP values for feature importance and interaction effects. This keeps things focused and impactful.
+
+Restructuring RQ3's Core
+
+I'm aiming to reshape RQ3 for greater clarity. My strategy involves a two-part analysis: a vital, non-negotiable core correlation analysis – tables and heatmaps displaying MAgIC vs. Performance – and an advanced predictive model "deep dive." This 'deep dive' consolidates multiple advanced techniques (inter-correlations, predictive models, interactions) using a predictive model and SHAP values for streamlined feature analysis. The inter-correlation data can go to the appendix, keeping the narrative focused.
+
+You are absolutely right to raise this concern. Your intuition is spot on. RQ3 is a critical chapter, and there's a real danger of it becoming bloated and losing its narrative focus if you try to include every possible analysis.
+
+A powerful thesis is not about showing everything you did, but about presenting a clear, compelling, and focused argument. Let's streamline your plan for RQ3 to be more concise and impactful.
+
+## A Streamlined and Powerful Structure for RQ3
+
+Instead of layering multiple different types of analysis, you can tell a more powerful story by focusing on two key stages: Discovery and Prediction.
+
+Part 1: Discovering Strategic Relationships (Correlation Analysis)
+
+This is the foundational part of your analysis. The goal is to establish the basic relationships between behaviors and outcomes.
+
+Deliverable:
+
+One Master Correlation Table: This is your core evidence. It will show the correlations between your MAgIC metrics and your Performance metrics for each game. This directly tests your primary hypotheses.
+
+One Summary Heatmap: Create a single heatmap that visualizes the most important findings from your master table, providing a high-level overview.
+
+What to Cut: Move the inter-correlation tables (Performance vs. Performance and MAgIC vs. MAgIC) to an appendix. While they are interesting, they are secondary to your main argument. You can refer to them in your text if you find a particularly noteworthy trade-off, but they don't need to be a central part of the main chapter. This immediately reduces the bloat.
+
+Part 2: Predicting Success (Advanced Modeling)
+
+This is the "deep dive" where you move beyond simple correlation to determine which behaviors are the most important drivers of success. Instead of doing multiple advanced analyses, you will combine them into one, powerful step.
+
+Deliverable:
+
+One Predictive Model per Outcome:
+
+Use a logistic regression model to predict the Win Rate based on your MAgIC metrics.
+
+Use a gradient boosting model to predict Average Profit based on your MAgIC metrics.
+
+One Key Visualization: The SHAP Summary Plot. For each model, you will generate a SHAP summary plot. This single plot is incredibly powerful:
+
+It ranks the importance of each behavioral metric, showing which had the biggest impact on predicting success.
+
+It shows the direction of the effect (e.g., did high Deception increase or decrease predicted profit?).
+
+It can even hint at interaction effects and non-linear relationships.
+
+## Why This Streamlined Approach is Better
+
+It's Focused: It tells a clear, two-part story: "First, we found these relationships. Second, we built a model to determine which of these relationships matter most."
+
+It's More Powerful: It replaces multiple, potentially confusing advanced analyses with a single, state-of-the-art method (SHAP) that answers the core questions of feature importance and impact in a more direct and intuitive way.
+
+It Eliminates Bloat: By moving the inter-correlation tables to the appendix and consolidating your advanced analysis into a single predictive modeling step, your RQ3 becomes a lean, focused, and highly impactful chapter.
+
+scatter plots for all master corelations, structural variations comparisons
+
+In Appendix: inter correlation table (performance vs performance, magic vs magic)
+
+## Ablation Study:
+
+## Your Ablation Study Reporting Plan
+
+Tables (The Foundation): You will present the complete performance and MAgIC metrics tables, now including columns for the ablation conditions side-by-side with the main conditions. This provides the full evidence.
+
+Plots (The Story): You will create a total of 8 plots—one performance plot and one behavioral plot for each of the four games.
+
+## Recommended Plots for Your Ablation Study Section
+
+Here are the two most insightful plots to create for each game, designed to tell a clear story about how the LLMs' strategies adapt under pressure.
+
+1. Salop: The Impact of Increased Competition (low_transport_cost)
+
+Performance Plot (Dumbbell Plot): Average Profit. This plot will visually show how much each model's profitability suffered when the market became more competitive. The length of the line for each model is an immediate indicator of its resilience.
+
+Behavioral Plot (Violin Plot): Price Distribution. This plot will show why profits changed. By comparing the price distribution from the baseline to the ablation, you can see which models adapted by becoming more aggressive (shifting their prices lower), more erratic (a wider distribution), or failed to adapt at all.
+
+2. Green & Porter: The Impact of Increased Uncertainty (high_demand_volatility)
+
+Performance Plot (Line Plot): Per-Round Market Price. Overlay the average market price from the baseline condition with the high-volatility condition. This will create a powerful visual showing if the increased uncertainty led to more frequent, deeper, and longer-lasting price wars, directly impacting performance.
+
+Behavioral Plot (Line Plot): Collusion Stability "Survival Curve". Plot the proportion of simulations remaining in the "Collusive" state for each round. This will clearly show if the increased signal noise caused the cartel to collapse more quickly and consistently, providing a direct measure of the impact on cooperative behavior.
+
+3. Spulber: The Impact of Increased Uncertainty (wide_cost_range)
+
+Performance Plot (Dumbbell Plot): Average Profit. Similar to Salop, this plot will show the direct impact of a riskier environment on each model's profitability. It measures their ability to adapt their bidding strategy to a wider range of potential rival costs.
+
+Behavioral Plot (Grouped Bar Chart): Self-Awareness (Bid Appropriateness Rate). This is a crucial behavioral test. Does the models' ability to make an "appropriate" bid (i.e., bidding low when they have a cost advantage and high when they don't) improve or degrade when the environment is more uncertain? This plot directly answers that question.
+
+4. Athey & Bagwell: The Impact of Lower Reputational Stakes (low_persistence)
+
+Performance Plot (Dumbbell Plot): Average Profit (NPV). This plot will show which models were able to successfully adapt their strategy to capitalize on the fact that reputation was less important. Did lying more (or less) lead to higher profits in this new environment?
+
+Behavioral Plot (Grouped Bar Chart): Deception Rate. This is the centerpiece of this ablation. A grouped bar chart showing the Deception Rate for each model in the high-persistence vs. low-persistence conditions will provide clear, powerful evidence of whether the LLMs are sophisticated enough to adjust their level of deception based on reputational incentives.

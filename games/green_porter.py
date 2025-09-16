@@ -23,10 +23,11 @@ class GreenPorterGame(DynamicGame, QuantityParsingMixin):
         constants = game_config.constants
         time_horizon = constants.get('time_horizon', 50)
         demand_shock_std = constants.get('demand_shock_std', 5)
+        demand_shock_mean = constants.get('demand_shock_mean', 0)
 
         # Pre-generate demand shocks for reproducibility
         np.random.seed(simulation_id)
-        demand_shocks = np.random.normal(0, demand_shock_std, time_horizon).tolist()
+        demand_shocks = np.random.normal(demand_shock_mean, demand_shock_std, time_horizon).tolist()
         
         # Initial state as per t.txt specification
         return {

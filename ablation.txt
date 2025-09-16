@@ -1,0 +1,90 @@
+Of course. Focusing the ablation study on the 3-player setup is an excellent decision that will make your analysis cleaner and your conclusions more powerful. It creates a direct, controlled comparison that perfectly isolates the impact of the parameter change.
+
+Here is the complete, updated guide for the tables and plots for your **Ablation Study Section**, tailored specifically to the 3-player experimental design.
+
+### **How to Generate the Data**
+
+The workflow is now more focused:
+1.  **Run Experiments**: Execute `run_experiments.py` for two sets of conditions for each game: the baseline 3-player structural variation and the 3-player ablation study variation.
+2.  **Analyze Metrics**: Run the `run_analysis.py` pipeline to process the results and generate the summary CSV files containing the data for these specific conditions.
+3.  **Create Visualizations**: The `analysis/visualize_results.py` script will use this focused dataset to generate the updated tables and plots.
+
+---
+### **Foundational Analysis: The Tables**
+
+You will present one clear, focused table for each of the four games. This provides the complete evidence for your ablation findings.
+
+* **Structure**: The rows will be the challenger models. The columns will be a multi-level structure showing the **3-Player Baseline Condition** and the **3-Player Ablation Condition** side-by-side for a set of key performance and MAgIC metrics.
+* **Content**: Each cell will contain the `Mean [95% Confidence Interval]`.
+
+**Table A.1: Salop Ablation Study Results (Increased Competition in 3-Player Market)**
+
+| Challenger Model                      | Baseline (transport\_cost = 1.5) |                       | Ablation (transport\_cost = 0.5) |                       |
+| :------------------------------------ | :------------------------------ | :-------------------- | :------------------------------ | :-------------------- |
+|                                       | **Avg. Profit** | **Judgment** | **Avg. Profit** | **Judgment** |
+| Gemini 2.5 Flash-Lite (Low Budget)    | XX.X [XX.X, XX.X]               | 0.XX [X.XX, X.XX]     | XX.X [XX.X, XX.X]               | 0.XX [X.XX, X.XX]     |
+| *...other models...* | ...                             | ...                   | ...                             | ...                   |
+| Random Player                         | XX.X [XX.X, XX.X]               | 0.XX [X.XX, X.XX]     | XX.X [XX.X, XX.X]               | 0.XX [X.XX, X.XX]     |
+
+*(This clear and focused table structure will be adapted for each of the four games.)*
+
+---
+### **High-Impact Visualizations: The Story**
+
+You will create a pair of plots for each game—one for performance, one for behavior—to tell a clear story of adaptation.
+
+#### **1. Salop: Impact of Increased Competition (`low_transport_cost`)**
+
+* **Performance Plot (Dumbbell Plot): Average Profit**
+    * **How to Get It**: Use `performance_metrics.csv` to get the `Average Profit` for each model in the 3-player baseline and 3-player ablation conditions.
+    * **Axes**: Y-axis: Challenger Models; X-axis: Average Profit.
+    * **Look**: A **dumbbell plot**. Each model will have a horizontal line connecting its average profit in the baseline condition to its average profit in the high-competition (ablation) condition.
+    * **Insight**: Instantly shows which models are most resilient to increased competition.
+
+* **Behavioral Plot (Violin Plot): Price Distribution**
+    * **How to Get It**: Use the raw JSON results to get the full distribution of prices chosen by each model in both 3-player conditions.
+    * **Axes**: Y-axis: Price ($); X-axis: Challenger Models.
+    * **Look**: A **split violin plot**. For each model, the violin's left side will show the price distribution for the baseline, and the right side for the ablation.
+    * **Insight**: Reveals *why* profits changed, showing which models adapted by becoming more aggressive (shifting prices lower) or erratic (wider distribution).
+
+#### **2. Green & Porter: Impact of Increased Uncertainty (`high_demand_volatility`)**
+
+* **Performance Plot (Line Plot): Per-Round Market Price**
+    * **How to Get It**: From the raw JSONs, calculate the average market price for each round for the 3-player baseline and 3-player ablation conditions.
+    * **Axes**: Y-axis: Average Market Price ($); X-axis: Game Round.
+    * **Look**: A **line plot**. Overlay two lines: one for the baseline condition (solid) and one for the high-volatility condition (dashed).
+    * **Insight**: A powerful visual of market stability, showing if increased uncertainty led to more frequent or deeper price wars.
+
+* **Behavioral Plot (Line Plot): Collusion Stability "Survival Curve"**
+    * **How to Get It**: From the raw JSONs, calculate the proportion of simulations remaining in the "Collusive" state at the start of each round for both 3-player conditions.
+    * **Axes**: Y-axis: "Proportion of Games in Collusion"; X-axis: "Game Round".
+    * **Look**: A **line plot**. Overlay the "survival curve" for the baseline (solid) with the curve for the high-volatility condition (dashed).
+    * **Insight**: Clearly shows if increased signal noise caused the cartel to collapse more quickly.
+
+#### **3. Spulber: Impact of Increased Uncertainty (`wide_cost_range`)**
+
+* **Performance Plot (Dumbbell Plot): Average Profit**
+    * **How to Get It**: Use `performance_metrics.csv` to get the `Average Profit` for each model in both 3-player conditions.
+    * **Axes**: Y-axis: Challenger Models; X-axis: Average Profit.
+    * **Look**: A **dumbbell plot**, showing the change in profitability in a riskier environment.
+    * **Insight**: Measures the ability to adapt bidding strategy to a wider range of potential rival costs.
+
+* **Behavioral Plot (Grouped Bar Chart): Self-Awareness (Bid Appropriateness Rate)**
+    * **How to Get It**: Use `magic_behavioral_metrics.csv` to get the `Self-Awareness` score for each model in both 3-player conditions.
+    * **Axes**: Y-axis: "Bid Appropriateness Rate"; X-axis: Challenger Models.
+    * **Look**: A **grouped bar chart**. For each model, two bars will be side-by-side: one for the baseline and one for the ablation condition.
+    * **Insight**: A crucial test of whether models' ability to make an "appropriate" bid improves or degrades in a more uncertain environment.
+
+#### **4. Athey & Bagwell: Impact of Lower Reputational Stakes (`low_persistence`)**
+
+* **Performance Plot (Dumbbell Plot): Average Profit (NPV)**
+    * **How to Get It**: Use `performance_metrics.csv` to get the `Average NPV` for each model in both 3-player conditions.
+    * **Axes**: Y-axis: Challenger Models; X-axis: Average NPV.
+    * **Look**: A **dumbbell plot**.
+    * **Insight**: Shows which models successfully adapted their strategy to capitalize on the change in reputational incentives.
+
+* **Behavioral Plot (Grouped Bar Chart): Deception Rate**
+    * **How to Get It**: Use `magic_behavioral_metrics.csv` to get the `Deception` score for each model in both 3-player conditions.
+    * **Axes**: Y-axis: "Deception Rate"; X-axis: Challenger Models.
+    * **Look**: A **grouped bar chart**, with paired bars for the high-persistence (baseline) vs. low-persistence (ablation) conditions.
+    * **Insight**: The centerpiece of this ablation. It provides clear, powerful evidence of whether the LLMs are sophisticated enough to adjust their level of deception based on reputational incentives.

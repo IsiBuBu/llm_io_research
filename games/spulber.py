@@ -28,8 +28,6 @@ class SpulberGame(StaticGame, PriceParsingMixin):
 
     def generate_player_prompt(self, player_id: str, game_state: Dict, game_config: GameConfig) -> str:
         """Generates a prompt for a player using the game's template and configuration."""
-        # Spulber game has private costs which might be passed in game_state
-        # during a simulation run, so we merge them for the prompt.
         prompt_vars = game_state.get('predefined_sequences', {}).get('player_private_costs', {})
         
         variables = get_prompt_variables(
@@ -43,7 +41,6 @@ class SpulberGame(StaticGame, PriceParsingMixin):
     def parse_llm_response(self, response: str, player_id: str, call_id: str) -> Optional[Dict[str, Any]]:
         """Parses the LLM's price/bid decision using the inherited mixin."""
         parsed = self.parse_price_response(response, player_id, call_id)
-        # Normalize 'bid' to 'price' for consistent handling
         if parsed and 'bid' in parsed:
             parsed['price'] = parsed.pop('bid')
         return parsed
@@ -59,40 +56,33 @@ class SpulberGame(StaticGame, PriceParsingMixin):
         if not prices:
             return {pid: 0.0 for pid in actions}
 
-        # Step 1: Find the minimum price
         min_price = min(prices.values())
-
-        # Step 2: Identify all winners (players who bid the minimum price)
         winners = [pid for pid, price in prices.items() if price == min_price]
         
         payoffs = {}
-        
-        # Calculate quantity demanded at the winning price
         quantity_demanded = max(0, demand_intercept - min_price)
 
         for player_id in actions:
             if player_id in winners:
-                # Step 3 & 4: Winners split the market and quantity
                 market_share = 1.0 / len(winners)
                 quantity_sold = quantity_demanded * market_share
                 player_cost = private_costs.get(player_id, constants.get('your_cost'))
                 
-                # Step 5: Calculate profit for each winner
                 profit = (min_price - player_cost) * quantity_sold
                 payoffs[player_id] = profit
             else:
-                # Step 6: Losers get zero profit
                 payoffs[player_id] = 0.0
                 
         return payoffs
 
     def get_game_data_for_logging(self, actions: Dict[str, Any], payoffs: Dict[str, float], game_config: GameConfig, game_state: Optional[Dict] = None) -> Dict[str, Any]:
         """Gathers all relevant data from the Spulber game for detailed logging."""
-        player_prices = {pid: action.get('price') for pid, action in actions.items() if isinstance(action, dict) and 'price' in action}
-        min_price = min(player_prices.values()) if player_prices else 0
-        winners = [pid for pid, price in player_prices.items() if price == min_price]
+        prices = {pid: action.get('price') for pid, action in actions.items() if isinstance(action, dict) and 'price' in action}
+        min_price = min(prices.values()) if prices else 0
+        winners = [pid for pid, price in prices.items() if price == min_price]
 
         return {
+            "constants": game_config.constants,
             "winner_ids": winners,
-            "player_profits": payoffs
+            "player_private_costs": game_state.get('predefined_sequences', {}).get('player_private_costs', {})
         }
