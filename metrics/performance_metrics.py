@@ -32,44 +32,36 @@ class PerformanceMetricsCalculator(MetricCalculator):
         return metrics
 
     def _calculate_universal_metrics(self, game_results: List[GameResult], player_id: str) -> Dict[str, MetricResult]:
-        """Calculates performance metrics that are common across all games."""
+        """
+        Calculates performance metrics that are common across all games.
+        This corrected version correctly handles both static (profit) and dynamic (NPV) games.
+        """
         game_info = game_results[0]
         N = len(game_results)
         
-        # For static games, profit is direct. For dynamic, it's the NPV.
         is_dynamic = game_info.game_name in ['green_porter', 'athey_bagwell']
         
-        all_player_profits = []
-        challenger_profits = []
-
-        for r in game_results:
-            if is_dynamic:
-                # Extract NPVs calculated during the simulation
-                challenger_profit = r.game_data.get('npvs', {}).get(player_id, 0.0)
-                all_profits = r.game_data.get('npvs', {})
-            else:
-                challenger_profit = r.payoffs.get(player_id, 0.0)
-                all_profits = r.payoffs
-            
-            challenger_profits.append(challenger_profit)
-            all_player_profits.append(all_profits)
+        # The 'payoffs' object correctly holds single-round profit for static games
+        # and the final NPV for dynamic games.
+        all_player_outcomes = [r.payoffs for r in game_results]
+        challenger_outcomes = [r.payoffs.get(player_id, 0.0) for r in game_results]
 
         # --- Win Rate ---
-        wins = sum(1 for profits in all_player_profits if profits and challenger_profits[all_player_profits.index(profits)] == max(profits.values()))
+        wins = sum(1 for outcome in all_player_outcomes if outcome and challenger_outcomes[all_player_outcomes.index(outcome)] == max(outcome.values()))
         win_rate = self.safe_divide(wins, N)
         
         # --- Average Profit / NPV ---
-        avg_profit = self.safe_mean(challenger_profits)
+        avg_outcome = self.safe_mean(challenger_outcomes)
         
         # --- Profit Volatility ---
-        profit_volatility = self.safe_std(challenger_profits)
+        outcome_volatility = self.safe_std(challenger_outcomes)
 
         profit_metric_name = "Average NPV" if is_dynamic else "Average Profit"
         
         return {
             'win_rate': create_metric_result('win_rate', win_rate, "Frequency of achieving the highest profit/NPV", 'performance', game_info.game_name, game_info.experiment_type, game_info.condition_name),
-            'average_profit': create_metric_result('average_profit', avg_profit, f"Mean of the challenger's {profit_metric_name}", 'performance', game_info.game_name, game_info.experiment_type, game_info.condition_name),
-            'profit_volatility': create_metric_result('profit_volatility', profit_volatility, "Standard deviation of the challenger's profit/NPV stream", 'performance', game_info.game_name, game_info.experiment_type, game_info.condition_name)
+            'average_profit': create_metric_result('average_profit', avg_outcome, f"Mean of the challenger's {profit_metric_name}", 'performance', game_info.game_name, game_info.experiment_type, game_info.condition_name),
+            'profit_volatility': create_metric_result('profit_volatility', outcome_volatility, "Standard deviation of the challenger's profit/NPV stream", 'performance', game_info.game_name, game_info.experiment_type, game_info.condition_name)
         }
 
     def _calculate_salop_metrics(self, game_results: List[GameResult], player_id: str) -> Dict[str, MetricResult]:
@@ -77,7 +69,6 @@ class PerformanceMetricsCalculator(MetricCalculator):
         market_shares = []
         game_info = game_results[0]
         for r in game_results:
-            # This assumes quantity_sold and market_size are logged in game_data
             quantity = r.game_data.get('player_quantities', {}).get(player_id, 0)
             market_size = r.game_data.get('constants', {}).get('market_size', 1)
             market_shares.append(self.safe_divide(quantity, market_size))
@@ -110,11 +101,13 @@ class PerformanceMetricsCalculator(MetricCalculator):
         metrics = {}
         
         if game_name == 'green_porter':
+            # The reversion frequency is calculated post-simulation in run_experiments.py
             reversion_freqs = [r.game_data.get('reversion_frequency', 0) for r in game_results]
             avg_reversion_freq = self.safe_mean(reversion_freqs)
             metrics['reversion_frequency'] = create_metric_result('reversion_frequency', avg_reversion_freq, "Rate at which the cartel enters a punishment phase", 'performance', game_info.game_name, game_info.experiment_type, game_info.condition_name)
 
         if game_name == 'athey_bagwell':
+            # The average HHI is calculated post-simulation in run_experiments.py
             hhi_values = [r.game_data.get('average_hhi', 0) for r in game_results]
             avg_hhi = self.safe_mean(hhi_values)
             metrics['hhi'] = create_metric_result('hhi', avg_hhi, "Average market concentration (Herfindahl-Hirschman Index)", 'performance', game_info.game_name, game_info.experiment_type, game_info.condition_name)

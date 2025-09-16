@@ -33,7 +33,6 @@ class MAgICMetricsCalculator(MetricCalculator):
         N = len(game_results)
         game_info = game_results[0]
         profitable_games = sum(1 for r in game_results if r.payoffs.get(player_id, -1) >= 0)
-        wins = sum(1 for r in game_results if r.payoffs.get(player_id) == max(r.payoffs.values()))
         profitable_wins = sum(1 for r in game_results if r.payoffs.get(player_id, -1) > 0 and r.payoffs.get(player_id) == max(r.payoffs.values()))
         viable_games = sum(1 for r in game_results if r.game_data.get('player_quantities', {}).get(player_id, 0) > 0)
         
@@ -51,15 +50,19 @@ class MAgICMetricsCalculator(MetricCalculator):
         game_info = game_results[0]
 
         for r in game_results:
-            states = r.game_data.get('state_history', [])
-            quantities = r.game_data.get('quantity_history', {}).get(player_id, [])
-            total_periods += len(states)
-            for i, state in enumerate(states):
+            rounds_data = r.game_data.get('rounds', [])
+            total_periods += len(rounds_data)
+            
+            for round_data in rounds_data:
+                state = round_data.get('market_state')
+                quantity = round_data.get('actions', {}).get(player_id, {}).get('quantity')
+
                 if state == 'Collusive':
                     collusive_periods += 1
-                    if i < len(quantities) and abs(quantities[i] - collusive_quantity) < 0.1:
+                    if quantity is not None and abs(quantity - collusive_quantity) < 0.1:
                         constructive_actions += 1
-                if i < len(quantities) and abs(quantities[i] - collusive_quantity) < 0.1:
+                
+                if quantity is not None and abs(quantity - collusive_quantity) < 0.1:
                     cooperative_periods += 1
         
         metrics = {
@@ -74,14 +77,15 @@ class MAgICMetricsCalculator(MetricCalculator):
         N = len(game_results)
         game_info = game_results[0]
         rational_bids, total_wins, profitable_wins, aware_bids = 0, 0, 0, 0
-        rival_mean = game_results[0].game_data.get('constants', {}).get('rival_cost_mean', 10)
+        rival_mean = game_info.game_data.get('constants', {}).get('rival_cost_mean', 10)
 
         for r in game_results:
             challenger_bid = r.actions.get(player_id, {}).get('price', 0)
-            challenger_cost = r.game_data.get('predefined_sequences', {}).get('player_private_costs', {}).get(player_id)
+            challenger_cost = r.game_data.get('player_private_costs', {}).get(player_id)
             
             if challenger_cost is not None:
-                if challenger_bid >= challenger_cost: rational_bids += 1
+                if challenger_bid >= challenger_cost:
+                    rational_bids += 1
                 if (challenger_cost < rival_mean and challenger_bid < rival_mean) or \
                    (challenger_cost > rival_mean and challenger_bid > rival_mean):
                     aware_bids += 1
@@ -104,11 +108,10 @@ class MAgICMetricsCalculator(MetricCalculator):
         game_info = game_results[0]
 
         for r in game_results:
-            # CORRECTED: Access player_true_costs directly from game_data, not nested deeper
-            true_costs = r.game_data.get('player_true_costs', {}).get(player_id, [])
-            
-            # CORRECTED: Access reports and profits from the actions and outcomes of each round
             rounds = r.game_data.get('rounds', [])
+            
+            # Extract per-round data by iterating through the rounds list
+            true_costs = [rnd.get('player_true_costs', {}).get(player_id) for rnd in rounds]
             reports = [rnd.get('actions', {}).get(player_id, {}).get('report') for rnd in rounds]
             profits = [rnd.get('game_outcomes', {}).get('player_profits', {}).get(player_id) for rnd in rounds]
             
@@ -124,10 +127,10 @@ class MAgICMetricsCalculator(MetricCalculator):
                 high_profit_actions += sum(1 for p in valid_profits if p > avg_profit)
                 total_periods += len(valid_profits)
 
-            # CORRECTED: Check for valid reports across all players in the 'actions' dict of each round
             for rnd in rounds:
                 all_reports_valid = True
                 for p_action in rnd.get('actions', {}).values():
+                    # A report is valid if it's 'high' or 'low'
                     if p_action.get('report') not in ['high', 'low']:
                         all_reports_valid = False
                         break
