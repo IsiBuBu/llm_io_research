@@ -157,7 +157,11 @@ class Competition:
         call_id = f"{config.game_name}-{game_state.get('simulation_id', 'N/A')}"
 
         prompts = {pid: game.generate_player_prompt(pid, game_state, config) for pid, agent in agents.items()}
-        tasks = {pid: agent.get_response(prompt, call_id, config) for pid, prompt in prompts.items()}
+        
+        # *** FIXED LOGIC ***
+        # The tasks dictionary now correctly iterates over agents.items() to get both pid and agent
+        tasks = {pid: agent.get_response(prompts[pid], call_id, config) for pid, agent in agents.items()}
+        
         responses = await asyncio.gather(*tasks.values())
 
         response_map = dict(zip(agents.keys(), responses))

@@ -10,7 +10,7 @@ from google import genai
 from google.genai import types
 
 from .base_agent import BaseLLMAgent, AgentResponse
-from config.config import load_config, get_model_config, get_thinking_config
+from config.config import GameConfig, load_config, get_model_config, get_thinking_config
 
 class ExperimentAgent(BaseLLMAgent):
     """
@@ -37,8 +37,11 @@ class ExperimentAgent(BaseLLMAgent):
             self.logger.error(f"Failed to initialize Gemini client: {e}")
             raise
 
-    async def get_response(self, prompt: str, call_id: str) -> AgentResponse:
-        """Gets a structured response from the Gemini model for an experiment."""
+    async def get_response(self, prompt: str, call_id: str, game_config: GameConfig, seed: Optional[int] = None) -> AgentResponse:
+        """
+        Gets a structured response from the Gemini model for an experiment.
+        The seed parameter is accepted for signature compatibility but not used.
+        """
         start_time = time.time()
         max_retries = self.api_config.get('max_retries', 3)
         delay = self.api_config.get('rate_limit_delay', 1.0)
