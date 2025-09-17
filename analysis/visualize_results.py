@@ -10,6 +10,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from analysis.visualize_rq1 import visualize_rq1
 from analysis.visualize_rq2 import visualize_rq2
 from analysis.visualize_rq3 import visualize_rq3
+from analysis.visualize_rq4 import visualize_rq4
 from analysis.visualize_ablations import visualize_ablations
 
 def setup_logging():

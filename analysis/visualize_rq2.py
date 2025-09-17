@@ -37,13 +37,11 @@ def _get_raw_results_rq2(results_dir: Path, game_name: str) -> pd.DataFrame:
         with open(file_path, 'r') as f:
             data = json.load(f)
             for sim in data.get('simulation_results', []):
-                # Only process dynamic games for round-by-round analysis
                 if 'rounds' in sim['game_data']:
                     trigger_price = sim['game_data'].get('constants', {}).get('trigger_price')
                     for i, round_data in enumerate(sim['game_data']['rounds']):
-                        # For Athey-Bagwell deception calculation
+                        challenger_action = round_data.get('actions', {}).get('challenger', {})
                         challenger_true_cost = round_data.get('player_true_costs', {}).get('challenger')
-                        challenger_report = round_data.get('actions', {}).get('challenger', {}).get('report')
                         
                         record = {
                             'game': sim['game_name'],
@@ -53,9 +51,10 @@ def _get_raw_results_rq2(results_dir: Path, game_name: str) -> pd.DataFrame:
                             'round': i + 1,
                             'market_state': round_data.get('market_state'),
                             'market_price': round_data.get('market_price'),
-                            'trigger_price': trigger_price, # For Green-Porter
+                            'trigger_price': trigger_price,
                             'challenger_true_cost': challenger_true_cost,
-                            'challenger_report': challenger_report,
+                            'challenger_report': challenger_action.get('report'),
+                            'challenger_quantity': challenger_action.get('quantity')
                         }
                         records.append(record)
     return pd.DataFrame(records)
@@ -63,9 +62,9 @@ def _get_raw_results_rq2(results_dir: Path, game_name: str) -> pd.DataFrame:
 # --- Table Generation ---
 
 def _create_rq2_tables(magic_df, tables_dir):
-    """Creates and saves summary tables for RQ2 MAgIC metrics."""
+    """Creates and saves the per-game summary tables for RQ2 MAgIC metrics (Tables 2.1-2.4)."""
     logger = logging.getLogger("RQ2Visualizer")
-    logger.info("Creating RQ2 summary tables (Tables 2.1-2.4)...")
+    logger.info("Creating RQ2 per-game summary tables (Tables 2.1-2.4)...")
 
     agg_df = magic_df.groupby(['game', 'model', 'condition', 'metric'])['value'].agg(['mean', get_ci]).reset_index()
 
@@ -87,6 +86,32 @@ def _create_rq2_tables(magic_df, tables_dir):
         pivot.to_csv(table_path)
         logger.info(f"Saved table: {table_path}")
 
+def _create_overall_magic_table(magic_df, tables_dir):
+    """Creates and saves a summary table for overall MAgIC performance across all games."""
+    logger = logging.getLogger("RQ2Visualizer")
+    logger.info("Creating Overall MAgIC Performance summary table...")
+    
+    core_metrics = ['judgment', 'reasoning', 'deception', 'self_awareness', 'cooperation', 'coordination', 'rationality']
+    
+    overall_scores = magic_df[magic_df['metric'].isin(core_metrics)]
+    agg_scores = overall_scores.groupby(['model', 'metric'])['value'].agg(['mean', get_ci]).reset_index()
+
+    agg_scores['formatted_score'] = agg_scores.apply(
+        lambda row: format_with_ci(row['mean'], row['get_ci']), axis=1
+    )
+
+    pivot_table = agg_scores.pivot_table(
+        index='model',
+        columns='metric',
+        values='formatted_score',
+        aggfunc='first'
+    )[core_metrics]
+
+    table_path = tables_dir / "Overall_MAgIC_Performance_Summary.csv"
+    pivot_table.to_csv(table_path)
+    logger.info(f"Saved table: {table_path}")
+
+
 # --- Plot Generation ---
 
 def _plot_overall_magic_profile(magic_df, plots_dir):
@@ -99,8 +124,7 @@ def _plot_overall_magic_profile(magic_df, plots_dir):
     overall_scores = magic_df[magic_df['metric'].isin(core_metrics)]
     overall_scores = overall_scores.groupby(['model', 'condition', 'metric'])['value'].mean().reset_index()
 
-    # Create a radar chart for each structural variation type (e.g., player count)
-    overall_scores['structural_variation'] = overall_scores['condition'].apply(lambda x: '5-Player' if '5' in x else '3-Player')
+    overall_scores['structural_variation'] = np.where(overall_scores['condition'].str.contains('5_players|more_players', regex=True), '5-Player', '3-Player')
     
     for variation in overall_scores['structural_variation'].unique():
         condition_df = overall_scores[overall_scores['structural_variation'] == variation]
@@ -114,7 +138,8 @@ def _plot_overall_magic_profile(magic_df, plots_dir):
         fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
 
         for model in sorted(condition_df['model'].unique()):
-            values = condition_df[condition_df['model'] == model].set_index('metric').reindex(labels)['value'].tolist()
+            model_data = condition_df[condition_df['model'] == model].set_index('metric').reindex(labels).fillna(0)
+            values = model_data['value'].tolist()
             values += values[:1] # complete the loop
             ax.plot(angles, values, label=model, linewidth=2)
             ax.fill(angles, values, alpha=0.25)
@@ -127,6 +152,31 @@ def _plot_overall_magic_profile(magic_df, plots_dir):
         plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1))
         plt.tight_layout()
         plt.savefig(plots_dir / f"P1.1_overall_magic_profile_{variation}.png")
+        plt.close()
+
+def _plot_game_specific_adaptation(magic_df, plots_dir):
+    """Plot 2.1: Game-Specific Behavioral Adaptation (Grouped Bar Chart)"""
+    logger = logging.getLogger("RQ2Visualizer")
+    logger.info("Generating Plot 2.1: Game-Specific Behavioral Adaptation (Grouped Bar Charts)...")
+
+    magic_df['structural_variation'] = np.where(magic_df['condition'].str.contains('5_players|more_players', regex=True), '5-Player', '3-Player')
+
+    for game in magic_df['game'].unique():
+        game_df = magic_df[magic_df['game'] == game]
+        
+        plt.figure(figsize=(14, 8))
+        ax = sns.barplot(data=game_df, x='metric', y='value', hue='model', 
+                         palette=sns.color_palette("muted", len(game_df['model'].unique())),
+                         dodge=True)
+        
+        plt.title(f"{game.replace('_', ' ').title()}: Game-Specific Behavioral Adaptation", fontsize=16)
+        plt.xlabel("MAgIC Metric", fontsize=12)
+        plt.ylabel("Metric Score", fontsize=12)
+        plt.xticks(rotation=45, ha='right')
+        
+        plt.legend(title='Model', bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.tight_layout(rect=[0, 0, 0.85, 1])
+        plt.savefig(plots_dir / f"P2.1_{game}_behavioral_adaptation.png")
         plt.close()
 
 def _plot_collusion_stability(results_dir, plots_dir):
@@ -169,27 +219,21 @@ def _plot_nuanced_reporting_strategy(results_dir, plots_dir):
         logger.warning("No raw data found for Athey & Bagwell to plot reporting strategy.")
         return
         
-    # Calculate truthful signaling and deception
     raw_df['truthful_signal'] = ((raw_df['challenger_true_cost'] == 'low') & (raw_df['challenger_report'] == 'low')).astype(int)
     raw_df['deception_event'] = ((raw_df['challenger_true_cost'] == 'high') & (raw_df['challenger_report'] == 'low')).astype(int)
     
-    # Calculate per-round rates
     rates_df = raw_df.groupby(['model', 'condition', 'round'])[['truthful_signal', 'deception_event']].mean().reset_index()
     
     plt.figure(figsize=(14, 8))
     
-    # Plot Deception
     sns.lineplot(data=rates_df, x='round', y='deception_event', hue='model', style='condition', palette='viridis', lw=2.5)
-    # Plot Truthful Signaling
     sns.lineplot(data=rates_df, x='round', y='truthful_signal', hue='model', style='condition', palette='plasma', lw=2.5, linestyle='--')
 
     plt.title("Nuanced Reporting Strategy Over Time (Athey & Bagwell)", fontsize=16)
     plt.xlabel("Game Round", fontsize=12)
     plt.ylabel("Proportion of 'Low' Reports", fontsize=12)
     
-    # Custom legend
     handles, labels = plt.gca().get_legend_handles_labels()
-    # Add labels for line types
     handles.append(Line2D([0], [0], color='black', lw=2.5, label='Deception'))
     handles.append(Line2D([0], [0], color='black', lw=2.5, linestyle='--', label='Truthful Signal'))
     plt.legend(handles=handles, title='Model & Condition / Line Type', bbox_to_anchor=(1.05, 1), loc='upper left')
@@ -209,10 +253,8 @@ def _plot_reporting_strategy_matrix(results_dir, plots_dir):
         logger.warning("No raw data found for Athey & Bagwell to plot reporting matrix.")
         return
     
-    # Aggregate counts of each (True Cost, Reported Cost) pair
     strategy_df = raw_df.groupby(['model', 'condition', 'challenger_true_cost', 'challenger_report']).size().reset_index(name='count')
     
-    # Normalize to get probabilities
     total_counts = strategy_df.groupby(['model', 'condition', 'challenger_true_cost'])['count'].transform('sum')
     strategy_df['probability'] = strategy_df['count'] / total_counts
     
@@ -226,7 +268,7 @@ def _plot_reporting_strategy_matrix(results_dir, plots_dir):
             pivot_df = plot_data.pivot_table(index='challenger_true_cost', columns='challenger_report', values='probability').fillna(0)
             
             plt.figure(figsize=(8, 6))
-            sns.heatmap(pivot_df, annot=True, fmt=".2f", cmap="YlGnBu", linewidths=.5, cbar=False)
+            sns.heatmap(pivot_df, annot=True, fmt=".2f", cmap="YlGnBu", linewidths=.5, cbar=False, vmin=0, vmax=1)
             plt.title(f"Reporting Strategy: {model} ({condition})", fontsize=16)
             plt.xlabel("Reported Cost", fontsize=12)
             plt.ylabel("True Cost", fontsize=12)
@@ -262,9 +304,11 @@ def visualize_rq2():
 
         # --- Generate Tables ---
         _create_rq2_tables(magic_df, tables_dir)
+        _create_overall_magic_table(magic_df, tables_dir)
         
         # --- Generate Plots ---
         _plot_overall_magic_profile(magic_df, plots_dir)
+        _plot_game_specific_adaptation(magic_df, plots_dir)
         _plot_collusion_stability(results_dir, plots_dir)
         _plot_nuanced_reporting_strategy(results_dir, plots_dir)
         _plot_reporting_strategy_matrix(results_dir, plots_dir)

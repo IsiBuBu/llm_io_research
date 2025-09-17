@@ -33,7 +33,6 @@ def load_config() -> Dict[str, Any]:
     Loads and caches the main JSON configuration file using a path
     relative to this script, making it robust to where it's called from.
     """
-    # CORRECTED: Build path relative to this file's location
     base_dir = Path(__file__).parent
     config_path = base_dir / "config.json"
     
@@ -104,12 +103,10 @@ def get_all_game_configs(game_name: str) -> List[GameConfig]:
     structural_variations = game_data.get('structural_variations', {'baseline': {}})
     ablation_studies = game_data.get('ablation_studies', {})
 
-    # If there are no defined structural variations, use a placeholder to ensure baseline and ablations run
     if not structural_variations:
         structural_variations = {'baseline': {}}
 
     for struct_name, struct_params in structural_variations.items():
-        # 1. Create the main experiment for the structural variation
         struct_constants = baseline_constants.copy()
         struct_constants.update(struct_params)
         configs.append(GameConfig(
@@ -119,24 +116,21 @@ def get_all_game_configs(game_name: str) -> List[GameConfig]:
             constants=struct_constants
         ))
 
-        # 2. Create an ablation study for this specific structural variation
-        for ablation_name, ablation_data in ablation_studies.items():
-            # Start with the constants from the current structural variation
-            ablation_constants = struct_constants.copy()
-            
-            # Layer the ablation parameters on top
-            ablation_params = {k: v for k, v in ablation_data.items() if k != 'description'}
-            ablation_constants.update(ablation_params)
-            
-            # Create a more descriptive, combined condition name
-            combined_condition_name = f"{struct_name}_{ablation_name}"
-            
-            configs.append(GameConfig(
-                game_name=game_name,
-                experiment_type='ablation_studies',
-                condition_name=combined_condition_name,
-                constants=ablation_constants
-            ))
+        if struct_name == 'few_players':
+            for ablation_name, ablation_data in ablation_studies.items():
+                ablation_constants = struct_constants.copy()
+                
+                ablation_params = {k: v for k, v in ablation_data.items() if k != 'description'}
+                ablation_constants.update(ablation_params)
+                
+                combined_condition_name = f"{struct_name}_{ablation_name}"
+                
+                configs.append(GameConfig(
+                    game_name=game_name,
+                    experiment_type='ablation_studies',
+                    condition_name=combined_condition_name,
+                    constants=ablation_constants
+                ))
 
     return configs
 
@@ -160,6 +154,13 @@ def get_prompt_variables(game_config: GameConfig, player_id: str, **kwargs) -> D
     if not isinstance(game_config, GameConfig):
         raise TypeError(f"Expected GameConfig, but got {type(game_config)}")
     variables = game_config.constants.copy()
+    
+    # *** FIXED LOGIC ***
+    # Unpack nested cost_types for the Athey & Bagwell prompt
+    if 'cost_types' in variables and isinstance(variables['cost_types'], dict):
+        variables['high_cost'] = variables['cost_types'].get('high')
+        variables['low_cost'] = variables['cost_types'].get('low')
+
     variables.update({
         'player_id': player_id,
         'number_of_competitors': variables.get('number_of_players', 1) - 1,

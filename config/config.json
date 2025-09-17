@@ -1,7 +1,8 @@
 {
   "models": {
     "challenger_models": [
-      "gemini_2_5_flash_lite_thinking_low",
+      "gemini_2_0_flash",
+      "gemini_2_0_flash_lite",
       "random_agent"
     ],
     "defender_model": "gemini_2_0_flash_lite"
@@ -18,14 +19,14 @@
       "model_name": "gemini-2.0-flash",
       "display_name": "Gemini 2.0 Flash",
       "thinking_available": false,
-      "temperature": 0.0
+      "temperature": 1.0
     },
     "gemini_2_0_flash_lite": {
       "provider": "google",
       "model_name": "gemini-2.0-flash-lite",
       "display_name": "Gemini 2.0 Flash-Lite",
       "thinking_available": false,
-      "temperature": 0.7
+      "temperature": 1.0
     },
     "gemini_2_5_flash_thinking_off": {
       "provider": "google",
@@ -35,7 +36,7 @@
       "thinking_config": {
         "thinking_budget": 0
       },
-      "temperature": 0.7
+      "temperature": 1.0
     },
     "gemini_2_5_flash_lite_thinking_off": {
       "provider": "google",
@@ -45,18 +46,7 @@
       "thinking_config": {
         "thinking_budget": 0
       },
-      "temperature": 0.7
-    },
-    "gemini_2_5_flash_thinking_low": {
-      "provider": "google",
-      "model_name": "gemini-2.5-flash",
-      "display_name": "Gemini 2.5 Flash (Low Budget)",
-      "thinking_available": true,
-      "thinking_config": {
-        "thinking_budget": 1024,
-        "include_thoughts": true
-      },
-      "temperature": 0.7
+      "temperature": 1.0
     },
     "gemini_2_5_flash_thinking_medium": {
       "provider": "google",
@@ -67,18 +57,7 @@
         "thinking_budget": 8192,
         "include_thoughts": true
       },
-      "temperature": 0.7
-    },
-    "gemini_2_5_flash_lite_thinking_low": {
-      "provider": "google",
-      "model_name": "gemini-2.5-flash-lite",
-      "display_name": "Gemini 2.5 Flash-Lite (Low Budget)",
-      "thinking_available": true,
-      "thinking_config": {
-        "thinking_budget": 1024,
-        "include_thoughts": true
-      },
-      "temperature": 0.7
+      "temperature": 1.0
     },
     "gemini_2_5_flash_lite_thinking_medium": {
       "provider": "google",
@@ -89,13 +68,20 @@
         "thinking_budget": 8192,
        "include_thoughts": true
       },
-      "temperature": 0.7
+      "temperature": 1.0
     }
   },
   "experiment_config": {
     "main_experiment_simulations": 50,
     "ablation_experiment_simulations": 20,
     "random_seed": 42
+  },
+  "judge_config": {
+    "judge_model": "gemini_2_0_flash_lite",
+    "samples_per_variation_per_game": 50,
+    "reliability_replications": 10,
+    "judge_temperature": 0.1,
+    "judge_random_seed": 123
   },
   "game_configs": {
     "salop": {
@@ -125,21 +111,22 @@
       "baseline": {
         "base_demand": 120,
         "marginal_cost": 20,
-        "collusive_quantity": 17,
         "cournot_quantity": 25,
         "demand_shock_mean": 0,
         "demand_shock_std": 5,
-        "trigger_price": 55,
+        "trigger_price": 62,
         "punishment_duration": 3,
         "discount_factor": 0.95,
         "time_horizon": 50
       },
       "structural_variations": {
         "few_players": {
-          "number_of_players": 3
+          "number_of_players": 3,
+          "collusive_quantity": 17
         },
         "more_players": {
-          "number_of_players": 5
+          "number_of_players": 5,
+          "collusive_quantity": 10
         }
       },
       "ablation_studies": {

@@ -66,7 +66,22 @@ class SpulberGame(StaticGame, PriceParsingMixin):
             if player_id in winners:
                 market_share = 1.0 / len(winners)
                 quantity_sold = quantity_demanded * market_share
-                player_cost = private_costs.get(player_id, constants.get('your_cost'))
+                
+                # *** FIXED LOGIC ***
+                # The cost for defenders might be a list; select the cost for the current simulation.
+                player_cost_or_list = private_costs.get(player_id, constants.get('your_cost'))
+                if isinstance(player_cost_or_list, list):
+                    # This is a defender with a list of costs for all simulations.
+                    # We need to get the cost for the current simulation_id.
+                    sim_id = game_state.get('simulation_id', 0)
+                    if sim_id < len(player_cost_or_list):
+                        player_cost = player_cost_or_list[sim_id]
+                    else:
+                        # Fallback if sim_id is out of bounds
+                        player_cost = constants.get('your_cost') 
+                else:
+                    # This is the challenger or a defender with a single cost value.
+                    player_cost = player_cost_or_list
                 
                 profit = (min_price - player_cost) * quantity_sold
                 payoffs[player_id] = profit

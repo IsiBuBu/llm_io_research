@@ -3,55 +3,61 @@
 import random
 import json
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
-# CORRECTED: Use a relative import within the same package
 from .base_agent import BaseLLMAgent, AgentResponse
 from config.config import GameConfig
 
 class RandomAgent(BaseLLMAgent):
     """
     A non-strategic baseline agent that selects valid actions uniformly at random.
+    It uses the game_config object for deterministic game identification.
     """
 
     def __init__(self, model_name: str, player_id: str, seed: int = None):
         super().__init__(model_name, player_id)
-        self.logger = logging.getLogger(f"{__name__}.RandomAgent")
         if seed is not None:
             random.seed(seed)
 
-    async def get_action(self, prompt: str, call_id: str) -> str:
+    def get_action(self, game_config: GameConfig) -> str:
         """
-        Determines the game from the prompt and returns a random, valid action as a JSON string.
+        Determines the game from the game_config and returns a random, valid action.
         """
-        prompt_lower = prompt.lower()
         action = {}
+        game_name = game_config.game_name
+        constants = game_config.constants
 
-        # CORRECTED: Use more specific and unique keywords for game detection
-        if "athey & bagwell" in prompt_lower or "market shares are allocated based on reports" in prompt_lower:
+        if game_name == "athey_bagwell":
             report = random.choice(["high", "low"])
             action = {"report": report}
-        elif "green & porter" in prompt_lower or "drops below the `trigger_price`" in prompt_lower:
-            quantity = random.choice([17, 25])
+        elif game_name == "green_porter":
+            # UPDATED LOGIC: Choose a random integer quantity from 0 to the Cournot quantity.
+            # This provides a more robust, non-strategic baseline than a binary choice.
+            max_quantity = constants.get('cournot_quantity', 25)
+            quantity = random.randint(0, max_quantity)
             action = {"quantity": quantity}
-        elif "salop" in prompt_lower or "circular market" in prompt_lower:
-            price = random.uniform(8, 30)
+        elif game_name == "salop":
+            # Chooses a random price between its marginal cost and the max willingness to pay
+            price = random.uniform(constants.get('marginal_cost', 8), constants.get('v', 30))
             action = {"price": round(price, 2)}
-        elif "spulber" in prompt_lower or "winner-take-all price auction" in prompt_lower:
-            price = random.uniform(8, 100)
+        elif game_name == "spulber":
+            # Chooses a random price between its own cost and the market demand intercept
+            price = random.uniform(constants.get('your_cost', 8), constants.get('demand_intercept', 100))
             action = {"price": round(price, 2)}
         else:
-            self.logger.warning(f"[{call_id}] Could not determine game for RandomAgent. Defaulting.")
+            self.logger.warning(f"Unknown game '{game_name}' for RandomAgent. Defaulting to a generic price action.")
             action = {"price": random.uniform(10, 50)}
             
         return json.dumps(action)
 
-    async def get_response(self, prompt: str, call_id: str) -> AgentResponse:
-        """Wraps get_action to provide a standardized AgentResponse object."""
+    async def get_response(self, prompt: str, call_id: str, game_config: GameConfig, seed: Optional[int] = None) -> AgentResponse:
+        """
+        Wraps get_action to provide a standardized AgentResponse object.
+        """
         import time
         start_time = time.time()
         try:
-            content = await self.get_action(prompt, call_id)
+            content = self.get_action(game_config)
             return AgentResponse(
                 content=content,
                 model=self.model_name,
