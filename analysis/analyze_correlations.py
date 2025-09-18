@@ -124,11 +124,6 @@ class CorrelationAnalyzer:
             self.logger.info(f"Not enough data points ({len(subset_df)}) for hypothesis '{hypothesis.name}'. Skipping.")
             return None
             
-        # Check for constant input which makes correlation undefined
-        if len(subset_df[magic_col].unique()) == 1 or len(subset_df[perf_col].unique()) == 1:
-             self.logger.warning(f"One of the inputs for hypothesis '{hypothesis.name}' is constant. Correlation is not defined. Skipping.")
-             return None
-
         corr, p_value = pearsonr(subset_df[magic_col], subset_df[perf_col])
         
         return CorrelationResult(

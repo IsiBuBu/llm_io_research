@@ -68,8 +68,21 @@ class SpulberGame(StaticGame, PriceParsingMixin):
                 market_share = 1.0 / len(winners)
                 quantity_sold = quantity_demanded * market_share
                 
-                player_cost = private_costs.get(player_id, constants.get('your_cost'))
+                player_cost = private_costs.get(player_id)
                 
+                # --- FIX: Ensure player_cost is a number, not a list ---
+                if isinstance(player_cost, list):
+                    # This handles the case where the full list was passed instead of a single value
+                    sim_id = game_state.get('simulation_id', 0)
+                    if sim_id < len(player_cost):
+                        player_cost = player_cost[sim_id]
+                    else:
+                        # Fallback if the list is unexpectedly short
+                        player_cost = constants.get('your_cost')
+                elif player_cost is None:
+                     # Fallback for the challenger if no pre-generated cost is found
+                    player_cost = constants.get('your_cost')
+
                 profit = (min_price - player_cost) * quantity_sold
                 payoffs[player_id] = profit
             else:
@@ -83,8 +96,6 @@ class SpulberGame(StaticGame, PriceParsingMixin):
         min_price = min(prices.values()) if prices else 0
         winners = [pid for pid, price in prices.items() if price == min_price]
 
-        # --- FIXED LOGIC ---
-        # This now correctly and directly retrieves the private costs from the game_state.
         private_costs = game_state.get('player_private_costs', {})
 
         return {

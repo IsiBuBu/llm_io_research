@@ -86,7 +86,7 @@ class Competition:
                 for player, costs_list in costs_data.items():
                     if isinstance(costs_list, list) and len(costs_list) > sim_id:
                         sim_costs[player] = costs_list[sim_id]
-                    else:
+                    else: # Handle cases where a single cost is provided, not a list
                         sim_costs[player] = costs_list
                 game_state['player_private_costs'] = sim_costs
             
@@ -161,6 +161,7 @@ class Competition:
             state_history = [r.get('market_state', 'Unknown') for r in all_rounds_data]
             reversion_triggers = sum(1 for i in range(len(state_history) - 1) if state_history[i] == 'Collusive' and state_history[i+1] == 'Reversionary')
             game_data['reversion_frequency'] = reversion_triggers / (time_horizon - 1) if time_horizon > 1 else 0
+            game_data['state_history'] = state_history
 
         if config.game_name == 'athey_bagwell':
             hhi_per_round = [sum((s * 100) ** 2 for s in r.get('game_outcomes', {}).get('player_market_shares', {}).values()) for r in all_rounds_data]
