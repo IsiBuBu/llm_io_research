@@ -1,4 +1,4 @@
-# data/generate_data.py
+# generate_data.py
 
 import json
 import numpy as np
@@ -9,9 +9,9 @@ import logging
 from typing import Dict, Any
 
 # Add the project root to the Python path to allow for package imports
-sys.path.append(str(Path(__file__).resolve().parent.parent))
+sys.path.append(str(Path(__file__).resolve().parent))
 
-from config.config import get_all_game_configs, get_experiment_config, GameConfig
+from config.config import get_all_game_configs, get_experiment_config, GameConfig, get_data_dir
 
 def generate_spulber_data(game_config: GameConfig, num_sims: int) -> Dict[str, Any]:
     """Generates private cost data for all defenders in the Spulber game."""
@@ -105,8 +105,8 @@ def main():
             sim_count = exp_config.get(f"{config.experiment_type}_simulations", num_sims)
             datasets[dataset_key] = generator_func(config, sim_count)
 
-    output_dir = Path("data")
-    output_dir.mkdir(exist_ok=True)
+    output_dir = get_data_dir()
+    output_dir.mkdir(exist_ok=True, parents=True)
     output_path = output_dir / "master_datasets.json"
 
     with open(output_path, 'w') as f:

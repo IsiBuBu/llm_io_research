@@ -33,23 +33,50 @@ PROMPTS_DIR = Path("prompts")
 # --- Helper Functions ---
 
 def load_all_thought_summaries():
-    """Loads all thought summaries and their initial prompts from the raw experiment results."""
+    """
+    Loads all thought summaries and their corresponding initial prompts from the raw experiment results.
+    This version correctly handles both static games and dynamic games with per-round prompts.
+    """
     records = []
     for file_path in RESULTS_DIR.glob("*/*/*_competition_result*.json"):
         with open(file_path, 'r') as f:
             data = json.load(f)
             for sim in data.get('simulation_results', []):
-                challenger_meta = sim.get('game_data', {}).get('llm_metadata', {}).get('challenger', {})
-                if 'thinking_medium' in sim['challenger_model'] and challenger_meta.get('thoughts'):
-                    records.append({
-                        'game': sim['game_name'],
-                        'model': sim['challenger_model'],
-                        'condition': sim['condition_name'],
-                        'simulation_id': sim['simulation_id'],
-                        'thought_summary': challenger_meta['thoughts'],
-                        'initial_prompt': sim['game_data'].get('initial_prompt_for_challenger', '')
-                    })
+                is_dynamic = 'rounds' in sim.get('game_data', {})
+                challenger_model = sim['challenger_model']
+
+                if 'thinking_medium' not in challenger_model:
+                    continue
+
+                # --- FIXED LOGIC: Handle dynamic vs. static games ---
+                if is_dynamic:
+                    for round_data in sim['game_data']['rounds']:
+                        challenger_meta = round_data.get('llm_metadata', {}).get('challenger', {})
+                        if challenger_meta.get('thoughts'):
+                            records.append({
+                                'game': sim['game_name'],
+                                'model': challenger_model,
+                                'condition': sim['condition_name'],
+                                'simulation_id': sim['simulation_id'],
+                                'round': round_data.get('period'),
+                                'thought_summary': challenger_meta['thoughts'],
+                                'initial_prompt': round_data.get('initial_prompt_for_challenger', '')
+                            })
+                else: # Static game logic
+                    challenger_meta = sim.get('game_data', {}).get('llm_metadata', {}).get('challenger', {})
+                    if challenger_meta.get('thoughts'):
+                        records.append({
+                            'game': sim['game_name'],
+                            'model': challenger_model,
+                            'condition': sim['condition_name'],
+                            'simulation_id': sim['simulation_id'],
+                            'round': 1, # Static games are single-round
+                            'thought_summary': challenger_meta['thoughts'],
+                            'initial_prompt': sim['game_data'].get('initial_prompt_for_challenger', '')
+                        })
+
     return pd.DataFrame(records)
+
 
 def sample_summaries(df: pd.DataFrame):
     """Samples a balanced set of summaries for each game."""
@@ -89,7 +116,7 @@ async def main():
     
     all_summaries = load_all_thought_summaries()
     if all_summaries.empty:
-        logger.error("No thought summaries found. Ensure experiments were run with 'thinking_on' models.")
+        logger.error("No thought summaries found. Ensure experiments were run with 'thinking_medium' models.")
         return
         
     sampled_df = sample_summaries(all_summaries)
@@ -102,7 +129,7 @@ async def main():
         game_name = row['game']
         
         try:
-            with open(PROMPTS_DIR / f"judge_{game_name}.md", 'r') as f:
+            with open(PROMPTS_DIR / "judge_prompts" / f"judge_{game_name}.md", 'r') as f:
                 prompt_template = f.read()
         except FileNotFoundError:
             logger.error(f"Judge prompt for {game_name} not found. Skipping.")

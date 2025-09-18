@@ -1,4 +1,4 @@
-# analysis/visualize_rq1.py
+# analysis/visualization/visualize_rq1.py
 
 import pandas as pd
 import numpy as np
@@ -13,6 +13,8 @@ try:
     PLOT_LIBS_INSTALLED = True
 except ImportError:
     PLOT_LIBS_INSTALLED = False
+
+from config.config import get_analysis_dir, get_experiments_dir
 
 # --- Helper Functions ---
 
@@ -50,7 +52,7 @@ def _get_raw_results(results_dir: Path, game_name: str) -> pd.DataFrame:
                                 'simulation_id': sim['simulation_id'],
                                 'round': i + 1,
                                 'action': action,
-                                'profit': round_data.get('game_outcomes', {}).get('player_profits', {}).get(player),
+                                'profit': round_data.get('payoffs', {}).get(player),
                                 'market_share': round_data.get('game_outcomes', {}).get('player_market_shares', {}).get(player),
                                 'market_state': round_data.get('market_state'),
                                 'market_price': round_data.get('market_price'),
@@ -81,14 +83,11 @@ def _create_rq1_tables(perf_df, tables_dir):
     logger = logging.getLogger("RQ1Visualizer")
     logger.info("Creating RQ1 summary tables (Tables 1.1-1.4)...")
 
-    # Aggregate raw data to get mean and CI
     agg_df = perf_df.groupby(['game', 'model', 'condition', 'metric'])['value'].agg(['mean', get_ci]).reset_index()
 
-    # Create a pivot table for each game
     for game in agg_df['game'].unique():
-        game_df = agg_df[agg_df['game'] == game]
+        game_df = agg_df[agg_df['game'] == game].copy()
         
-        # Format the metric string
         game_df['formatted_metric'] = game_df.apply(
             lambda row: format_with_ci(row['mean'], row['get_ci'], precision=2 if 'volatility' not in row['metric'] else 1), axis=1
         )
@@ -97,10 +96,9 @@ def _create_rq1_tables(perf_df, tables_dir):
             index='model',
             columns=['condition', 'metric'],
             values='formatted_metric',
-            aggfunc='first' # just to move the value
-        ).sort_index(axis=1) # Sort columns for consistent ordering
+            aggfunc='first'
+        ).sort_index(axis=1)
 
-        # Save to a file
         table_path = tables_dir / f"T1_{game}_performance_summary.csv"
         pivot.to_csv(table_path)
         logger.info(f"Saved table: {table_path}")
@@ -121,7 +119,6 @@ def _plot_performance_heatmap(perf_df, plots_dir):
     for metric in ['win_rate', 'average_profit']:
         metric_df = main_condition_df[main_condition_df['metric'] == metric].copy()
         
-        # Normalize scores within each game
         metric_df['normalized_value'] = metric_df.groupby('game')['value'].transform(
             lambda x: (x - x.min()) / (x.max() - x.min()) if (x.max() - x.min()) > 0 else 0
         )
@@ -150,7 +147,7 @@ def _plot_action_distributions(results_dir, plots_dir):
         if game == 'green_porter':
             action_col = 'quantity'
             raw_df[action_col] = raw_df['action'].apply(lambda x: x.get('quantity') if isinstance(x, dict) else None)
-        else: # salop and spulber
+        else:
             action_col = 'price'
             raw_df[action_col] = raw_df['action'].apply(lambda x: x.get('price') if isinstance(x, dict) else x.get('bid') if isinstance(x, dict) else None)
         
@@ -162,7 +159,6 @@ def _plot_action_distributions(results_dir, plots_dir):
             plot_data = challenger_df[challenger_df['condition'] == condition]
             sns.violinplot(data=plot_data, x='model', y=action_col, palette='muted', inner='quartile')
             
-            # Add theoretical benchmarks
             if game == 'green_porter':
                 plt.axhline(y=17, color='g', linestyle='--', label='Collusive Quantity (17)')
                 plt.axhline(y=25, color='r', linestyle='--', label='Cournot Quantity (25)')
@@ -172,7 +168,8 @@ def _plot_action_distributions(results_dir, plots_dir):
             plt.xlabel("Challenger Model", fontsize=12)
             plt.xticks(rotation=45, ha='right')
             plt.grid(True, linestyle='--', alpha=0.6)
-            plt.legend()
+            if game == 'green_porter':
+                plt.legend()
             plt.tight_layout()
             plt.savefig(plots_dir / f"P2.1_{game}_{condition}_{action_col}_violin.png")
             plt.close()
@@ -219,13 +216,14 @@ def _plot_cumulative_profit(results_dir, plots_dir):
         raw_df = _get_raw_results(results_dir, game)
         challenger_df = raw_df[raw_df['player_type'] == 'Challenger'].copy()
         
-        # Assuming discount factor of 0.95 for this example
+        # --- FIXED LOGIC: Ensure profit is numeric before calculations ---
+        challenger_df['profit'] = pd.to_numeric(challenger_df['profit'], errors='coerce')
+        challenger_df.dropna(subset=['profit'], inplace=True)
+
         challenger_df['discounted_profit'] = challenger_df['profit'] * (0.95 ** (challenger_df['round'] - 1))
         
-        # Calculate cumulative NPV
         challenger_df['cumulative_npv'] = challenger_df.groupby(['model', 'condition', 'simulation_id'])['discounted_profit'].cumsum()
         
-        # Average across simulations
         avg_cumulative_df = challenger_df.groupby(['model', 'condition', 'round'])['cumulative_npv'].mean().reset_index()
 
         for condition in avg_cumulative_df['condition'].unique():
@@ -286,7 +284,6 @@ def _plot_price_war_scatter(results_dir, plots_dir):
     
     raw_df = _get_raw_results(results_dir, 'green_porter')
     
-    # Identify price wars
     wars = []
     for (model, condition, sim_id), group in raw_df.groupby(['model', 'condition', 'simulation_id']):
         in_war = False
@@ -302,7 +299,7 @@ def _plot_price_war_scatter(results_dir, plots_dir):
                 if current_war:
                     wars.append(pd.DataFrame(current_war))
                 current_war = []
-        if current_war: # Add war if it's ongoing at the end
+        if current_war:
             wars.append(pd.DataFrame(current_war))
 
     war_data = []
@@ -344,7 +341,6 @@ def _plot_market_share_dominance(results_dir, plots_dir):
             if plot_data.empty:
                 continue
 
-            # Pivot to get players as columns
             pivot = plot_data.groupby(['round', 'player_id'])['market_share'].mean().unstack().fillna(0)
             
             if pivot.empty:
@@ -377,9 +373,8 @@ def visualize_rq1():
     logger = logging.getLogger("RQ1Visualizer")
     logger.info("--- Generating visualizations for RQ1: Economic Performance ---")
     
-    script_dir = Path(__file__).parent
-    analysis_dir = script_dir
-    results_dir = script_dir.parent / "results"
+    analysis_dir = get_analysis_dir()
+    results_dir = get_experiments_dir()
 
     plots_dir = analysis_dir / "plots" / "rq1"
     tables_dir = analysis_dir / "tables" / "rq1"

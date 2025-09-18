@@ -168,8 +168,20 @@ def get_prompt_variables(game_config: GameConfig, player_id: str, **kwargs) -> D
     })
     return variables
 
-# --- General Configuration Accessors ---
+# --- Directory Path Accessors ---
 
-def get_output_dir() -> str:
-    """Returns the path for the results output directory."""
-    return load_config().get('output', {}).get('results_dir', 'results')
+def get_main_output_dir() -> Path:
+    """Returns the main output directory Path object."""
+    return Path(load_config().get('output', {}).get('main_output_dir', 'output'))
+
+def get_data_dir() -> Path:
+    """Returns the path for the data directory."""
+    return get_main_output_dir() / load_config().get('output', {}).get('data_dir', 'data')
+
+def get_experiments_dir() -> Path:
+    """Returns the path for the experiments (raw results) directory."""
+    return get_main_output_dir() / load_config().get('output', {}).get('experiments_dir', 'experiments')
+
+def get_analysis_dir() -> Path:
+    """Returns the path for the analysis output directory."""
+    return get_main_output_dir() / load_config().get('output', {}).get('analysis_dir', 'analysis')

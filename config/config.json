@@ -1,9 +1,7 @@
 {
   "models": {
     "challenger_models": [
-      "gemini_2_0_flash_lite",
-      "gemini_2_0_flash",
-      "random_agent"
+      "gemini_2_5_pro_thinking_medium"
     ],
     "defender_model": "gemini_2_0_flash_lite"
   },
@@ -69,11 +67,22 @@
        "include_thoughts": true
       },
       "temperature": 1.0
+    },
+    "gemini_2_5_pro_thinking_medium": {
+      "provider": "google",
+      "model_name": "gemini-2.5-pro",
+      "display_name": "Gemini 2.5 Pro (Medium Budget)",
+      "thinking_available": true,
+      "thinking_config": {
+        "thinking_budget": 8192,
+       "include_thoughts": true
+      },
+      "temperature": 1.0
     }
   },
   "experiment_config": {
-    "main_experiment_simulations": 20,
-    "ablation_experiment_simulations": 20,
+    "main_experiment_simulations": 3,
+    "ablation_experiment_simulations": 1,
     "random_seed": 42
   },
   "judge_config": {
@@ -193,8 +202,10 @@
     "file": "experiments.log",
     "console": true
   },
-  "output": {
-    "results_dir": "results",
+    "output": {
+    "main_output_dir": "output",
+    "data_dir": "data",
+    "experiments_dir": "experiments",
     "analysis_dir": "analysis"
   },
   "api_config": {

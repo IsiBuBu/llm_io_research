@@ -19,8 +19,9 @@ from config.config import (
     get_challenger_models,
     get_defender_model,
     get_model_display_name,
-    get_output_dir,
-    get_simulation_count
+    get_experiments_dir,
+    get_simulation_count,
+    get_data_dir
 )
 from games import create_game
 from agents import create_agent, AgentResponse
@@ -38,11 +39,11 @@ class Competition:
         self.challenger_models = challenger_models
         self.defender_model = defender_model
         self.mock_mode = mock_mode
-        self.output_dir = Path(get_output_dir())
+        self.output_dir = get_experiments_dir()
         self.logger = logging.getLogger(self.__class__.__name__)
 
         try:
-            with open("data/master_datasets.json", 'r') as f:
+            with open(get_data_dir() / "master_datasets.json", 'r') as f:
                 self.master_datasets = json.load(f)
         except FileNotFoundError:
             self.logger.warning("master_datasets.json not found. Dynamic games may not be reproducible.")
@@ -79,18 +80,17 @@ class Competition:
         if dataset_key in self.master_datasets:
             dataset = self.master_datasets[dataset_key]
             
-            # --- FIXED LOGIC: Robust data injection for all game types ---
             if config.game_name == 'spulber' and 'player_private_costs' in dataset:
                 costs_data = dataset.get('player_private_costs', {})
                 sim_costs = {}
                 for player, costs_list in costs_data.items():
                     if isinstance(costs_list, list) and len(costs_list) > sim_id:
                         sim_costs[player] = costs_list[sim_id]
-                    else: # Handle cases where a single cost is provided, not a list
+                    else:
                         sim_costs[player] = costs_list
                 game_state['player_private_costs'] = sim_costs
             
-            else: # General logic for dynamic games with 'predefined_sequences'
+            else:
                 sim_specific_data = {}
                 for key, value in dataset.items():
                     if isinstance(value, list) and len(value) > sim_id:
@@ -135,10 +135,10 @@ class Competition:
             actions, responses, challenger_prompt = await self._get_all_actions(game, agents, config, game_state)
             payoffs = game.calculate_payoffs(actions, config, game_state)
             round_data = game.get_game_data_for_logging(actions, payoffs, config, game_state)
+            
             round_data['llm_metadata'] = {pid: resp.__dict__ for pid, resp in responses.items()}
-
-            if game_state.get('current_period', 1) == 1:
-                round_data['initial_prompt_for_challenger'] = challenger_prompt
+            round_data['initial_prompt_for_challenger'] = challenger_prompt
+            
             all_rounds_data.append(round_data)
             game_state = game.update_game_state(game_state, actions, config, payoffs)
 
@@ -167,7 +167,6 @@ class Competition:
             hhi_per_round = [sum((s * 100) ** 2 for s in r.get('game_outcomes', {}).get('player_market_shares', {}).values()) for r in all_rounds_data]
             game_data['average_hhi'] = np.mean(hhi_per_round) if hhi_per_round else 0
         
-        # Pass an empty dictionary for the top-level 'actions' field as it's redundant for dynamic games
         return create_game_result(game_state['simulation_id'], config.game_name, config.experiment_type, config.condition_name, challenger_model, list(agents.keys()), {}, final_npvs, game_data)
 
     async def _get_all_actions(self, game, agents, config, game_state) -> (Dict[str, Any], Dict[str, AgentResponse], str):

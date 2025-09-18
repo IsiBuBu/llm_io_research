@@ -1,17 +1,18 @@
-# analysis/visualize_results.py
+# analysis/visualization/visualize_results.py
 
 import logging
 import sys
 from pathlib import Path
 
 # Ensure the project root is in the Python path
-sys.path.append(str(Path(__file__).parent.parent))
+# This allows imports from the top-level 'analysis' package
+sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from analysis.visualize_rq1 import visualize_rq1
-from analysis.visualize_rq2 import visualize_rq2
-from analysis.visualize_rq3 import visualize_rq3
-from analysis.visualize_rq4 import visualize_rq4
-from analysis.visualize_ablations import visualize_ablations
+from .visualize_rq1 import visualize_rq1
+from .visualize_rq2 import visualize_rq2
+from .visualize_rq3 import visualize_rq3
+from .visualize_rq4 import visualize_rq4
+from .visualize_ablations import visualize_ablations
 
 def setup_logging():
     """Configures basic logging for the visualization pipeline."""
@@ -36,11 +37,12 @@ def main():
         visualize_rq1()
         visualize_rq2()
         visualize_rq3()
+        visualize_rq4()
         visualize_ablations()
         
         logger.info("=" * 80)
         logger.info("🎉 VISUALIZATION PIPELINE FINISHED SUCCESSFULLY! 🎉")
-        logger.info("Check the 'analysis_output/plots' and 'analysis_output/tables' directories.")
+        logger.info("Check the 'output/analysis/plots' and 'output/analysis/tables' directories.")
         logger.info("=" * 80)
 
     except FileNotFoundError as e:

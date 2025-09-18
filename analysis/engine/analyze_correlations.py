@@ -1,4 +1,4 @@
-# analysis/analyze_correlations.py
+# analysis/engine/analyze_correlations.py
 
 import json
 import logging
@@ -91,12 +91,12 @@ class CorrelationAnalyzer:
             self.logger.error("Summary CSV files not found. Please ensure Steps 1 & 2 of the analysis ran correctly.")
             return
 
-        # Pivot each dataframe so that metrics become columns
         perf_df = perf_df_raw.pivot_table(index=['game', 'model', 'condition'], columns='metric', values='value').reset_index()
         magic_df = magic_df_raw.pivot_table(index=['game', 'model', 'condition'], columns='metric', values='value').reset_index()
 
-        # Merge the two pivoted dataframes
         merged_df = pd.merge(perf_df, magic_df, on=['game', 'model', 'condition'])
+        merged_df = merged_df[merged_df['model'] != 'random_agent'].copy()
+
 
         for game_name in merged_df['game'].unique():
             self.logger.info(f"--- Analyzing correlations for: {game_name.upper()} ---")
@@ -123,8 +123,13 @@ class CorrelationAnalyzer:
         if len(subset_df) < 3:
             self.logger.info(f"Not enough data points ({len(subset_df)}) for hypothesis '{hypothesis.name}'. Skipping.")
             return None
-            
-        corr, p_value = pearsonr(subset_df[magic_col], subset_df[perf_col])
+
+        # --- FIXED LOGIC: Handle cases with zero variance ---
+        if subset_df[magic_col].nunique() == 1 or subset_df[perf_col].nunique() == 1:
+            corr, p_value = 0.0, 1.0
+            self.logger.warning(f"One or both variables for hypothesis '{hypothesis.name}' have zero variance. Correlation is undefined; setting r=0, p=1.")
+        else:
+            corr, p_value = pearsonr(subset_df[magic_col], subset_df[perf_col])
         
         return CorrelationResult(
             hypothesis=hypothesis,
@@ -141,7 +146,6 @@ class CorrelationAnalyzer:
 
         output_path = self.analysis_dir / "correlations_analysis.csv"
         df = pd.DataFrame(results)
-        # Flatten the nested hypothesis dataclass for easier CSV reading
         df = pd.concat([df.drop(['hypothesis'], axis=1), df['hypothesis'].apply(pd.Series)], axis=1)
         df.to_csv(output_path, index=False)
         self.logger.info(f"Successfully saved correlation analysis to {output_path}")
