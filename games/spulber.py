@@ -24,12 +24,12 @@ class SpulberGame(StaticGame, PriceParsingMixin):
             'current_round': 1,
             'simulation_id': simulation_id,
             'constants': game_config.constants,
-            'predefined_sequences': {} # Will be populated by the experiment runner
+            'player_private_costs': {} # Explicit field for private costs
         }
 
     def generate_player_prompt(self, player_id: str, game_state: Dict, game_config: GameConfig) -> str:
         """Generates a prompt for a player using the game's template and configuration."""
-        private_costs = game_state.get('predefined_sequences', {}).get('player_private_costs', {})
+        private_costs = game_state.get('player_private_costs', {})
         
         variables = get_prompt_variables(
             game_config,
@@ -51,7 +51,7 @@ class SpulberGame(StaticGame, PriceParsingMixin):
         constants = game_config.constants
         demand_intercept = constants.get('demand_intercept', 100)
         
-        private_costs = game_state.get('predefined_sequences', {}).get('player_private_costs', {})
+        private_costs = game_state.get('player_private_costs', {})
         prices = {pid: action.get('price', demand_intercept + 1) for pid, action in actions.items() if isinstance(action, dict)}
 
         if not prices:
@@ -68,9 +68,6 @@ class SpulberGame(StaticGame, PriceParsingMixin):
                 market_share = 1.0 / len(winners)
                 quantity_sold = quantity_demanded * market_share
                 
-                # --- FIXED LOGIC ---
-                # The logic has been simplified to correctly use the single cost value
-                # provided for the current simulation in the game_state.
                 player_cost = private_costs.get(player_id, constants.get('your_cost'))
                 
                 profit = (min_price - player_cost) * quantity_sold
@@ -86,8 +83,12 @@ class SpulberGame(StaticGame, PriceParsingMixin):
         min_price = min(prices.values()) if prices else 0
         winners = [pid for pid, price in prices.items() if price == min_price]
 
+        # --- FIXED LOGIC ---
+        # This now correctly and directly retrieves the private costs from the game_state.
+        private_costs = game_state.get('player_private_costs', {})
+
         return {
             "constants": game_config.constants,
             "winner_ids": winners,
-            "player_private_costs": game_state.get('predefined_sequences', {}).get('player_private_costs', {})
+            "player_private_costs": private_costs
         }

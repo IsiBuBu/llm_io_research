@@ -78,16 +78,33 @@ class Competition:
         dataset_key = f"{config.game_name}_{config.experiment_type}_{config.condition_name}"
         if dataset_key in self.master_datasets:
             dataset = self.master_datasets[dataset_key]
-            sim_specific_data = {}
-            for key, value in dataset.items():
-                if isinstance(value, list) and len(value) > sim_id:
-                    sim_specific_data[key] = value[sim_id]
-                elif isinstance(value, dict):
-                    player_data = {}
-                    for player, data in value.items():
-                        player_data[player] = data[sim_id] if isinstance(data, list) and len(data) > sim_id else data
-                    sim_specific_data[key] = player_data
-            game_state['predefined_sequences'] = sim_specific_data
+            
+            # --- FIXED LOGIC: Robust data injection for all game types ---
+            if config.game_name == 'spulber' and 'player_private_costs' in dataset:
+                costs_data = dataset.get('player_private_costs', {})
+                sim_costs = {}
+                for player, costs_list in costs_data.items():
+                    if isinstance(costs_list, list) and len(costs_list) > sim_id:
+                        sim_costs[player] = costs_list[sim_id]
+                    else:
+                        sim_costs[player] = costs_list
+                game_state['player_private_costs'] = sim_costs
+            
+            else: # General logic for dynamic games with 'predefined_sequences'
+                sim_specific_data = {}
+                for key, value in dataset.items():
+                    if isinstance(value, list) and len(value) > sim_id:
+                        sim_specific_data[key] = value[sim_id]
+                    elif isinstance(value, dict):
+                        player_data = {}
+                        for player, data in value.items():
+                            if isinstance(data, list) and len(data) > sim_id:
+                                player_data[player] = data[sim_id]
+                            else:
+                                player_data[player] = data
+                        sim_specific_data[key] = player_data
+                game_state['predefined_sequences'] = sim_specific_data
+
 
         agents = {
             'challenger': create_agent(challenger_model, 'challenger', agent_type='experiment', mock_mode=self.mock_mode),
@@ -127,9 +144,6 @@ class Competition:
 
         profit_streams = defaultdict(list)
         for round_data in all_rounds_data:
-            # --- FIXED LOGIC ---
-            # Correctly retrieves per-round payoffs from the 'payoffs' key,
-            # ensuring profit_streams is populated.
             profits = round_data.get('payoffs', {})
             for p_id, profit in profits.items():
                 profit_streams[p_id].append(profit)
@@ -151,9 +165,9 @@ class Competition:
         if config.game_name == 'athey_bagwell':
             hhi_per_round = [sum((s * 100) ** 2 for s in r.get('game_outcomes', {}).get('player_market_shares', {}).values()) for r in all_rounds_data]
             game_data['average_hhi'] = np.mean(hhi_per_round) if hhi_per_round else 0
-
-        last_actions = all_rounds_data[-1]['actions'] if all_rounds_data else {}
-        return create_game_result(game_state['simulation_id'], config.game_name, config.experiment_type, config.condition_name, challenger_model, list(agents.keys()), last_actions, final_npvs, game_data)
+        
+        # Pass an empty dictionary for the top-level 'actions' field as it's redundant for dynamic games
+        return create_game_result(game_state['simulation_id'], config.game_name, config.experiment_type, config.condition_name, challenger_model, list(agents.keys()), {}, final_npvs, game_data)
 
     async def _get_all_actions(self, game, agents, config, game_state) -> (Dict[str, Any], Dict[str, AgentResponse], str):
         """Gets actions and full responses from all agents concurrently, and returns the challenger's prompt."""
