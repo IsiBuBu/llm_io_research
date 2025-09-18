@@ -24,12 +24,13 @@ class GreenPorterGame(DynamicGame, QuantityParsingMixin):
         time_horizon = constants.get('time_horizon', 50)
         demand_shock_std = constants.get('demand_shock_std', 5)
         demand_shock_mean = constants.get('demand_shock_mean', 0)
+        num_players = constants.get('number_of_players', 3)
+        player_ids = ['challenger'] + [f'defender_{i}' for i in range(1, num_players)]
 
         # Pre-generate demand shocks for reproducibility
         np.random.seed(simulation_id)
         demand_shocks = np.random.normal(demand_shock_mean, demand_shock_std, time_horizon).tolist()
         
-        # Initial state as per t.txt specification
         return {
             'current_period': 1,
             'market_state': 'Collusive',
@@ -37,8 +38,8 @@ class GreenPorterGame(DynamicGame, QuantityParsingMixin):
             'demand_shocks': demand_shocks,
             'price_history': [],
             'state_history': [],
-            'quantity_history': {player_id: [] for player_id in ['challenger'] + [f'defender_{i}' for i in range(1, constants.get('number_of_players', 3))]},
-            'profit_history': {player_id: [] for player_id in ['challenger'] + [f'defender_{i}' for i in range(1, constants.get('number_of_players', 3))]}
+            'quantity_history': {pid: [] for pid in player_ids},
+            'profit_history': {pid: [] for pid in player_ids}
         }
 
     def generate_player_prompt(self, player_id: str, game_state: Dict, game_config: GameConfig) -> str:
@@ -68,20 +69,17 @@ class GreenPorterGame(DynamicGame, QuantityParsingMixin):
         quantities = {pid: action.get('quantity', constants.get('cournot_quantity', 25)) for pid, action in actions.items()}
         total_quantity = sum(quantities.values())
 
-        # Market Price = base_demand - (Total Industry Quantity) + Demand Shock
         market_price = max(0, demand_intercept - total_quantity + demand_shock)
         
         payoffs = {}
         for player_id, quantity in quantities.items():
-            # Profit = (Market Price - marginal_cost) * quantity
             profit = (market_price - marginal_cost) * quantity
             payoffs[player_id] = profit
         
-        # Store for state update and logging
         game_state['current_market_price'] = market_price
         return payoffs
 
-    def update_game_state(self, game_state: Dict, actions: Dict[str, Any], game_config: GameConfig) -> Dict:
+    def update_game_state(self, game_state: Dict, actions: Dict[str, Any], game_config: GameConfig, payoffs: Dict[str, float]) -> Dict:
         """Updates the game state using the State Transition Algorithm from t.txt."""
         constants = game_config.constants
         trigger_price = constants.get('trigger_price', 55)
@@ -93,7 +91,8 @@ class GreenPorterGame(DynamicGame, QuantityParsingMixin):
         game_state['state_history'].append(game_state['market_state'])
         for pid, action in actions.items():
             game_state['quantity_history'][pid].append(action.get('quantity', constants.get('cournot_quantity', 25)))
-        
+            game_state['profit_history'][pid].append(payoffs.get(pid, 0.0)) # <-- FIXED: Record profit history
+
         # State Transition Algorithm
         if game_state['market_state'] == 'Collusive':
             if market_price < trigger_price:
@@ -109,12 +108,15 @@ class GreenPorterGame(DynamicGame, QuantityParsingMixin):
     
     def get_game_data_for_logging(self, actions: Dict[str, Any], payoffs: Dict[str, float], game_config: GameConfig, game_state: Optional[Dict] = None) -> Dict[str, Any]:
         """Gathers round-specific outcomes for detailed logging."""
-        round_data = super().get_game_data_for_logging(actions, payoffs, game_config, game_state)
-        round_data.update({
-            "period": game_state.get('current_period', 1) -1, # Log the period that just finished
-            "market_state": game_state.get('state_history', [])[-1] if game_state.get('state_history') else "Collusive",
-            "demand_shock": game_state.get('demand_shocks', [])[game_state.get('current_period', 1) - 2],
+        # --- FIXED LOGIC ---
+        # The 'period' now correctly reflects the round number that just finished.
+        # The super() call is removed to avoid duplicate data logging.
+        current_period_index = game_state.get('current_period', 1) - 1
+        return {
+            "period": current_period_index + 1,
+            "market_state": game_state.get('market_state', 'Collusive'),
+            "demand_shock": game_state.get('demand_shocks', [])[current_period_index],
             "market_price": game_state.get('current_market_price', 0),
-            "player_profits": payoffs,
-        })
-        return round_data
+            "actions": actions,
+            "payoffs": payoffs
+        }

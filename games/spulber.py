@@ -23,17 +23,18 @@ class SpulberGame(StaticGame, PriceParsingMixin):
             'game_type': 'static',
             'current_round': 1,
             'simulation_id': simulation_id,
-            'constants': game_config.constants
+            'constants': game_config.constants,
+            'predefined_sequences': {} # Will be populated by the experiment runner
         }
 
     def generate_player_prompt(self, player_id: str, game_state: Dict, game_config: GameConfig) -> str:
         """Generates a prompt for a player using the game's template and configuration."""
-        prompt_vars = game_state.get('predefined_sequences', {}).get('player_private_costs', {})
+        private_costs = game_state.get('predefined_sequences', {}).get('player_private_costs', {})
         
         variables = get_prompt_variables(
             game_config,
             player_id=player_id,
-            your_cost=prompt_vars.get(player_id, game_config.constants.get('your_cost')),
+            your_cost=private_costs.get(player_id, game_config.constants.get('your_cost')),
             **game_state
         )
         return self.prompt_template.format(**variables)
@@ -67,21 +68,10 @@ class SpulberGame(StaticGame, PriceParsingMixin):
                 market_share = 1.0 / len(winners)
                 quantity_sold = quantity_demanded * market_share
                 
-                # *** FIXED LOGIC ***
-                # The cost for defenders might be a list; select the cost for the current simulation.
-                player_cost_or_list = private_costs.get(player_id, constants.get('your_cost'))
-                if isinstance(player_cost_or_list, list):
-                    # This is a defender with a list of costs for all simulations.
-                    # We need to get the cost for the current simulation_id.
-                    sim_id = game_state.get('simulation_id', 0)
-                    if sim_id < len(player_cost_or_list):
-                        player_cost = player_cost_or_list[sim_id]
-                    else:
-                        # Fallback if sim_id is out of bounds
-                        player_cost = constants.get('your_cost') 
-                else:
-                    # This is the challenger or a defender with a single cost value.
-                    player_cost = player_cost_or_list
+                # --- FIXED LOGIC ---
+                # The logic has been simplified to correctly use the single cost value
+                # provided for the current simulation in the game_state.
+                player_cost = private_costs.get(player_id, constants.get('your_cost'))
                 
                 profit = (min_price - player_cost) * quantity_sold
                 payoffs[player_id] = profit

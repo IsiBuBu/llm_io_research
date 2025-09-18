@@ -1,8 +1,7 @@
 {
   "models": {
     "challenger_models": [
-      "gemini_2_0_flash_lite",
-      "random_agent"
+      "gemini_2_0_flash_lite"
     ],
     "defender_model": "gemini_2_0_flash_lite"
   },
@@ -72,7 +71,7 @@
   },
   "experiment_config": {
     "main_experiment_simulations": 5,
-    "ablation_experiment_simulations": 5,
+    "ablation_experiment_simulations": 2,
     "random_seed": 42
   },
   "judge_config": {
@@ -116,7 +115,7 @@
         "trigger_price": 62,
         "punishment_duration": 3,
         "discount_factor": 0.95,
-        "time_horizon": 3
+        "time_horizon": 4
       },
       "structural_variations": {
         "few_players": {
@@ -169,7 +168,7 @@
         "market_price": 30,
         "market_size": 100,
         "discount_factor": 0.95,
-        "time_horizon": 3
+        "time_horizon": 4
       },
       "structural_variations": {
         "few_players": {

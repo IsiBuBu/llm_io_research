@@ -123,11 +123,14 @@ class Competition:
             if game_state.get('current_period', 1) == 1:
                 round_data['initial_prompt_for_challenger'] = challenger_prompt
             all_rounds_data.append(round_data)
-            game_state = game.update_game_state(game_state, actions, config)
+            game_state = game.update_game_state(game_state, actions, config, payoffs)
 
         profit_streams = defaultdict(list)
         for round_data in all_rounds_data:
-            profits = round_data.get('game_outcomes', {}).get('player_profits', {})
+            # --- FIXED LOGIC ---
+            # Correctly retrieves per-round payoffs from the 'payoffs' key,
+            # ensuring profit_streams is populated.
+            profits = round_data.get('payoffs', {})
             for p_id, profit in profits.items():
                 profit_streams[p_id].append(profit)
 
@@ -158,8 +161,6 @@ class Competition:
 
         prompts = {pid: game.generate_player_prompt(pid, game_state, config) for pid, agent in agents.items()}
         
-        # *** FIXED LOGIC ***
-        # The tasks dictionary now correctly iterates over agents.items() to get both pid and agent
         tasks = {pid: agent.get_response(prompts[pid], call_id, config) for pid, agent in agents.items()}
         
         responses = await asyncio.gather(*tasks.values())

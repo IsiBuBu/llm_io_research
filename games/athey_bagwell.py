@@ -94,7 +94,9 @@ class AtheyBagwellGame(DynamicGame, ReportParsingMixin):
         game_state['last_market_shares'] = market_shares
         return payoffs
 
-    def update_game_state(self, game_state: Dict, actions: Dict[str, Any], game_config: GameConfig) -> Dict:
+    # --- FIXED METHOD SIGNATURE ---
+    # Added 'payoffs' to the method signature to match the call in run_experiments.py
+    def update_game_state(self, game_state: Dict, actions: Dict[str, Any], game_config: GameConfig, payoffs: Dict[str, float]) -> Dict:
         """Updates report histories and advances the game to the next period."""
         for pid, action in actions.items():
             game_state['report_history'][pid].append(action.get('report', 'high'))
@@ -104,10 +106,10 @@ class AtheyBagwellGame(DynamicGame, ReportParsingMixin):
     def get_game_data_for_logging(self, actions: Dict[str, Any], payoffs: Dict[str, float], game_config: GameConfig, game_state: Optional[Dict] = None) -> Dict[str, Any]:
         """Gathers round-specific outcomes, including actions, for detailed logging."""
         period = game_state.get('current_period', 1)
-        # CORRECTED: Added 'actions': actions to the returned dictionary.
         return {
             "period": period,
-            "actions": actions, # This was the missing key
+            "actions": actions,
+            "payoffs": payoffs,
             "player_true_costs": {pid: seq[period-1] for pid, seq in game_state.get('cost_sequences', {}).items()},
             "game_outcomes": {
                 "player_market_shares": game_state.get('last_market_shares', {}),
