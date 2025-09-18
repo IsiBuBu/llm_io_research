@@ -1,7 +1,8 @@
 {
   "models": {
     "challenger_models": [
-      "gemini_2_0_flash_lite"
+      "gemini_2_0_flash_lite",
+      "random_agent"
     ],
     "defender_model": "gemini_2_0_flash_lite"
   },
@@ -70,15 +71,15 @@
     }
   },
   "experiment_config": {
-    "main_experiment_simulations": 5,
-    "ablation_experiment_simulations": 2,
+    "main_experiment_simulations": 50,
+    "ablation_experiment_simulations": 50,
     "random_seed": 42
   },
   "judge_config": {
     "judge_model": "gemini_2_0_flash_lite",
     "samples_per_variation_per_game": 50,
     "reliability_replications": 10,
-    "judge_temperature": 0.1,
+    "judge_temperature": 0.5,
     "judge_random_seed": 123
   },
   "game_configs": {
@@ -115,7 +116,7 @@
         "trigger_price": 62,
         "punishment_duration": 3,
         "discount_factor": 0.95,
-        "time_horizon": 4
+        "time_horizon": 15
       },
       "structural_variations": {
         "few_players": {
@@ -168,7 +169,7 @@
         "market_price": 30,
         "market_size": 100,
         "discount_factor": 0.95,
-        "time_horizon": 4
+        "time_horizon": 15
       },
       "structural_variations": {
         "few_players": {
