@@ -45,32 +45,22 @@ class CorrelationAnalyzer:
     def _define_hypotheses(self) -> List[CorrelationHypothesis]:
         """
         Dynamically generates all possible correlation hypotheses for each game,
-        using the updated, theoretically aligned MAgIC metrics.
+        testing each game-specific MAgIC metric against core performance outcomes.
         """
         hypotheses = []
         
         game_metrics = {
-            'salop': {
-                'magic': ['rationality', 'judgment', 'self_awareness'],
-                'performance': ['win_rate', 'average_profit', 'profit_volatility', 'market_share']
-            },
-            'green_porter': {
-                'magic': ['cooperation', 'coordination', 'reasoning'],
-                'performance': ['win_rate', 'average_profit', 'profit_volatility', 'reversion_frequency']
-            },
-            'spulber': {
-                'magic': ['rationality', 'judgment', 'self_awareness'],
-                'performance': ['win_rate', 'average_profit', 'profit_volatility', 'market_capture_rate']
-            },
-            'athey_bagwell': {
-                'magic': ['deception', 'reasoning', 'cooperation'],
-                'performance': ['win_rate', 'average_profit', 'profit_volatility', 'hhi']
-            }
+            'salop': ['rationality', 'self_awareness'],
+            'green_porter': ['cooperation', 'coordination', 'judgment'],
+            'spulber': ['rationality', 'self_awareness'],
+            'athey_bagwell': ['deception', 'cooperation', 'reasoning']
         }
         
-        for game, metrics in game_metrics.items():
-            for magic_metric in metrics['magic']:
-                for perf_metric in metrics['performance']:
+        performance_targets = ['win_rate', 'average_profit']
+
+        for game, magic_metrics in game_metrics.items():
+            for magic_metric in magic_metrics:
+                for perf_metric in performance_targets:
                     hypotheses.append(
                         CorrelationHypothesis(
                             name=f"{magic_metric.title()} vs. {perf_metric.replace('_', ' ').title()}",
@@ -98,8 +88,9 @@ class CorrelationAnalyzer:
         magic_df = magic_df_raw.pivot_table(index=['game', 'model', 'condition'], columns='metric', values='value').reset_index()
 
         merged_df = pd.merge(perf_df, magic_df, on=['game', 'model', 'condition'])
+        
+        # Exclude random agent for meaningful correlation analysis
         merged_df = merged_df[merged_df['model'] != 'random_agent'].copy()
-
 
         for game_name in merged_df['game'].unique():
             self.logger.info(f"--- Analyzing correlations for: {game_name.upper()} ---")
@@ -150,6 +141,8 @@ class CorrelationAnalyzer:
         output_path = self.analysis_dir / "correlations_analysis.csv"
         df = pd.DataFrame(results)
         df = pd.concat([df.drop(['hypothesis'], axis=1), df['hypothesis'].apply(pd.Series)], axis=1)
+        # Reorder columns for clarity
+        df = df[['game_name', 'magic_metric', 'performance_metric', 'correlation_coefficient', 'p_value', 'n_samples']]
         df.to_csv(output_path, index=False)
         self.logger.info(f"Successfully saved correlation analysis to {output_path}")
 

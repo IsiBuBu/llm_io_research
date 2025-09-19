@@ -1,6 +1,7 @@
 # analysis/visualization/visualize_rq3.py
 
 import pandas as pd
+import numpy as np
 import logging
 from pathlib import Path
 
@@ -27,7 +28,6 @@ def _create_master_correlation_table(corr_df: pd.DataFrame, tables_dir: Path):
     logger = logging.getLogger("RQ3Visualizer")
     logger.info("Creating Appendix Table A.1: Master Correlation Table...")
     
-    # Reorder and rename columns for presentation
     master_table = corr_df[['game_name', 'magic_metric', 'performance_metric', 'correlation_coefficient', 'p_value', 'n_samples']]
     master_table.columns = ['Game', 'MAgIC Metric', 'Performance Metric', 'r-value', 'p-value', 'n']
 
@@ -93,7 +93,6 @@ def _plot_significant_scatter(corr_df: pd.DataFrame, perf_df: pd.DataFrame, magi
         if plot_data.empty or magic_metric not in plot_data.columns or perf_metric not in plot_data.columns:
             continue
 
-        # Add a column to distinguish 3-player vs 5-player conditions
         plot_data['Player Count'] = plot_data['condition'].apply(lambda x: '5-Player' if '5' in x else '3-Player')
 
         plt.figure(figsize=(11, 7))
@@ -111,6 +110,77 @@ def _plot_significant_scatter(corr_df: pd.DataFrame, perf_df: pd.DataFrame, magi
         plt.savefig(plot_filename)
         plt.close()
 
+def _plot_composite_performance_summary(perf_df: pd.DataFrame, magic_df: pd.DataFrame, plots_dir: Path):
+    """Generates the MAgIC paper-style composite radar and bar/line charts for both win rate and profit."""
+    logger = logging.getLogger("RQ3Visualizer")
+    logger.info("Generating MAgIC-style composite performance plots for Win Rate and Profit...")
+
+    # 1. Aggregate Data
+    core_metrics = ['judgment', 'reasoning', 'deception', 'self_awareness', 'cooperation', 'coordination', 'rationality']
+    magic_agg = magic_df[magic_df['metric'].isin(core_metrics)].groupby(['model', 'metric'])['value'].mean().reset_index()
+    magic_pivot = magic_agg.pivot_table(index='model', columns='metric', values='value').reindex(columns=core_metrics)
+
+    win_rate_agg = perf_df[perf_df['metric'] == 'win_rate'].groupby('model')['value'].mean().reset_index()
+    avg_profit_agg = perf_df[perf_df['metric'] == 'average_profit'].groupby('model')['value'].mean().reset_index()
+
+    # 2. Calculate Polygon Area
+    n = len(core_metrics)
+    areas = {model: 0.5 * np.sin(2 * np.pi / n) * sum(row.values[i] * row.values[(i + 1) % n] for i in range(n)) for model, row in magic_pivot.iterrows()}
+    area_df = pd.DataFrame(list(areas.items()), columns=['model', 'area'])
+
+    # 3. Generate Radar Chart (Plot A)
+    labels = [m.replace('_', ' ').title() for m in core_metrics]
+    angles = np.linspace(0, 2 * np.pi, n, endpoint=False).tolist() + [0]
+
+    fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
+    for model in magic_pivot.index:
+        values = magic_pivot.loc[model].tolist() + [magic_pivot.loc[model].tolist()[0]]
+        ax.plot(angles, values, label=model, linewidth=2)
+        ax.fill(angles, values, alpha=0.2)
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(labels, size=12)
+    plt.title("Overall MAgIC Capability Profile", size=20, y=1.1)
+    plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1))
+    plt.tight_layout()
+    plt.savefig(plots_dir / "P3.0a_composite_radar_chart.png")
+    plt.close()
+
+    # 4. Generate Bar/Line Chart for Win Rate (Plot B)
+    plot_df_win = pd.merge(area_df, win_rate_agg, on='model').sort_values('area', ascending=False)
+    fig, ax1 = plt.subplots(figsize=(12, 7))
+    sns.barplot(data=plot_df_win, x='model', y='area', ax=ax1, color='skyblue')
+    ax1.set_xlabel("Model", fontsize=12)
+    ax1.set_ylabel("Radar Chart Area (Capability Score)", color='skyblue', fontsize=12)
+    ax1.tick_params(axis='y', labelcolor='skyblue')
+    ax1.set_xticklabels(ax1.get_xticklabels(), rotation=45, ha="right")
+    ax2 = ax1.twinx()
+    sns.lineplot(data=plot_df_win, x='model', y='value', ax=ax2, color='red', marker='o', sort=False, lw=2.5)
+    ax2.set_ylabel("Average Win Rate", color='red', fontsize=12)
+    ax2.tick_params(axis='y', labelcolor='red')
+    ax2.set_ylim(bottom=0)
+    plt.title("Capability Score vs. Win Rate", fontsize=16)
+    plt.grid(False)
+    plt.tight_layout()
+    plt.savefig(plots_dir / "P3.0b_area_vs_winrate_chart.png")
+    plt.close()
+
+    # 5. Generate Bar/Line Chart for Average Profit (Plot C)
+    plot_df_profit = pd.merge(area_df, avg_profit_agg, on='model').sort_values('area', ascending=False)
+    fig, ax1 = plt.subplots(figsize=(12, 7))
+    sns.barplot(data=plot_df_profit, x='model', y='area', ax=ax1, color='lightgreen')
+    ax1.set_xlabel("Model", fontsize=12)
+    ax1.set_ylabel("Radar Chart Area (Capability Score)", color='green', fontsize=12)
+    ax1.tick_params(axis='y', labelcolor='green')
+    ax1.set_xticklabels(ax1.get_xticklabels(), rotation=45, ha="right")
+    ax2 = ax1.twinx()
+    sns.lineplot(data=plot_df_profit, x='model', y='value', ax=ax2, color='purple', marker='s', sort=False, lw=2.5)
+    ax2.set_ylabel("Average Profit / NPV", color='purple', fontsize=12)
+    ax2.tick_params(axis='y', labelcolor='purple')
+    plt.title("Capability Score vs. Average Profit/NPV", fontsize=16)
+    plt.grid(False)
+    plt.tight_layout()
+    plt.savefig(plots_dir / "P3.0c_area_vs_profit_chart.png")
+    plt.close()
 
 def _plot_shap_summary(perf_df: pd.DataFrame, magic_df: pd.DataFrame, plots_dir: Path):
     """Plot 3.3: Trains predictive models and generates SHAP summary plots."""
@@ -121,10 +191,9 @@ def _plot_shap_summary(perf_df: pd.DataFrame, magic_df: pd.DataFrame, plots_dir:
         logger.warning("Please run: pip install shap scikit-learn")
         return
     
-    # Create a unified feature set by pivoting MAgIC metrics
     magic_pivot = magic_df.pivot_table(index=['model', 'condition', 'game'], columns='metric', values='value').reset_index()
     
-    # --- Model 1: Predicting Average Profit ---
+    # Model 1: Predicting Average Profit
     profit_df = perf_df[perf_df['metric'] == 'average_profit']
     df_profit = pd.merge(magic_pivot, profit_df[['model', 'condition', 'game', 'value']], on=['model', 'condition', 'game']).rename(columns={'value': 'average_profit'})
     
@@ -144,16 +213,15 @@ def _plot_shap_summary(perf_df: pd.DataFrame, magic_df: pd.DataFrame, plots_dir:
         plt.savefig(plots_dir / "P3.3_shap_summary_avg_profit.png")
         plt.close()
 
-    # --- Model 2: Predicting Win Rate ---
+    # Model 2: Predicting Win Rate
     win_df = perf_df[perf_df['metric'] == 'win_rate']
     df_win = pd.merge(magic_pivot, win_df[['model', 'condition', 'game', 'value']], on=['model', 'condition', 'game']).rename(columns={'value': 'win_rate'})
     
     X_win = df_win.drop(columns=['win_rate', 'model', 'condition', 'game'])
-    # Binarize win rate for logistic regression (e.g., win if rate > median)
     y_win = (df_win['win_rate'] > df_win['win_rate'].median()).astype(int)
 
     if len(X_win) > 1 and len(y_win.unique()) > 1:
-        model_win = LogisticRegression(random_state=42)
+        model_win = LogisticRegression(random_state=42, max_iter=1000)
         model_win.fit(X_win, y_win)
         explainer_win = shap.Explainer(model_win, X_win)
         shap_values_win = explainer_win(X_win)
@@ -164,7 +232,6 @@ def _plot_shap_summary(perf_df: pd.DataFrame, magic_df: pd.DataFrame, plots_dir:
         plt.tight_layout()
         plt.savefig(plots_dir / "P3.3_shap_summary_win_rate.png")
         plt.close()
-
 
 # --- Main Visualization Function ---
 
@@ -181,8 +248,8 @@ def visualize_rq3():
     logger.info("--- Generating visualizations for RQ3: Correlations & Predictive Models ---")
     
     script_dir = Path(__file__).parent
-    analysis_dir = script_dir
-    results_dir = script_dir.parent / "results"
+    analysis_dir = script_dir.parent
+    results_dir = script_dir.parent.parent / "output" / "experiments"
 
     plots_dir = analysis_dir / "plots" / "rq3"
     tables_dir = analysis_dir / "tables" / "rq3"
@@ -193,6 +260,9 @@ def visualize_rq3():
         corr_df = pd.read_csv(analysis_dir / "correlations_analysis.csv")
         perf_df = pd.read_csv(analysis_dir / "performance_metrics.csv")
         magic_df = pd.read_csv(analysis_dir / "magic_behavioral_metrics.csv")
+
+        # --- Generate MAgIC Paper-style Composite Plots ---
+        _plot_composite_performance_summary(perf_df, magic_df, plots_dir)
 
         # --- Part 1: Foundational Correlation Analysis ---
         _create_master_correlation_table(corr_df, tables_dir)
