@@ -1,4 +1,4 @@
-# analysis/visualize_ablations.py
+# analysis/visualization/visualize_ablations.py
 
 import pandas as pd
 import numpy as np
@@ -197,8 +197,9 @@ def _plot_spulber_ablation(perf_df, magic_df, plots_dir):
     spulber_awareness = magic_df[(magic_df['game'] == 'spulber') & (magic_df['metric'] == 'self_awareness')]
     plt.figure(figsize=(12, 8))
     sns.barplot(data=spulber_awareness, x='model', y='value', hue='condition', palette='muted')
-    plt.title("Spulber: Impact of Uncertainty on Self-Awareness", fontsize=16)
+    plt.title("Spulber: Impact of Uncertainty on Bidding Strategy", fontsize=16)
     plt.xlabel("Challenger Model", fontsize=12)
+    # UPDATED LABEL
     plt.ylabel("Bid Appropriateness Rate", fontsize=12)
     plt.xticks(rotation=45, ha='right')
     plt.grid(True, axis='y', linestyle='--', alpha=0.6)
@@ -245,7 +246,7 @@ def visualize_ablations():
     
     script_dir = Path(__file__).parent
     analysis_dir = script_dir
-    results_dir = script_dir.parent / "results"
+    results_dir = script_dir.parent.parent / "results"
 
     plots_dir = analysis_dir / "plots" / "ablations"
     tables_dir = analysis_dir / "tables" / "ablations"
@@ -253,8 +254,8 @@ def visualize_ablations():
     tables_dir.mkdir(exist_ok=True, parents=True)
 
     try:
-        perf_df_full = pd.read_csv(analysis_dir / "performance_metrics.csv")
-        magic_df_full = pd.read_csv(analysis_dir / "magic_behavioral_metrics.csv")
+        perf_df_full = pd.read_csv(analysis_dir.parent / "performance_metrics.csv")
+        magic_df_full = pd.read_csv(analysis_dir.parent / "magic_behavioral_metrics.csv")
         
         # Prepare data by filtering and renaming conditions
         df_list = []

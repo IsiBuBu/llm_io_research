@@ -1,4 +1,4 @@
-# analysis/visualize_rq2.py
+# analysis/visualization/visualize_rq2.py
 
 import pandas as pd
 import numpy as np
@@ -119,6 +119,7 @@ def _plot_overall_magic_profile(magic_df, plots_dir):
     logger = logging.getLogger("RQ2Visualizer")
     logger.info("Generating Plot 1.1: Overall MAgIC Profile (Radar Charts)...")
     
+    # UPDATED: Reflects the new, complete list of MAgIC metrics
     core_metrics = ['judgment', 'reasoning', 'deception', 'self_awareness', 'cooperation', 'coordination', 'rationality']
     
     overall_scores = magic_df[magic_df['metric'].isin(core_metrics)]

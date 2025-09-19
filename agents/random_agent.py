@@ -31,9 +31,10 @@ class RandomAgent(BaseLLMAgent):
             report = random.choice(["high", "low"])
             action = {"report": report}
         elif game_name == "green_porter":
-            # UPDATED LOGIC: Choose a random integer quantity from 0 to the Cournot quantity.
-            # This provides a more robust, non-strategic baseline than a binary choice.
-            max_quantity = constants.get('cournot_quantity', 25)
+            # UPDATED LOGIC (Option A): Choose a random integer quantity from 0 to the quantity
+            # that would drive the price to marginal cost, representing the full range of
+            # potentially profitable actions for a non-strategic agent.
+            max_quantity = constants.get('base_demand', 120) - constants.get('marginal_cost', 20)
             quantity = random.randint(0, max_quantity)
             action = {"quantity": quantity}
         elif game_name == "salop":

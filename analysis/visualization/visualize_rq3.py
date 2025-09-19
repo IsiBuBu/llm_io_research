@@ -1,4 +1,4 @@
-# analysis/visualize_rq3.py
+# analysis/visualization/visualize_rq3.py
 
 import pandas as pd
 import logging

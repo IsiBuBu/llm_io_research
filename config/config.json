@@ -1,7 +1,10 @@
 {
   "models": {
     "challenger_models": [
-      "gemini_2_5_pro_thinking_medium"
+      "gemini_2_0_flash_lite",
+      "gemini_2_0_flash",
+      "gemini_2_5_flash_lite_thinking_medium",
+      "random_agent"
     ],
     "defender_model": "gemini_2_0_flash_lite"
   },
@@ -64,7 +67,7 @@
       "thinking_available": true,
       "thinking_config": {
         "thinking_budget": 8192,
-       "include_thoughts": true
+        "include_thoughts": true
       },
       "temperature": 1.0
     },
@@ -75,14 +78,14 @@
       "thinking_available": true,
       "thinking_config": {
         "thinking_budget": 8192,
-       "include_thoughts": true
+        "include_thoughts": true
       },
       "temperature": 1.0
     }
   },
   "experiment_config": {
-    "main_experiment_simulations": 3,
-    "ablation_experiment_simulations": 1,
+    "main_experiment_simulations": 5,
+    "ablation_experiment_simulations": 5,
     "random_seed": 42
   },
   "judge_config": {

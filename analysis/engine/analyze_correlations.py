@@ -43,7 +43,10 @@ class CorrelationAnalyzer:
         self.hypotheses = self._define_hypotheses()
 
     def _define_hypotheses(self) -> List[CorrelationHypothesis]:
-        """Dynamically generates all possible correlation hypotheses for each game."""
+        """
+        Dynamically generates all possible correlation hypotheses for each game,
+        using the updated, theoretically aligned MAgIC metrics.
+        """
         hypotheses = []
         
         game_metrics = {
@@ -52,7 +55,7 @@ class CorrelationAnalyzer:
                 'performance': ['win_rate', 'average_profit', 'profit_volatility', 'market_share']
             },
             'green_porter': {
-                'magic': ['cooperation', 'coordination', 'rationality'],
+                'magic': ['cooperation', 'coordination', 'reasoning'],
                 'performance': ['win_rate', 'average_profit', 'profit_volatility', 'reversion_frequency']
             },
             'spulber': {
@@ -124,7 +127,7 @@ class CorrelationAnalyzer:
             self.logger.info(f"Not enough data points ({len(subset_df)}) for hypothesis '{hypothesis.name}'. Skipping.")
             return None
 
-        # --- FIXED LOGIC: Handle cases with zero variance ---
+        # Handle cases with zero variance
         if subset_df[magic_col].nunique() == 1 or subset_df[perf_col].nunique() == 1:
             corr, p_value = 0.0, 1.0
             self.logger.warning(f"One or both variables for hypothesis '{hypothesis.name}' have zero variance. Correlation is undefined; setting r=0, p=1.")
