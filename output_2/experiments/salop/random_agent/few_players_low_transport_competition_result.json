@@ -1,0 +1,403 @@
+{
+  "game_name": "salop",
+  "experiment_type": "ablation_studies",
+  "condition_name": "few_players_low_transport",
+  "challenger_model": "random_agent",
+  "simulation_results": [
+    {
+      "simulation_id": 0,
+      "game_name": "salop",
+      "experiment_type": "ablation_studies",
+      "condition_name": "few_players_low_transport",
+      "challenger_model": "random_agent",
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2"
+      ],
+      "actions": {
+        "challenger": {
+          "price": 25.19
+        },
+        "defender_1": {
+          "price": 29.0
+        },
+        "defender_2": {
+          "price": 29.5
+        }
+      },
+      "payoffs": {
+        "challenger": 145212.8,
+        "defender_1": 13900.0,
+        "defender_2": -100.0
+      },
+      "game_data": {
+        "constants": {
+          "transport_cost": 0.5,
+          "v": 30,
+          "marginal_cost": 8,
+          "fixed_cost": 100,
+          "market_size": 1000,
+          "number_of_players": 3
+        },
+        "player_quantities": {
+          "challenger": 8453.333333333332,
+          "defender_1": 666.6666666666666,
+          "defender_2": 0
+        },
+        "llm_metadata": {
+          "challenger": {
+            "content": "{\"price\": 25.19}",
+            "model": "random_agent",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 0,
+            "output_tokens": 0,
+            "thinking_tokens": 0,
+            "response_time": 1.5735626220703125e-05
+          },
+          "defender_1": {
+            "content": "{\"price\": \"29\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 168,
+            "output_tokens": 7,
+            "thinking_tokens": null,
+            "response_time": 0.5540478229522705
+          },
+          "defender_2": {
+            "content": "{\"price\": \"29.5\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 170,
+            "output_tokens": 9,
+            "thinking_tokens": null,
+            "response_time": 0.5535621643066406
+          }
+        },
+        "initial_prompt_for_challenger": "## Rules & Economic Information\n- **Market:** You are one of 3 firms located symmetrically around a circular market of 1000 customers.\n- **Costs:** Your marginal cost is $8. Your fixed cost is $100.\n- **Customer Behavior:** Customers buy from the firm with the lowest total cost (price + transportation cost). Transportation cost is $0.5 per unit of distance. The maximum price any customer will pay is $30.\n- **Objective:** Your profit is (Your Price - $8) * Quantity Sold - $100.\n\n## Your Task\nChoose your price to maximize your profit. All firms choose their prices simultaneously.\n\n## Output Format\nRespond with valid JSON only:\n{\"price\": <number>}"
+      }
+    },
+    {
+      "simulation_id": 1,
+      "game_name": "salop",
+      "experiment_type": "ablation_studies",
+      "condition_name": "few_players_low_transport",
+      "challenger_model": "random_agent",
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2"
+      ],
+      "actions": {
+        "challenger": {
+          "price": 22.61
+        },
+        "defender_1": {
+          "price": 29.0
+        },
+        "defender_2": {
+          "price": 29.5
+        }
+      },
+      "payoffs": {
+        "challenger": 198790.80000000002,
+        "defender_1": 13900.0,
+        "defender_2": -100.0
+      },
+      "game_data": {
+        "constants": {
+          "transport_cost": 0.5,
+          "v": 30,
+          "marginal_cost": 8,
+          "fixed_cost": 100,
+          "market_size": 1000,
+          "number_of_players": 3
+        },
+        "player_quantities": {
+          "challenger": 13613.333333333336,
+          "defender_1": 666.6666666666666,
+          "defender_2": 0
+        },
+        "llm_metadata": {
+          "challenger": {
+            "content": "{\"price\": 22.61}",
+            "model": "random_agent",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 0,
+            "output_tokens": 0,
+            "thinking_tokens": 0,
+            "response_time": 5.9604644775390625e-06
+          },
+          "defender_1": {
+            "content": "{\"price\": \"29\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 168,
+            "output_tokens": 7,
+            "thinking_tokens": null,
+            "response_time": 0.6408472061157227
+          },
+          "defender_2": {
+            "content": "{\"price\": \"29.5\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 170,
+            "output_tokens": 9,
+            "thinking_tokens": null,
+            "response_time": 0.553725004196167
+          }
+        },
+        "initial_prompt_for_challenger": "## Rules & Economic Information\n- **Market:** You are one of 3 firms located symmetrically around a circular market of 1000 customers.\n- **Costs:** Your marginal cost is $8. Your fixed cost is $100.\n- **Customer Behavior:** Customers buy from the firm with the lowest total cost (price + transportation cost). Transportation cost is $0.5 per unit of distance. The maximum price any customer will pay is $30.\n- **Objective:** Your profit is (Your Price - $8) * Quantity Sold - $100.\n\n## Your Task\nChoose your price to maximize your profit. All firms choose their prices simultaneously.\n\n## Output Format\nRespond with valid JSON only:\n{\"price\": <number>}"
+      }
+    },
+    {
+      "simulation_id": 2,
+      "game_name": "salop",
+      "experiment_type": "ablation_studies",
+      "condition_name": "few_players_low_transport",
+      "challenger_model": "random_agent",
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2"
+      ],
+      "actions": {
+        "challenger": {
+          "price": 19.24
+        },
+        "defender_1": {
+          "price": 15.0
+        },
+        "defender_2": {
+          "price": 29.5
+        }
+      },
+      "payoffs": {
+        "challenger": 117095.73333333334,
+        "defender_1": 133413.3333333333,
+        "defender_2": -100.0
+      },
+      "game_data": {
+        "constants": {
+          "transport_cost": 0.5,
+          "v": 30,
+          "marginal_cost": 8,
+          "fixed_cost": 100,
+          "market_size": 1000,
+          "number_of_players": 3
+        },
+        "player_quantities": {
+          "challenger": 10426.666666666668,
+          "defender_1": 19073.333333333332,
+          "defender_2": 0
+        },
+        "llm_metadata": {
+          "challenger": {
+            "content": "{\"price\": 19.24}",
+            "model": "random_agent",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 0,
+            "output_tokens": 0,
+            "thinking_tokens": 0,
+            "response_time": 3.0994415283203125e-06
+          },
+          "defender_1": {
+            "content": "{\"price\": \"15\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 168,
+            "output_tokens": 7,
+            "thinking_tokens": null,
+            "response_time": 0.6252970695495605
+          },
+          "defender_2": {
+            "content": "{\"price\": \"29.5\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 170,
+            "output_tokens": 9,
+            "thinking_tokens": null,
+            "response_time": 0.6127791404724121
+          }
+        },
+        "initial_prompt_for_challenger": "## Rules & Economic Information\n- **Market:** You are one of 3 firms located symmetrically around a circular market of 1000 customers.\n- **Costs:** Your marginal cost is $8. Your fixed cost is $100.\n- **Customer Behavior:** Customers buy from the firm with the lowest total cost (price + transportation cost). Transportation cost is $0.5 per unit of distance. The maximum price any customer will pay is $30.\n- **Objective:** Your profit is (Your Price - $8) * Quantity Sold - $100.\n\n## Your Task\nChoose your price to maximize your profit. All firms choose their prices simultaneously.\n\n## Output Format\nRespond with valid JSON only:\n{\"price\": <number>}"
+      }
+    },
+    {
+      "simulation_id": 3,
+      "game_name": "salop",
+      "experiment_type": "ablation_studies",
+      "condition_name": "few_players_low_transport",
+      "challenger_model": "random_agent",
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2"
+      ],
+      "actions": {
+        "challenger": {
+          "price": 18.37
+        },
+        "defender_1": {
+          "price": 29.5
+        },
+        "defender_2": {
+          "price": 29.0
+        }
+      },
+      "payoffs": {
+        "challenger": 229007.86666666664,
+        "defender_1": -100.0,
+        "defender_2": 13900.0
+      },
+      "game_data": {
+        "constants": {
+          "transport_cost": 0.5,
+          "v": 30,
+          "marginal_cost": 8,
+          "fixed_cost": 100,
+          "market_size": 1000,
+          "number_of_players": 3
+        },
+        "player_quantities": {
+          "challenger": 22093.33333333333,
+          "defender_1": 0,
+          "defender_2": 666.6666666666666
+        },
+        "llm_metadata": {
+          "challenger": {
+            "content": "{\"price\": 18.37}",
+            "model": "random_agent",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 0,
+            "output_tokens": 0,
+            "thinking_tokens": 0,
+            "response_time": 1.9073486328125e-06
+          },
+          "defender_1": {
+            "content": "{\"price\": \"29.5\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 170,
+            "output_tokens": 9,
+            "thinking_tokens": null,
+            "response_time": 0.632911205291748
+          },
+          "defender_2": {
+            "content": "{\"price\": \"29\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 168,
+            "output_tokens": 7,
+            "thinking_tokens": null,
+            "response_time": 0.5535171031951904
+          }
+        },
+        "initial_prompt_for_challenger": "## Rules & Economic Information\n- **Market:** You are one of 3 firms located symmetrically around a circular market of 1000 customers.\n- **Costs:** Your marginal cost is $8. Your fixed cost is $100.\n- **Customer Behavior:** Customers buy from the firm with the lowest total cost (price + transportation cost). Transportation cost is $0.5 per unit of distance. The maximum price any customer will pay is $30.\n- **Objective:** Your profit is (Your Price - $8) * Quantity Sold - $100.\n\n## Your Task\nChoose your price to maximize your profit. All firms choose their prices simultaneously.\n\n## Output Format\nRespond with valid JSON only:\n{\"price\": <number>}"
+      }
+    },
+    {
+      "simulation_id": 4,
+      "game_name": "salop",
+      "experiment_type": "ablation_studies",
+      "condition_name": "few_players_low_transport",
+      "challenger_model": "random_agent",
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2"
+      ],
+      "actions": {
+        "challenger": {
+          "price": 21.18
+        },
+        "defender_1": {
+          "price": 29.0
+        },
+        "defender_2": {
+          "price": 29.0
+        }
+      },
+      "payoffs": {
+        "challenger": 210428.53333333333,
+        "defender_1": 3400.0,
+        "defender_2": 3400.0
+      },
+      "game_data": {
+        "constants": {
+          "transport_cost": 0.5,
+          "v": 30,
+          "marginal_cost": 8,
+          "fixed_cost": 100,
+          "market_size": 1000,
+          "number_of_players": 3
+        },
+        "player_quantities": {
+          "challenger": 15973.333333333334,
+          "defender_1": 166.66666666666666,
+          "defender_2": 166.66666666666666
+        },
+        "llm_metadata": {
+          "challenger": {
+            "content": "{\"price\": 21.18}",
+            "model": "random_agent",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 0,
+            "output_tokens": 0,
+            "thinking_tokens": 0,
+            "response_time": 1.9073486328125e-06
+          },
+          "defender_1": {
+            "content": "{\"price\": \"29\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 168,
+            "output_tokens": 7,
+            "thinking_tokens": null,
+            "response_time": 0.5532429218292236
+          },
+          "defender_2": {
+            "content": "{\"price\": \"29\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 168,
+            "output_tokens": 7,
+            "thinking_tokens": null,
+            "response_time": 0.5963931083679199
+          }
+        },
+        "initial_prompt_for_challenger": "## Rules & Economic Information\n- **Market:** You are one of 3 firms located symmetrically around a circular market of 1000 customers.\n- **Costs:** Your marginal cost is $8. Your fixed cost is $100.\n- **Customer Behavior:** Customers buy from the firm with the lowest total cost (price + transportation cost). Transportation cost is $0.5 per unit of distance. The maximum price any customer will pay is $30.\n- **Objective:** Your profit is (Your Price - $8) * Quantity Sold - $100.\n\n## Your Task\nChoose your price to maximize your profit. All firms choose their prices simultaneously.\n\n## Output Format\nRespond with valid JSON only:\n{\"price\": <number>}"
+      }
+    }
+  ]
+}

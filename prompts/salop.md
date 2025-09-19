@@ -1,5 +1,5 @@
 ## Rules & Economic Information
-- **Market:** You are one of {number_of_players} firms located symmetrically around a circular market of {market_size} customers.
+- **Market:** You are one of {number_of_players} firms located **symmetrically** around a circular market of **circumference 1**, with a total of {market_size} customers.
 - **Costs:** Your marginal cost is ${marginal_cost}. Your fixed cost is ${fixed_cost}.
 - **Customer Behavior:** Customers buy from the firm with the lowest total cost (price + transportation cost). Transportation cost is ${transport_cost} per unit of distance. The maximum price any customer will pay is ${v}.
 - **Objective:** Your profit is (Your Price - ${marginal_cost}) * Quantity Sold - ${fixed_cost}.

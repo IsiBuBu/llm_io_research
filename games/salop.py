@@ -65,14 +65,18 @@ class SalopGame(StaticGame, PriceParsingMixin):
             reach_left = max(0, min(x_left, x_max))
             reach_right = max(0, min(x_right, x_max))
             
-            quantity_sold = (reach_left + reach_right) * market_size
+            # --- FIX: Constrain total reach to the market's physical limit (circumference 1.0) ---
+            total_reach = min(1.0, reach_left + reach_right)
+            
+            quantity_sold = total_reach * market_size
             quantities[player_id] = quantity_sold
             
             profit = (p_i - marginal_cost) * quantity_sold - fixed_cost
             payoffs[player_id] = profit
             
         # Store quantities for logging
-        game_state['player_quantities'] = quantities
+        if game_state is not None:
+            game_state['player_quantities'] = quantities
         return payoffs
 
     def get_game_data_for_logging(self, actions: Dict[str, Any], payoffs: Dict[str, float], game_config: GameConfig, game_state: Optional[Dict] = None) -> Dict[str, Any]:

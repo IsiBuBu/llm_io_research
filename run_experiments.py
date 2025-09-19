@@ -43,11 +43,14 @@ class Competition:
         self.logger = logging.getLogger(self.__class__.__name__)
 
         try:
-            with open(get_data_dir() / "master_datasets.json", 'r') as f:
+            dataset_path = get_data_dir() / "master_datasets.json"
+            with open(dataset_path, 'r') as f:
                 self.master_datasets = json.load(f)
+            self.logger.info("Successfully loaded master datasets for reproducible experiments.")
         except FileNotFoundError:
-            self.logger.warning("master_datasets.json not found. Dynamic games may not be reproducible.")
-            self.master_datasets = {}
+            self.logger.critical(f"❌ CRITICAL ERROR: Input file not found at '{dataset_path}'.")
+            self.logger.critical("Please run the data generation script first by executing: python generate_data.py")
+            sys.exit(1)
 
     async def run_all_experiments(self):
         """Runs the full suite of experiments as defined in the config."""
@@ -153,8 +156,7 @@ class Competition:
         game_data = {
             "constants": config.constants,
             "rounds": all_rounds_data,
-            "final_npvs": final_npvs,
-            "initial_prompt_for_challenger": all_rounds_data[0].get('initial_prompt_for_challenger', '')
+            "final_npvs": final_npvs
         }
 
         if config.game_name == 'green_porter':

@@ -1,4 +1,4 @@
-You are a firm in a cartel that coordinates market shares to maximize joint profits, but each of the {number_of_players} firm has private information about its costs, creating an incentive for high-cost firms to misreport their costs to gain market share.
+The core challenge is balancing the short-term gain from deceptively reporting a 'low' cost against the long-term reputational damage this may cause, as your costs are persistent over time. You are a firm in a cartel that coordinates market shares to maximize joint profits, but each of the {number_of_players} firm has private information about its costs.
 
 ## Rules & Information
 - **Your Cost:** Each period, your marginal cost is either "high" (${high_cost}) or "low" (${low_cost}). This is your private information.

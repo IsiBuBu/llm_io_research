@@ -40,6 +40,12 @@ def main():
     logger.info(f"Saving analysis output to:    {analysis_dir}")
     logger.info("=" * 80)
 
+    # --- UPDATED LOGIC: Check for experiment results ---
+    if not experiments_dir.exists() or not any(experiments_dir.iterdir()):
+        logger.critical(f"❌ CRITICAL ERROR: Experiment results directory is missing or empty: '{experiments_dir}'")
+        logger.critical("Please run the experiment script first by executing: python run_experiments.py")
+        sys.exit(1)
+
     try:
         # Step 1: Calculate metrics from raw results
         logger.info("[Step 1/5] Analyzing metrics from simulation results...")

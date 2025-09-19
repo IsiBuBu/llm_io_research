@@ -3,7 +3,7 @@
 - **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of {number_of_competitors} competitors are cheating.
 - **Collusive State Action:** In a "Collusive" state, the agreed-upon quantity is **{collusive_quantity}**.
 - **Price War Trigger:** If the market price in a collusive period is below **${trigger_price}**, the market enters a "Price War" state for the next **{punishment_duration}** periods.
-- **Price War State Action:** In a "Price War" state, firms revert to noncooperative Cournot behavior, each producing **{cournot_quantity}** units.
+- **Price War State Action:** In a "Price War" state, the required action is to produce the **Cournot quantity** of **{cournot_quantity}** units.
 - **Market Price Formula:** Price = {base_demand} - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.
 
 ## Economic Information & Objective
@@ -14,7 +14,7 @@
 ## Current Market Information
 - **Period:** {current_round}
 - **Current Market State:** {current_market_state}
-- **Previous market prices:** {price_history}
+- **Market prices from the last {len(price_history)} periods:** {price_history}
 
 ## Your Task
 Choose your quantity for this period to maximize your total long-term profit.

@@ -1,0 +1,3178 @@
+{
+  "game_name": "green_porter",
+  "experiment_type": "ablation_studies",
+  "condition_name": "few_players_high_demand_volatility",
+  "challenger_model": "gemini_2_0_flash",
+  "simulation_results": [
+    {
+      "simulation_id": 0,
+      "game_name": "green_porter",
+      "experiment_type": "ablation_studies",
+      "condition_name": "few_players_high_demand_volatility",
+      "challenger_model": "gemini_2_0_flash",
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2"
+      ],
+      "actions": {},
+      "payoffs": {
+        "challenger": 7814.652229922663,
+        "defender_1": 7638.747054440865,
+        "defender_2": 7395.0509932632895
+      },
+      "game_data": {
+        "constants": {
+          "base_demand": 120,
+          "marginal_cost": 20,
+          "cournot_quantity": 25,
+          "demand_shock_mean": 0,
+          "demand_shock_std": 10,
+          "trigger_price": 62,
+          "punishment_duration": 3,
+          "discount_factor": 0.95,
+          "time_horizon": 10,
+          "number_of_players": 3,
+          "collusive_quantity": 17
+        },
+        "rounds": [
+          {
+            "period": 1,
+            "market_state": "Collusive",
+            "demand_shock": 17.64052345967664,
+            "market_price": 86.64052345967664,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 1132.888898814503,
+              "defender_1": 1132.888898814503,
+              "defender_2": 1132.888898814503
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 362,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.7872087955474854
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 362,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5141980648040771
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 362,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4881119728088379
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 1\n- **Current Market State:** Collusive\n- **Previous market prices:** []\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 2,
+            "market_state": "Collusive",
+            "demand_shock": 4.001572083672233,
+            "market_price": 73.00157208367223,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 901.026725422428,
+              "defender_1": 901.026725422428,
+              "defender_2": 901.026725422428
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 380,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4620699882507324
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 380,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5028553009033203
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 380,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5260992050170898
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 2\n- **Current Market State:** Collusive\n- **Previous market prices:** [86.64052345967664]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 3,
+            "market_state": "Collusive",
+            "demand_shock": 9.787379841057392,
+            "market_price": 78.78737984105739,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 999.3854572979756,
+              "defender_1": 999.3854572979756,
+              "defender_2": 999.3854572979756
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 399,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.3632771968841553
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 399,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4294002056121826
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 399,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4218790531158447
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 3\n- **Current Market State:** Collusive\n- **Previous market prices:** [86.64052345967664, 73.00157208367223]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 4,
+            "market_state": "Collusive",
+            "demand_shock": 22.40893199201458,
+            "market_price": 91.40893199201457,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 1213.9518438642476,
+              "defender_1": 1213.9518438642476,
+              "defender_2": 1213.9518438642476
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 418,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5194957256317139
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 418,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4999659061431885
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 418,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5057332515716553
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 4\n- **Current Market State:** Collusive\n- **Previous market prices:** [86.64052345967664, 73.00157208367223, 78.78737984105739]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 5,
+            "market_state": "Collusive",
+            "demand_shock": 18.675579901499674,
+            "market_price": 87.67557990149967,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 1150.4848583254945,
+              "defender_1": 1150.4848583254945,
+              "defender_2": 1150.4848583254945
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 437,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.34145307540893555
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 437,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5060710906982422
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 437,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.6783180236816406
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 5\n- **Current Market State:** Collusive\n- **Previous market prices:** [86.64052345967664, 73.00157208367223, 78.78737984105739, 91.40893199201457]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 6,
+            "market_state": "Collusive",
+            "demand_shock": -9.77277879876411,
+            "market_price": 59.22722120123589,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 666.8627604210102,
+              "defender_1": 666.8627604210102,
+              "defender_2": 666.8627604210102
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 456,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4382810592651367
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 456,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4735088348388672
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 456,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.47342991828918457
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 6\n- **Current Market State:** Collusive\n- **Previous market prices:** [86.64052345967664, 73.00157208367223, 78.78737984105739, 91.40893199201457, 87.67557990149967]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 7,
+            "market_state": "Reversionary",
+            "demand_shock": 9.500884175255894,
+            "market_price": 62.50088417525589,
+            "actions": {
+              "challenger": {
+                "quantity": 25.0
+              },
+              "defender_1": {
+                "quantity": 25.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 1062.5221043813972,
+              "defender_1": 1062.5221043813972,
+              "defender_2": 722.5150309793502
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 25}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 476,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4744267463684082
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 476,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.454758882522583
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 476,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4712181091308594
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 7\n- **Current Market State:** Reversionary\n- **Previous market prices:** [86.64052345967664, 73.00157208367223, 78.78737984105739, 91.40893199201457, 87.67557990149967, 59.22722120123589]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 8,
+            "market_state": "Reversionary",
+            "demand_shock": -1.513572082976979,
+            "market_price": 51.48642791702302,
+            "actions": {
+              "challenger": {
+                "quantity": 25.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 25.0
+              }
+            },
+            "payoffs": {
+              "challenger": 787.1606979255755,
+              "defender_1": 535.2692745893913,
+              "defender_2": 787.1606979255755
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 25}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 495,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.31466174125671387
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 495,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4954800605773926
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 495,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5342519283294678
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 8\n- **Current Market State:** Reversionary\n- **Previous market prices:** [86.64052345967664, 73.00157208367223, 78.78737984105739, 91.40893199201457, 87.67557990149967, 59.22722120123589, 62.50088417525589]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 9,
+            "market_state": "Reversionary",
+            "demand_shock": -1.0321885179355785,
+            "market_price": 51.96781148206442,
+            "actions": {
+              "challenger": {
+                "quantity": 25.0
+              },
+              "defender_1": {
+                "quantity": 25.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 799.1952870516105,
+              "defender_1": 799.1952870516105,
+              "defender_2": 543.4527951950952
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 25}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 514,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.3637502193450928
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 514,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5248570442199707
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 514,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5716869831085205
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 9\n- **Current Market State:** Reversionary\n- **Previous market prices:** [86.64052345967664, 73.00157208367223, 78.78737984105739, 91.40893199201457, 87.67557990149967, 59.22722120123589, 62.50088417525589, 51.48642791702302]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 10,
+            "market_state": "Collusive",
+            "demand_shock": 4.1059850193837235,
+            "market_price": 73.10598501938372,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 902.8017453295233,
+              "defender_1": 902.8017453295233,
+              "defender_2": 902.8017453295233
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 533,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.3387489318847656
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 533,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.3668057918548584
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 533,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.560758113861084
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 10\n- **Current Market State:** Collusive\n- **Previous market prices:** [86.64052345967664, 73.00157208367223, 78.78737984105739, 91.40893199201457, 87.67557990149967, 59.22722120123589, 62.50088417525589, 51.48642791702302, 51.96781148206442]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          }
+        ],
+        "final_npvs": {
+          "challenger": 7814.652229922663,
+          "defender_1": 7638.747054440865,
+          "defender_2": 7395.0509932632895
+        },
+        "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 1\n- **Current Market State:** Collusive\n- **Previous market prices:** []\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}",
+        "reversion_frequency": 0.1111111111111111,
+        "state_history": [
+          "Collusive",
+          "Collusive",
+          "Collusive",
+          "Collusive",
+          "Collusive",
+          "Collusive",
+          "Reversionary",
+          "Reversionary",
+          "Reversionary",
+          "Collusive"
+        ]
+      }
+    },
+    {
+      "simulation_id": 1,
+      "game_name": "green_porter",
+      "experiment_type": "ablation_studies",
+      "condition_name": "few_players_high_demand_volatility",
+      "challenger_model": "gemini_2_0_flash",
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2"
+      ],
+      "actions": {},
+      "payoffs": {
+        "challenger": 6157.026846408169,
+        "defender_1": 6045.697640553333,
+        "defender_2": 6045.697640553333
+      },
+      "game_data": {
+        "constants": {
+          "base_demand": 120,
+          "marginal_cost": 20,
+          "cournot_quantity": 25,
+          "demand_shock_mean": 0,
+          "demand_shock_std": 10,
+          "trigger_price": 62,
+          "punishment_duration": 3,
+          "discount_factor": 0.95,
+          "time_horizon": 10,
+          "number_of_players": 3,
+          "collusive_quantity": 17
+        },
+        "rounds": [
+          {
+            "period": 1,
+            "market_state": "Collusive",
+            "demand_shock": 16.243453636632417,
+            "market_price": 85.24345363663241,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 1109.138711822751,
+              "defender_1": 1109.138711822751,
+              "defender_2": 1109.138711822751
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 362,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.572883129119873
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 362,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.45661091804504395
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 362,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4565420150756836
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 1\n- **Current Market State:** Collusive\n- **Previous market prices:** []\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 2,
+            "market_state": "Collusive",
+            "demand_shock": -6.117564136500754,
+            "market_price": 62.882435863499246,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 729.0014096794872,
+              "defender_1": 729.0014096794872,
+              "defender_2": 729.0014096794872
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 380,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.31244611740112305
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 380,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.3842658996582031
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 380,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.3789067268371582
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 2\n- **Current Market State:** Collusive\n- **Previous market prices:** [85.24345363663241]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 3,
+            "market_state": "Collusive",
+            "demand_shock": -5.2817175226345565,
+            "market_price": 63.71828247736544,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 743.2108021152125,
+              "defender_1": 743.2108021152125,
+              "defender_2": 743.2108021152125
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 400,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.2961738109588623
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 400,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.37140917778015137
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 400,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.3764979839324951
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 3\n- **Current Market State:** Collusive\n- **Previous market prices:** [85.24345363663241, 62.882435863499246]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 4,
+            "market_state": "Collusive",
+            "demand_shock": -10.729686221561705,
+            "market_price": 58.27031377843829,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 650.595334233451,
+              "defender_1": 650.595334233451,
+              "defender_2": 650.595334233451
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 419,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5128645896911621
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 419,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5128509998321533
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 419,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.39926886558532715
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 4\n- **Current Market State:** Collusive\n- **Previous market prices:** [85.24345363663241, 62.882435863499246, 63.71828247736544]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 5,
+            "market_state": "Reversionary",
+            "demand_shock": 8.654076293246785,
+            "market_price": 53.65407629324679,
+            "actions": {
+              "challenger": {
+                "quantity": 25.0
+              },
+              "defender_1": {
+                "quantity": 25.0
+              },
+              "defender_2": {
+                "quantity": 25.0
+              }
+            },
+            "payoffs": {
+              "challenger": 841.3519073311697,
+              "defender_1": 841.3519073311697,
+              "defender_2": 841.3519073311697
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 25}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 439,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4480252265930176
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 439,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.7863731384277344
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 439,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.6321578025817871
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 5\n- **Current Market State:** Reversionary\n- **Previous market prices:** [85.24345363663241, 62.882435863499246, 63.71828247736544, 58.27031377843829]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 6,
+            "market_state": "Reversionary",
+            "demand_shock": -23.015386968802826,
+            "market_price": 37.98461303119717,
+            "actions": {
+              "challenger": {
+                "quantity": 25.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 449.61532577992926,
+              "defender_1": 305.7384215303519,
+              "defender_2": 305.7384215303519
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 25}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 458,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4078800678253174
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 458,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.46257710456848145
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 458,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.386383056640625
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 6\n- **Current Market State:** Reversionary\n- **Previous market prices:** [85.24345363663241, 62.882435863499246, 63.71828247736544, 58.27031377843829, 53.65407629324679]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 7,
+            "market_state": "Reversionary",
+            "demand_shock": 17.4481176421648,
+            "market_price": 62.4481176421648,
+            "actions": {
+              "challenger": {
+                "quantity": 25.0
+              },
+              "defender_1": {
+                "quantity": 25.0
+              },
+              "defender_2": {
+                "quantity": 25.0
+              }
+            },
+            "payoffs": {
+              "challenger": 1061.2029410541202,
+              "defender_1": 1061.2029410541202,
+              "defender_2": 1061.2029410541202
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 25}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 477,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.3566899299621582
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 477,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.451707124710083
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 477,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5108358860015869
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 7\n- **Current Market State:** Reversionary\n- **Previous market prices:** [85.24345363663241, 62.882435863499246, 63.71828247736544, 58.27031377843829, 53.65407629324679, 37.98461303119717]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 8,
+            "market_state": "Collusive",
+            "demand_shock": -7.612069008951028,
+            "market_price": 61.387930991048975,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 703.5948268478326,
+              "defender_1": 703.5948268478326,
+              "defender_2": 703.5948268478326
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 494,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.35523509979248047
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 494,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.6011557579040527
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 494,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5355358123779297
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 8\n- **Current Market State:** Collusive\n- **Previous market prices:** [85.24345363663241, 62.882435863499246, 63.71828247736544, 58.27031377843829, 53.65407629324679, 37.98461303119717, 62.4481176421648]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 9,
+            "market_state": "Reversionary",
+            "demand_shock": 3.1903909605709857,
+            "market_price": 48.19039096057099,
+            "actions": {
+              "challenger": {
+                "quantity": 25.0
+              },
+              "defender_1": {
+                "quantity": 25.0
+              },
+              "defender_2": {
+                "quantity": 25.0
+              }
+            },
+            "payoffs": {
+              "challenger": 704.7597740142746,
+              "defender_1": 704.7597740142746,
+              "defender_2": 704.7597740142746
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 25}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 515,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.33634185791015625
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 515,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.40003085136413574
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 515,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.491973876953125
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 9\n- **Current Market State:** Reversionary\n- **Previous market prices:** [85.24345363663241, 62.882435863499246, 63.71828247736544, 58.27031377843829, 53.65407629324679, 37.98461303119717, 62.4481176421648, 61.387930991048975]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 10,
+            "market_state": "Reversionary",
+            "demand_shock": -2.493703754774101,
+            "market_price": 42.5062962452259,
+            "actions": {
+              "challenger": {
+                "quantity": 25.0
+              },
+              "defender_1": {
+                "quantity": 25.0
+              },
+              "defender_2": {
+                "quantity": 25.0
+              }
+            },
+            "payoffs": {
+              "challenger": 562.6574061306475,
+              "defender_1": 562.6574061306475,
+              "defender_2": 562.6574061306475
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 25}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 535,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4681520462036133
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 535,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.45508718490600586
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 535,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5544750690460205
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 10\n- **Current Market State:** Reversionary\n- **Previous market prices:** [85.24345363663241, 62.882435863499246, 63.71828247736544, 58.27031377843829, 53.65407629324679, 37.98461303119717, 62.4481176421648, 61.387930991048975, 48.19039096057099]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          }
+        ],
+        "final_npvs": {
+          "challenger": 6157.026846408169,
+          "defender_1": 6045.697640553333,
+          "defender_2": 6045.697640553333
+        },
+        "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 1\n- **Current Market State:** Collusive\n- **Previous market prices:** []\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}",
+        "reversion_frequency": 0.2222222222222222,
+        "state_history": [
+          "Collusive",
+          "Collusive",
+          "Collusive",
+          "Collusive",
+          "Reversionary",
+          "Reversionary",
+          "Reversionary",
+          "Collusive",
+          "Reversionary",
+          "Reversionary"
+        ]
+      }
+    },
+    {
+      "simulation_id": 2,
+      "game_name": "green_porter",
+      "experiment_type": "ablation_studies",
+      "condition_name": "few_players_high_demand_volatility",
+      "challenger_model": "gemini_2_0_flash",
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2"
+      ],
+      "actions": {},
+      "payoffs": {
+        "challenger": 5680.816572724365,
+        "defender_1": 5328.825779932304,
+        "defender_2": 5208.272056784433
+      },
+      "game_data": {
+        "constants": {
+          "base_demand": 120,
+          "marginal_cost": 20,
+          "cournot_quantity": 25,
+          "demand_shock_mean": 0,
+          "demand_shock_std": 10,
+          "trigger_price": 62,
+          "punishment_duration": 3,
+          "discount_factor": 0.95,
+          "time_horizon": 10,
+          "number_of_players": 3,
+          "collusive_quantity": 17
+        },
+        "rounds": [
+          {
+            "period": 1,
+            "market_state": "Collusive",
+            "demand_shock": -4.167578474054706,
+            "market_price": 64.83242152594529,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 762.15116594107,
+              "defender_1": 762.15116594107,
+              "defender_2": 762.15116594107
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 362,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.45795488357543945
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 362,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.46109700202941895
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 362,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.49956607818603516
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 1\n- **Current Market State:** Collusive\n- **Previous market prices:** []\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 2,
+            "market_state": "Collusive",
+            "demand_shock": -0.5626682722632947,
+            "market_price": 68.4373317277367,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 823.434639371524,
+              "defender_1": 823.434639371524,
+              "defender_2": 823.434639371524
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 380,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.36339902877807617
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 380,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4321448802947998
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 380,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4892141819000244
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 2\n- **Current Market State:** Collusive\n- **Previous market prices:** [64.83242152594529]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 3,
+            "market_state": "Collusive",
+            "demand_shock": -21.36196095668454,
+            "market_price": 47.63803904331546,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 469.8466637363628,
+              "defender_1": 469.8466637363628,
+              "defender_2": 469.8466637363628
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 398,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.30579304695129395
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 398,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5619218349456787
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 398,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.6203711032867432
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 3\n- **Current Market State:** Collusive\n- **Previous market prices:** [64.83242152594529, 68.4373317277367]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 4,
+            "market_state": "Reversionary",
+            "demand_shock": 16.402708084049888,
+            "market_price": 61.40270808404989,
+            "actions": {
+              "challenger": {
+                "quantity": 25.0
+              },
+              "defender_1": {
+                "quantity": 25.0
+              },
+              "defender_2": {
+                "quantity": 25.0
+              }
+            },
+            "payoffs": {
+              "challenger": 1035.0677021012473,
+              "defender_1": 1035.0677021012473,
+              "defender_2": 1035.0677021012473
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 25}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 418,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.37287378311157227
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 418,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.40196895599365234
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 418,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5423600673675537
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 4\n- **Current Market State:** Reversionary\n- **Previous market prices:** [64.83242152594529, 68.4373317277367, 47.63803904331546]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 5,
+            "market_state": "Reversionary",
+            "demand_shock": -17.93435585194863,
+            "market_price": 43.06564414805137,
+            "actions": {
+              "challenger": {
+                "quantity": 25.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 576.6411037012842,
+              "defender_1": 392.1159505168733,
+              "defender_2": 392.1159505168733
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 25}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 437,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.7114827632904053
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 437,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4297659397125244
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 437,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4541151523590088
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 5\n- **Current Market State:** Reversionary\n- **Previous market prices:** [64.83242152594529, 68.4373317277367, 47.63803904331546, 61.40270808404989]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 6,
+            "market_state": "Reversionary",
+            "demand_shock": -8.41747365656204,
+            "market_price": 52.58252634343796,
+            "actions": {
+              "challenger": {
+                "quantity": 25.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 814.563158585949,
+              "defender_1": 553.9029478384454,
+              "defender_2": 553.9029478384454
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 25}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 456,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.3254730701446533
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 456,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.39780306816101074
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 456,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.41260194778442383
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 6\n- **Current Market State:** Reversionary\n- **Previous market prices:** [64.83242152594529, 68.4373317277367, 47.63803904331546, 61.40270808404989, 43.06564414805137]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 7,
+            "market_state": "Collusive",
+            "demand_shock": 5.028814171580428,
+            "market_price": 74.02881417158042,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 918.4898409168671,
+              "defender_1": 918.4898409168671,
+              "defender_2": 918.4898409168671
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 474,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5227348804473877
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 474,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.588515043258667
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 474,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.6017251014709473
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 7\n- **Current Market State:** Collusive\n- **Previous market prices:** [64.83242152594529, 68.4373317277367, 47.63803904331546, 61.40270808404989, 43.06564414805137, 52.58252634343796]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 8,
+            "market_state": "Collusive",
+            "demand_shock": -12.452880866072316,
+            "market_price": 56.54711913392768,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 621.3010252767706,
+              "defender_1": 621.3010252767706,
+              "defender_2": 621.3010252767706
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 493,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.40946507453918457
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 493,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4875779151916504
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 493,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.38995790481567383
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 8\n- **Current Market State:** Collusive\n- **Previous market prices:** [64.83242152594529, 68.4373317277367, 47.63803904331546, 61.40270808404989, 43.06564414805137, 52.58252634343796, 74.02881417158042]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 9,
+            "market_state": "Reversionary",
+            "demand_shock": -10.57952218862339,
+            "market_price": 34.420477811376614,
+            "actions": {
+              "challenger": {
+                "quantity": 25.0
+              },
+              "defender_1": {
+                "quantity": 25.0
+              },
+              "defender_2": {
+                "quantity": 25.0
+              }
+            },
+            "payoffs": {
+              "challenger": 360.51194528441533,
+              "defender_1": 360.51194528441533,
+              "defender_2": 360.51194528441533
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 25}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 513,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.3907778263092041
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 513,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.3450460433959961
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 513,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4858231544494629
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 9\n- **Current Market State:** Reversionary\n- **Previous market prices:** [64.83242152594529, 68.4373317277367, 47.63803904331546, 61.40270808404989, 43.06564414805137, 52.58252634343796, 74.02881417158042, 56.54711913392768]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 10,
+            "market_state": "Reversionary",
+            "demand_shock": -9.090076149268494,
+            "market_price": 43.9099238507315,
+            "actions": {
+              "challenger": {
+                "quantity": 25.0
+              },
+              "defender_1": {
+                "quantity": 25.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 597.7480962682876,
+              "defender_1": 597.7480962682876,
+              "defender_2": 406.46870546243554
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 25}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 534,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.33869314193725586
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 534,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.6353139877319336
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 534,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.46287107467651367
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 10\n- **Current Market State:** Reversionary\n- **Previous market prices:** [64.83242152594529, 68.4373317277367, 47.63803904331546, 61.40270808404989, 43.06564414805137, 52.58252634343796, 74.02881417158042, 56.54711913392768, 34.420477811376614]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          }
+        ],
+        "final_npvs": {
+          "challenger": 5680.816572724365,
+          "defender_1": 5328.825779932304,
+          "defender_2": 5208.272056784433
+        },
+        "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 1\n- **Current Market State:** Collusive\n- **Previous market prices:** []\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}",
+        "reversion_frequency": 0.2222222222222222,
+        "state_history": [
+          "Collusive",
+          "Collusive",
+          "Collusive",
+          "Reversionary",
+          "Reversionary",
+          "Reversionary",
+          "Collusive",
+          "Collusive",
+          "Reversionary",
+          "Reversionary"
+        ]
+      }
+    },
+    {
+      "simulation_id": 3,
+      "game_name": "green_porter",
+      "experiment_type": "ablation_studies",
+      "condition_name": "few_players_high_demand_volatility",
+      "challenger_model": "gemini_2_0_flash",
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2"
+      ],
+      "actions": {},
+      "payoffs": {
+        "challenger": 6366.370733916888,
+        "defender_1": 6366.370733916888,
+        "defender_2": 5987.098129232051
+      },
+      "game_data": {
+        "constants": {
+          "base_demand": 120,
+          "marginal_cost": 20,
+          "cournot_quantity": 25,
+          "demand_shock_mean": 0,
+          "demand_shock_std": 10,
+          "trigger_price": 62,
+          "punishment_duration": 3,
+          "discount_factor": 0.95,
+          "time_horizon": 10,
+          "number_of_players": 3,
+          "collusive_quantity": 17
+        },
+        "rounds": [
+          {
+            "period": 1,
+            "market_state": "Collusive",
+            "demand_shock": 17.886284734303185,
+            "market_price": 86.88628473430319,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 1137.0668404831542,
+              "defender_1": 1137.0668404831542,
+              "defender_2": 1137.0668404831542
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 362,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.6387581825256348
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 362,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.46085405349731445
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 362,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4549548625946045
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 1\n- **Current Market State:** Collusive\n- **Previous market prices:** []\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 2,
+            "market_state": "Collusive",
+            "demand_shock": 4.365098505119894,
+            "market_price": 73.36509850511989,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 907.2066745870382,
+              "defender_1": 907.2066745870382,
+              "defender_2": 907.2066745870382
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 380,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.32930779457092285
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 380,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4754650592803955
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 380,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.6448638439178467
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 2\n- **Current Market State:** Collusive\n- **Previous market prices:** [86.88628473430319]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 3,
+            "market_state": "Collusive",
+            "demand_shock": 0.9649746807200863,
+            "market_price": 69.96497468072009,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 849.4045695722415,
+              "defender_1": 849.4045695722415,
+              "defender_2": 849.4045695722415
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 399,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.36731481552124023
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 399,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4518110752105713
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 399,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.459301233291626
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 3\n- **Current Market State:** Collusive\n- **Previous market prices:** [86.88628473430319, 73.36509850511989]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 4,
+            "market_state": "Collusive",
+            "demand_shock": -18.634927033644907,
+            "market_price": 50.36507296635509,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 516.2062404280366,
+              "defender_1": 516.2062404280366,
+              "defender_2": 516.2062404280366
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 418,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.3375051021575928
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 418,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.44913792610168457
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 418,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4083588123321533
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 4\n- **Current Market State:** Collusive\n- **Previous market prices:** [86.88628473430319, 73.36509850511989, 69.96497468072009]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 5,
+            "market_state": "Reversionary",
+            "demand_shock": -2.7738820251439904,
+            "market_price": 50.22611797485601,
+            "actions": {
+              "challenger": {
+                "quantity": 25.0
+              },
+              "defender_1": {
+                "quantity": 25.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 755.6529493714003,
+              "defender_1": 755.6529493714003,
+              "defender_2": 513.8440055725522
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 25}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 438,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.36171388626098633
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 438,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.473984956741333
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 438,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 1.0078637599945068
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 5\n- **Current Market State:** Reversionary\n- **Previous market prices:** [86.88628473430319, 73.36509850511989, 69.96497468072009, 50.36507296635509]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 6,
+            "market_state": "Reversionary",
+            "demand_shock": -3.5475897926898674,
+            "market_price": 49.45241020731013,
+            "actions": {
+              "challenger": {
+                "quantity": 25.0
+              },
+              "defender_1": {
+                "quantity": 25.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 736.3102551827533,
+              "defender_1": 736.3102551827533,
+              "defender_2": 500.69097352427224
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 25}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 457,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.3450889587402344
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 457,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5148658752441406
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 457,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5613408088684082
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 6\n- **Current Market State:** Reversionary\n- **Previous market prices:** [86.88628473430319, 73.36509850511989, 69.96497468072009, 50.36507296635509, 50.22611797485601]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 7,
+            "market_state": "Reversionary",
+            "demand_shock": -0.8274148148245977,
+            "market_price": 44.1725851851754,
+            "actions": {
+              "challenger": {
+                "quantity": 25.0
+              },
+              "defender_1": {
+                "quantity": 25.0
+              },
+              "defender_2": {
+                "quantity": 25.0
+              }
+            },
+            "payoffs": {
+              "challenger": 604.314629629385,
+              "defender_1": 604.314629629385,
+              "defender_2": 604.314629629385
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 25}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 476,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.3762350082397461
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 476,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.44832897186279297
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 476,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.503709077835083
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 7\n- **Current Market State:** Reversionary\n- **Previous market prices:** [86.88628473430319, 73.36509850511989, 69.96497468072009, 50.36507296635509, 50.22611797485601, 49.45241020731013]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 8,
+            "market_state": "Collusive",
+            "demand_shock": -6.270006768238473,
+            "market_price": 62.729993231761526,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 726.409884939946,
+              "defender_1": 726.409884939946,
+              "defender_2": 726.409884939946
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 493,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.408066987991333
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 493,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4080181121826172
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 493,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.41715312004089355
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 8\n- **Current Market State:** Collusive\n- **Previous market prices:** [86.88628473430319, 73.36509850511989, 69.96497468072009, 50.36507296635509, 50.22611797485601, 49.45241020731013, 44.1725851851754]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 9,
+            "market_state": "Collusive",
+            "demand_shock": -0.4381816897592824,
+            "market_price": 68.56181831024072,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 825.5509112740923,
+              "defender_1": 825.5509112740923,
+              "defender_2": 825.5509112740923
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 513,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.6000089645385742
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 513,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4593632221221924
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 513,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.48078083992004395
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 9\n- **Current Market State:** Collusive\n- **Previous market prices:** [86.88628473430319, 73.36509850511989, 69.96497468072009, 50.36507296635509, 50.22611797485601, 49.45241020731013, 44.1725851851754, 62.729993231761526]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 10,
+            "market_state": "Collusive",
+            "demand_shock": -4.772180303595027,
+            "market_price": 64.22781969640498,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 751.8729348388846,
+              "defender_1": 751.8729348388846,
+              "defender_2": 751.8729348388846
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 533,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.3931121826171875
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 533,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4078037738800049
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 533,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.42100024223327637
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 10\n- **Current Market State:** Collusive\n- **Previous market prices:** [86.88628473430319, 73.36509850511989, 69.96497468072009, 50.36507296635509, 50.22611797485601, 49.45241020731013, 44.1725851851754, 62.729993231761526, 68.56181831024072]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          }
+        ],
+        "final_npvs": {
+          "challenger": 6366.370733916888,
+          "defender_1": 6366.370733916888,
+          "defender_2": 5987.098129232051
+        },
+        "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 1\n- **Current Market State:** Collusive\n- **Previous market prices:** []\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}",
+        "reversion_frequency": 0.1111111111111111,
+        "state_history": [
+          "Collusive",
+          "Collusive",
+          "Collusive",
+          "Collusive",
+          "Reversionary",
+          "Reversionary",
+          "Reversionary",
+          "Collusive",
+          "Collusive",
+          "Collusive"
+        ]
+      }
+    },
+    {
+      "simulation_id": 4,
+      "game_name": "green_porter",
+      "experiment_type": "ablation_studies",
+      "condition_name": "few_players_high_demand_volatility",
+      "challenger_model": "gemini_2_0_flash",
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2"
+      ],
+      "actions": {},
+      "payoffs": {
+        "challenger": 5774.495872274614,
+        "defender_1": 5774.495872274614,
+        "defender_2": 5774.495872274614
+      },
+      "game_data": {
+        "constants": {
+          "base_demand": 120,
+          "marginal_cost": 20,
+          "cournot_quantity": 25,
+          "demand_shock_mean": 0,
+          "demand_shock_std": 10,
+          "trigger_price": 62,
+          "punishment_duration": 3,
+          "discount_factor": 0.95,
+          "time_horizon": 10,
+          "number_of_players": 3,
+          "collusive_quantity": 17
+        },
+        "rounds": [
+          {
+            "period": 1,
+            "market_state": "Collusive",
+            "demand_shock": 0.5056170714293955,
+            "market_price": 69.5056170714294,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 841.5954902142997,
+              "defender_1": 841.5954902142997,
+              "defender_2": 841.5954902142997
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 362,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.9198658466339111
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 362,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.9683489799499512
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 362,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.9521090984344482
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 1\n- **Current Market State:** Collusive\n- **Previous market prices:** []\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 2,
+            "market_state": "Collusive",
+            "demand_shock": 4.99951333237829,
+            "market_price": 73.99951333237829,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 917.9917266504308,
+              "defender_1": 917.9917266504308,
+              "defender_2": 917.9917266504308
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 379,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.47937822341918945
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 379,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.36176490783691406
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 379,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.3716721534729004
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 2\n- **Current Market State:** Collusive\n- **Previous market prices:** [69.5056170714294]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 3,
+            "market_state": "Collusive",
+            "demand_shock": -9.95908931106865,
+            "market_price": 59.04091068893135,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 663.6954817118329,
+              "defender_1": 663.6954817118329,
+              "defender_2": 663.6954817118329
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 398,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.3198580741882324
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 398,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5293111801147461
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 398,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5870518684387207
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 3\n- **Current Market State:** Collusive\n- **Previous market prices:** [69.5056170714294, 73.99951333237829]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 4,
+            "market_state": "Reversionary",
+            "demand_shock": 6.935985082913117,
+            "market_price": 51.93598508291312,
+            "actions": {
+              "challenger": {
+                "quantity": 25.0
+              },
+              "defender_1": {
+                "quantity": 25.0
+              },
+              "defender_2": {
+                "quantity": 25.0
+              }
+            },
+            "payoffs": {
+              "challenger": 798.399627072828,
+              "defender_1": 798.399627072828,
+              "defender_2": 798.399627072828
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 25}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 418,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.3278012275695801
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 418,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.40774011611938477
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 418,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.44582223892211914
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 4\n- **Current Market State:** Reversionary\n- **Previous market prices:** [69.5056170714294, 73.99951333237829, 59.04091068893135]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 5,
+            "market_state": "Reversionary",
+            "demand_shock": -4.183015200269101,
+            "market_price": 40.816984799730896,
+            "actions": {
+              "challenger": {
+                "quantity": 25.0
+              },
+              "defender_1": {
+                "quantity": 25.0
+              },
+              "defender_2": {
+                "quantity": 25.0
+              }
+            },
+            "payoffs": {
+              "challenger": 520.4246199932724,
+              "defender_1": 520.4246199932724,
+              "defender_2": 520.4246199932724
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 25}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 437,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.3520169258117676
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 437,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.47411680221557617
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 437,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5541532039642334
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 5\n- **Current Market State:** Reversionary\n- **Previous market prices:** [69.5056170714294, 73.99951333237829, 59.04091068893135, 51.93598508291312]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 6,
+            "market_state": "Reversionary",
+            "demand_shock": -15.84577235112124,
+            "market_price": 29.15422764887876,
+            "actions": {
+              "challenger": {
+                "quantity": 25.0
+              },
+              "defender_1": {
+                "quantity": 25.0
+              },
+              "defender_2": {
+                "quantity": 25.0
+              }
+            },
+            "payoffs": {
+              "challenger": 228.85569122196898,
+              "defender_1": 228.85569122196898,
+              "defender_2": 228.85569122196898
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 25}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 457,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.35373377799987793
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 457,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.40024709701538086
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"25\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 457,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.45168590545654297
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 6\n- **Current Market State:** Reversionary\n- **Previous market prices:** [69.5056170714294, 73.99951333237829, 59.04091068893135, 51.93598508291312, 40.816984799730896]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 7,
+            "market_state": "Collusive",
+            "demand_shock": -6.477067671218505,
+            "market_price": 62.52293232878149,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 722.8898495892854,
+              "defender_1": 722.8898495892854,
+              "defender_2": 722.8898495892854
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 475,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.28087306022644043
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 475,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4591517448425293
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 475,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5162827968597412
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 7\n- **Current Market State:** Collusive\n- **Previous market prices:** [69.5056170714294, 73.99951333237829, 59.04091068893135, 51.93598508291312, 40.816984799730896, 29.15422764887876]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 8,
+            "market_state": "Collusive",
+            "demand_shock": 5.9857517396737725,
+            "market_price": 74.98575173967377,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 934.7577795744542,
+              "defender_1": 934.7577795744542,
+              "defender_2": 934.7577795744542
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 494,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4093620777130127
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 494,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5381309986114502
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 494,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5446851253509521
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 8\n- **Current Market State:** Collusive\n- **Previous market prices:** [69.5056170714294, 73.99951333237829, 59.04091068893135, 51.93598508291312, 40.816984799730896, 29.15422764887876, 62.52293232878149]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 9,
+            "market_state": "Collusive",
+            "demand_shock": 3.322500326099644,
+            "market_price": 72.32250032609964,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 889.482505543694,
+              "defender_1": 889.482505543694,
+              "defender_2": 889.482505543694
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 513,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.3886260986328125
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 513,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4749739170074463
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 513,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.5965898036956787
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 9\n- **Current Market State:** Collusive\n- **Previous market prices:** [69.5056170714294, 73.99951333237829, 59.04091068893135, 51.93598508291312, 40.816984799730896, 29.15422764887876, 62.52293232878149, 74.98575173967377]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          },
+          {
+            "period": 10,
+            "market_state": "Collusive",
+            "demand_shock": -11.474766329454798,
+            "market_price": 57.525233670545205,
+            "actions": {
+              "challenger": {
+                "quantity": 17.0
+              },
+              "defender_1": {
+                "quantity": 17.0
+              },
+              "defender_2": {
+                "quantity": 17.0
+              }
+            },
+            "payoffs": {
+              "challenger": 637.9289723992684,
+              "defender_1": 637.9289723992684,
+              "defender_2": 637.9289723992684
+            },
+            "llm_metadata": {
+              "challenger": {
+                "content": "{\"quantity\": 17}",
+                "model": "gemini_2_0_flash",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 533,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.43051815032958984
+              },
+              "defender_1": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 533,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.4360508918762207
+              },
+              "defender_2": {
+                "content": "{\"quantity\": \"17\"}",
+                "model": "gemini_2_0_flash_lite",
+                "success": true,
+                "error": null,
+                "thoughts": null,
+                "tokens_used": 533,
+                "output_tokens": 7,
+                "thinking_tokens": null,
+                "response_time": 0.49469709396362305
+              }
+            },
+            "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 10\n- **Current Market State:** Collusive\n- **Previous market prices:** [69.5056170714294, 73.99951333237829, 59.04091068893135, 51.93598508291312, 40.816984799730896, 29.15422764887876, 62.52293232878149, 74.98575173967377, 72.32250032609964]\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}"
+          }
+        ],
+        "final_npvs": {
+          "challenger": 5774.495872274614,
+          "defender_1": 5774.495872274614,
+          "defender_2": 5774.495872274614
+        },
+        "initial_prompt_for_challenger": "## Rules & Market Dynamics\n- **Market States:** The market is either in a \"Collusive\" or \"Price War\" state.\n- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of 2 competitors are cheating.\n- **Collusive State Action:** In a \"Collusive\" state, the agreed-upon quantity is **17**.\n- **Price War Trigger:** If the market price in a collusive period is below **$62**, the market enters a \"Price War\" state for the next **3** periods.\n- **Price War State Action:** In a \"Price War\" state, firms revert to noncooperative Cournot behavior, each producing **25** units.\n- **Market Price Formula:** Price = 120 - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $20 per unit.\n- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **0**. and a standard deviation of **10**.\n- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: $0.95).\n\n## Current Market Information\n- **Period:** 1\n- **Current Market State:** Collusive\n- **Previous market prices:** []\n\n## Your Task\nChoose your quantity for this period to maximize your total long-term profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"quantity\": <number>}",
+        "reversion_frequency": 0.1111111111111111,
+        "state_history": [
+          "Collusive",
+          "Collusive",
+          "Collusive",
+          "Reversionary",
+          "Reversionary",
+          "Reversionary",
+          "Collusive",
+          "Collusive",
+          "Collusive",
+          "Collusive"
+        ]
+      }
+    }
+  ]
+}

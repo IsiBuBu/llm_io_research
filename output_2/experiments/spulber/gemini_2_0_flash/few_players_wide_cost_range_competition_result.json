@@ -1,0 +1,418 @@
+{
+  "game_name": "spulber",
+  "experiment_type": "ablation_studies",
+  "condition_name": "few_players_wide_cost_range",
+  "challenger_model": "gemini_2_0_flash",
+  "simulation_results": [
+    {
+      "simulation_id": 0,
+      "game_name": "spulber",
+      "experiment_type": "ablation_studies",
+      "condition_name": "few_players_wide_cost_range",
+      "challenger_model": "gemini_2_0_flash",
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2"
+      ],
+      "actions": {
+        "challenger": {
+          "price": 8.01
+        },
+        "defender_1": {
+          "price": 7.0
+        },
+        "defender_2": {
+          "price": 10.0
+        }
+      },
+      "payoffs": {
+        "challenger": 0.0,
+        "defender_1": 83.70000000000003,
+        "defender_2": 0.0
+      },
+      "game_data": {
+        "constants": {
+          "demand_intercept": 100,
+          "rival_cost_mean": 10,
+          "rival_cost_std": 4.0,
+          "type": "normal",
+          "your_cost": 8,
+          "number_of_players": 3
+        },
+        "winner_ids": [
+          "defender_1"
+        ],
+        "player_private_costs": {
+          "challenger": 8,
+          "defender_1": 6.1,
+          "defender_2": 11.65
+        },
+        "llm_metadata": {
+          "challenger": {
+            "content": "{\"price\": 8.01}",
+            "model": "gemini_2_0_flash",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 189,
+            "output_tokens": 9,
+            "thinking_tokens": null,
+            "response_time": 0.6360142230987549
+          },
+          "defender_1": {
+            "content": "{\"price\": \"7.0\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 192,
+            "output_tokens": 8,
+            "thinking_tokens": null,
+            "response_time": 0.5770831108093262
+          },
+          "defender_2": {
+            "content": "{\"price\": 10.0}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 197,
+            "output_tokens": 9,
+            "thinking_tokens": null,
+            "response_time": 0.5781359672546387
+          }
+        },
+        "initial_prompt_for_challenger": "## Rules & Information Structure\n- **Auction Type:** You are bidding in a winner-take-all price auction against 2 rivals. The lowest price wins the entire market.\n- **Information:** You know your marginal cost. Your rivals' costs are unknown and are drawn from a normal distribution (mean: $10, std dev: $4.0).\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $8 per unit.\n- **Market Demand:** D(p) = 100 - p.\n- **Your Profit:** If you win, profit is (Your Price - $8) * (100 - Your Price). If you lose, profit is $0.\n\n## Your Task\nChoose your price to maximize your expected profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"price\": <number>}"
+      }
+    },
+    {
+      "simulation_id": 1,
+      "game_name": "spulber",
+      "experiment_type": "ablation_studies",
+      "condition_name": "few_players_wide_cost_range",
+      "challenger_model": "gemini_2_0_flash",
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2"
+      ],
+      "actions": {
+        "challenger": {
+          "price": 8.01
+        },
+        "defender_1": {
+          "price": 10.0
+        },
+        "defender_2": {
+          "price": 11.0
+        }
+      },
+      "payoffs": {
+        "challenger": 0.9198999999999803,
+        "defender_1": 0.0,
+        "defender_2": 0.0
+      },
+      "game_data": {
+        "constants": {
+          "demand_intercept": 100,
+          "rival_cost_mean": 10,
+          "rival_cost_std": 4.0,
+          "type": "normal",
+          "your_cost": 8,
+          "number_of_players": 3
+        },
+        "winner_ids": [
+          "challenger"
+        ],
+        "player_private_costs": {
+          "challenger": 8,
+          "defender_1": 13.15,
+          "defender_2": 13.29
+        },
+        "llm_metadata": {
+          "challenger": {
+            "content": "{\"price\": 8.01}",
+            "model": "gemini_2_0_flash",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 189,
+            "output_tokens": 9,
+            "thinking_tokens": null,
+            "response_time": 0.5771410465240479
+          },
+          "defender_1": {
+            "content": "{\"price\": \"10.00\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 198,
+            "output_tokens": 10,
+            "thinking_tokens": null,
+            "response_time": 0.5973250865936279
+          },
+          "defender_2": {
+            "content": "{\"price\": \"11.00\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 198,
+            "output_tokens": 10,
+            "thinking_tokens": null,
+            "response_time": 0.5780541896820068
+          }
+        },
+        "initial_prompt_for_challenger": "## Rules & Information Structure\n- **Auction Type:** You are bidding in a winner-take-all price auction against 2 rivals. The lowest price wins the entire market.\n- **Information:** You know your marginal cost. Your rivals' costs are unknown and are drawn from a normal distribution (mean: $10, std dev: $4.0).\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $8 per unit.\n- **Market Demand:** D(p) = 100 - p.\n- **Your Profit:** If you win, profit is (Your Price - $8) * (100 - Your Price). If you lose, profit is $0.\n\n## Your Task\nChoose your price to maximize your expected profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"price\": <number>}"
+      }
+    },
+    {
+      "simulation_id": 2,
+      "game_name": "spulber",
+      "experiment_type": "ablation_studies",
+      "condition_name": "few_players_wide_cost_range",
+      "challenger_model": "gemini_2_0_flash",
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2"
+      ],
+      "actions": {
+        "challenger": {
+          "price": 9.9
+        },
+        "defender_1": {
+          "price": 11.0
+        },
+        "defender_2": {
+          "price": 21.0
+        }
+      },
+      "payoffs": {
+        "challenger": 171.19000000000003,
+        "defender_1": 0.0,
+        "defender_2": 0.0
+      },
+      "game_data": {
+        "constants": {
+          "demand_intercept": 100,
+          "rival_cost_mean": 10,
+          "rival_cost_std": 4.0,
+          "type": "normal",
+          "your_cost": 8,
+          "number_of_players": 3
+        },
+        "winner_ids": [
+          "challenger"
+        ],
+        "player_private_costs": {
+          "challenger": 8,
+          "defender_1": 14.63,
+          "defender_2": 17.59
+        },
+        "llm_metadata": {
+          "challenger": {
+            "content": "{\"price\": 9.9}",
+            "model": "gemini_2_0_flash",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 188,
+            "output_tokens": 8,
+            "thinking_tokens": null,
+            "response_time": 0.5783069133758545
+          },
+          "defender_1": {
+            "content": "{\"price\": \"11.00\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 198,
+            "output_tokens": 10,
+            "thinking_tokens": null,
+            "response_time": 0.5814239978790283
+          },
+          "defender_2": {
+            "content": "{\"price\": \"21.00\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 198,
+            "output_tokens": 10,
+            "thinking_tokens": null,
+            "response_time": 0.627126932144165
+          }
+        },
+        "initial_prompt_for_challenger": "## Rules & Information Structure\n- **Auction Type:** You are bidding in a winner-take-all price auction against 2 rivals. The lowest price wins the entire market.\n- **Information:** You know your marginal cost. Your rivals' costs are unknown and are drawn from a normal distribution (mean: $10, std dev: $4.0).\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $8 per unit.\n- **Market Demand:** D(p) = 100 - p.\n- **Your Profit:** If you win, profit is (Your Price - $8) * (100 - Your Price). If you lose, profit is $0.\n\n## Your Task\nChoose your price to maximize your expected profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"price\": <number>}"
+      }
+    },
+    {
+      "simulation_id": 3,
+      "game_name": "spulber",
+      "experiment_type": "ablation_studies",
+      "condition_name": "few_players_wide_cost_range",
+      "challenger_model": "gemini_2_0_flash",
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2"
+      ],
+      "actions": {
+        "challenger": {
+          "price": 8.01
+        },
+        "defender_1": {
+          "price": 8.0
+        },
+        "defender_2": {
+          "price": 9.03
+        }
+      },
+      "payoffs": {
+        "challenger": 0.0,
+        "defender_1": 117.76000000000002,
+        "defender_2": 0.0
+      },
+      "game_data": {
+        "constants": {
+          "demand_intercept": 100,
+          "rival_cost_mean": 10,
+          "rival_cost_std": 4.0,
+          "type": "normal",
+          "your_cost": 8,
+          "number_of_players": 3
+        },
+        "winner_ids": [
+          "defender_1"
+        ],
+        "player_private_costs": {
+          "challenger": 8,
+          "defender_1": 6.72,
+          "defender_2": 9.02
+        },
+        "llm_metadata": {
+          "challenger": {
+            "content": "{\"price\": 8.01}",
+            "model": "gemini_2_0_flash",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 189,
+            "output_tokens": 9,
+            "thinking_tokens": null,
+            "response_time": 0.6166830062866211
+          },
+          "defender_1": {
+            "content": "{\"price\": \"8.00\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 195,
+            "output_tokens": 9,
+            "thinking_tokens": null,
+            "response_time": 0.5800793170928955
+          },
+          "defender_2": {
+            "content": "{\"price\": \"9.03\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 195,
+            "output_tokens": 9,
+            "thinking_tokens": null,
+            "response_time": 0.58351731300354
+          }
+        },
+        "initial_prompt_for_challenger": "## Rules & Information Structure\n- **Auction Type:** You are bidding in a winner-take-all price auction against 2 rivals. The lowest price wins the entire market.\n- **Information:** You know your marginal cost. Your rivals' costs are unknown and are drawn from a normal distribution (mean: $10, std dev: $4.0).\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $8 per unit.\n- **Market Demand:** D(p) = 100 - p.\n- **Your Profit:** If you win, profit is (Your Price - $8) * (100 - Your Price). If you lose, profit is $0.\n\n## Your Task\nChoose your price to maximize your expected profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"price\": <number>}"
+      }
+    },
+    {
+      "simulation_id": 4,
+      "game_name": "spulber",
+      "experiment_type": "ablation_studies",
+      "condition_name": "few_players_wide_cost_range",
+      "challenger_model": "gemini_2_0_flash",
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2"
+      ],
+      "actions": {
+        "challenger": {
+          "price": 9.9
+        },
+        "defender_1": {
+          "price": 20.0
+        },
+        "defender_2": {
+          "price": 8.0
+        }
+      },
+      "payoffs": {
+        "challenger": 0.0,
+        "defender_1": 0.0,
+        "defender_2": 92.91999999999999
+      },
+      "game_data": {
+        "constants": {
+          "demand_intercept": 100,
+          "rival_cost_mean": 10,
+          "rival_cost_std": 4.0,
+          "type": "normal",
+          "your_cost": 8,
+          "number_of_players": 3
+        },
+        "winner_ids": [
+          "defender_2"
+        ],
+        "player_private_costs": {
+          "challenger": 8,
+          "defender_1": 13.85,
+          "defender_2": 6.99
+        },
+        "llm_metadata": {
+          "challenger": {
+            "content": "{\"price\": 9.9}",
+            "model": "gemini_2_0_flash",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 188,
+            "output_tokens": 8,
+            "thinking_tokens": null,
+            "response_time": 1.230055809020996
+          },
+          "defender_1": {
+            "content": "{\"price\": \"20.00\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 198,
+            "output_tokens": 10,
+            "thinking_tokens": null,
+            "response_time": 1.180203914642334
+          },
+          "defender_2": {
+            "content": "{\"price\": \"8.00\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 195,
+            "output_tokens": 9,
+            "thinking_tokens": null,
+            "response_time": 1.1804449558258057
+          }
+        },
+        "initial_prompt_for_challenger": "## Rules & Information Structure\n- **Auction Type:** You are bidding in a winner-take-all price auction against 2 rivals. The lowest price wins the entire market.\n- **Information:** You know your marginal cost. Your rivals' costs are unknown and are drawn from a normal distribution (mean: $10, std dev: $4.0).\n\n## Economic Information & Objective\n- **Your Marginal Cost:** $8 per unit.\n- **Market Demand:** D(p) = 100 - p.\n- **Your Profit:** If you win, profit is (Your Price - $8) * (100 - Your Price). If you lose, profit is $0.\n\n## Your Task\nChoose your price to maximize your expected profit.\n\n## Output Format\nRespond with valid JSON only:\n{\"price\": <number>}"
+      }
+    }
+  ]
+}

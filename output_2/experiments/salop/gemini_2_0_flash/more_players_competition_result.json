@@ -1,0 +1,573 @@
+{
+  "game_name": "salop",
+  "experiment_type": "structural_variations",
+  "condition_name": "more_players",
+  "challenger_model": "gemini_2_0_flash",
+  "simulation_results": [
+    {
+      "simulation_id": 0,
+      "game_name": "salop",
+      "experiment_type": "structural_variations",
+      "condition_name": "more_players",
+      "challenger_model": "gemini_2_0_flash",
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2",
+        "defender_3",
+        "defender_4"
+      ],
+      "actions": {
+        "challenger": {
+          "price": 15.5
+        },
+        "defender_1": {
+          "price": 29.0
+        },
+        "defender_2": {
+          "price": 29.99
+        },
+        "defender_3": {
+          "price": 25.0
+        },
+        "defender_4": {
+          "price": 29.0
+        }
+      },
+      "payoffs": {
+        "challenger": 68900.0,
+        "defender_1": 8929.999999999989,
+        "defender_2": -100.0,
+        "defender_3": 54243.33333333333,
+        "defender_4": -100.0
+      },
+      "game_data": {
+        "constants": {
+          "transport_cost": 1.5,
+          "v": 30,
+          "marginal_cost": 8,
+          "fixed_cost": 100,
+          "market_size": 1000,
+          "number_of_players": 5
+        },
+        "player_quantities": {
+          "challenger": 9200.0,
+          "defender_1": 429.9999999999995,
+          "defender_2": 0,
+          "defender_3": 3196.6666666666665,
+          "defender_4": 0
+        },
+        "llm_metadata": {
+          "challenger": {
+            "content": "{\"price\": 15.5}",
+            "model": "gemini_2_0_flash",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 170,
+            "output_tokens": 9,
+            "thinking_tokens": null,
+            "response_time": 0.5949540138244629
+          },
+          "defender_1": {
+            "content": "{\"price\": \"29.0\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 170,
+            "output_tokens": 9,
+            "thinking_tokens": null,
+            "response_time": 0.4850752353668213
+          },
+          "defender_2": {
+            "content": "{\"price\": \"29.99\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 171,
+            "output_tokens": 10,
+            "thinking_tokens": null,
+            "response_time": 0.6061968803405762
+          },
+          "defender_3": {
+            "content": "{\"price\": \"25\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 168,
+            "output_tokens": 7,
+            "thinking_tokens": null,
+            "response_time": 0.4416470527648926
+          },
+          "defender_4": {
+            "content": "{\"price\": \"29.00\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 171,
+            "output_tokens": 10,
+            "thinking_tokens": null,
+            "response_time": 0.46137332916259766
+          }
+        },
+        "initial_prompt_for_challenger": "## Rules & Economic Information\n- **Market:** You are one of 5 firms located symmetrically around a circular market of 1000 customers.\n- **Costs:** Your marginal cost is $8. Your fixed cost is $100.\n- **Customer Behavior:** Customers buy from the firm with the lowest total cost (price + transportation cost). Transportation cost is $1.5 per unit of distance. The maximum price any customer will pay is $30.\n- **Objective:** Your profit is (Your Price - $8) * Quantity Sold - $100.\n\n## Your Task\nChoose your price to maximize your profit. All firms choose their prices simultaneously.\n\n## Output Format\nRespond with valid JSON only:\n{\"price\": <number>}"
+      }
+    },
+    {
+      "simulation_id": 1,
+      "game_name": "salop",
+      "experiment_type": "structural_variations",
+      "condition_name": "more_players",
+      "challenger_model": "gemini_2_0_flash",
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2",
+        "defender_3",
+        "defender_4"
+      ],
+      "actions": {
+        "challenger": {
+          "price": 15.5
+        },
+        "defender_1": {
+          "price": 29.0
+        },
+        "defender_2": {
+          "price": 28.0
+        },
+        "defender_3": {
+          "price": 28.0
+        },
+        "defender_4": {
+          "price": 29.0
+        }
+      },
+      "payoffs": {
+        "challenger": 68900.0,
+        "defender_1": -100.0,
+        "defender_2": 10566.666666666668,
+        "defender_3": 10566.666666666668,
+        "defender_4": -100.0
+      },
+      "game_data": {
+        "constants": {
+          "transport_cost": 1.5,
+          "v": 30,
+          "marginal_cost": 8,
+          "fixed_cost": 100,
+          "market_size": 1000,
+          "number_of_players": 5
+        },
+        "player_quantities": {
+          "challenger": 9200.0,
+          "defender_1": 0,
+          "defender_2": 533.3333333333334,
+          "defender_3": 533.3333333333334,
+          "defender_4": 0
+        },
+        "llm_metadata": {
+          "challenger": {
+            "content": "{\"price\": 15.5}",
+            "model": "gemini_2_0_flash",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 170,
+            "output_tokens": 9,
+            "thinking_tokens": null,
+            "response_time": 0.507760763168335
+          },
+          "defender_1": {
+            "content": "{\"price\": \"29\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 168,
+            "output_tokens": 7,
+            "thinking_tokens": null,
+            "response_time": 0.46595120429992676
+          },
+          "defender_2": {
+            "content": "{\"price\": \"28\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 168,
+            "output_tokens": 7,
+            "thinking_tokens": null,
+            "response_time": 0.5520060062408447
+          },
+          "defender_3": {
+            "content": "{\"price\": \"28\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 168,
+            "output_tokens": 7,
+            "thinking_tokens": null,
+            "response_time": 0.4791569709777832
+          },
+          "defender_4": {
+            "content": "{\"price\": \"29.00\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 171,
+            "output_tokens": 10,
+            "thinking_tokens": null,
+            "response_time": 0.48151683807373047
+          }
+        },
+        "initial_prompt_for_challenger": "## Rules & Economic Information\n- **Market:** You are one of 5 firms located symmetrically around a circular market of 1000 customers.\n- **Costs:** Your marginal cost is $8. Your fixed cost is $100.\n- **Customer Behavior:** Customers buy from the firm with the lowest total cost (price + transportation cost). Transportation cost is $1.5 per unit of distance. The maximum price any customer will pay is $30.\n- **Objective:** Your profit is (Your Price - $8) * Quantity Sold - $100.\n\n## Your Task\nChoose your price to maximize your profit. All firms choose their prices simultaneously.\n\n## Output Format\nRespond with valid JSON only:\n{\"price\": <number>}"
+      }
+    },
+    {
+      "simulation_id": 2,
+      "game_name": "salop",
+      "experiment_type": "structural_variations",
+      "condition_name": "more_players",
+      "challenger_model": "gemini_2_0_flash",
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2",
+        "defender_3",
+        "defender_4"
+      ],
+      "actions": {
+        "challenger": {
+          "price": 15.5
+        },
+        "defender_1": {
+          "price": 28.0
+        },
+        "defender_2": {
+          "price": 29.0
+        },
+        "defender_3": {
+          "price": 28.0
+        },
+        "defender_4": {
+          "price": 29.0
+        }
+      },
+      "payoffs": {
+        "challenger": 66400.00000000001,
+        "defender_1": 8566.666666666668,
+        "defender_2": -100.0,
+        "defender_3": 17233.333333333336,
+        "defender_4": -100.0
+      },
+      "game_data": {
+        "constants": {
+          "transport_cost": 1.5,
+          "v": 30,
+          "marginal_cost": 8,
+          "fixed_cost": 100,
+          "market_size": 1000,
+          "number_of_players": 5
+        },
+        "player_quantities": {
+          "challenger": 8866.666666666668,
+          "defender_1": 433.33333333333337,
+          "defender_2": 0,
+          "defender_3": 866.6666666666667,
+          "defender_4": 0
+        },
+        "llm_metadata": {
+          "challenger": {
+            "content": "{\"price\": 15.5}",
+            "model": "gemini_2_0_flash",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 170,
+            "output_tokens": 9,
+            "thinking_tokens": null,
+            "response_time": 0.5207140445709229
+          },
+          "defender_1": {
+            "content": "{\"price\": \"28\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 168,
+            "output_tokens": 7,
+            "thinking_tokens": null,
+            "response_time": 0.44138431549072266
+          },
+          "defender_2": {
+            "content": "{\"price\": \"29\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 168,
+            "output_tokens": 7,
+            "thinking_tokens": null,
+            "response_time": 0.9569559097290039
+          },
+          "defender_3": {
+            "content": "{\"price\": \"28\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 168,
+            "output_tokens": 7,
+            "thinking_tokens": null,
+            "response_time": 0.9572460651397705
+          },
+          "defender_4": {
+            "content": "{\"price\": \"29\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 168,
+            "output_tokens": 7,
+            "thinking_tokens": null,
+            "response_time": 0.9588181972503662
+          }
+        },
+        "initial_prompt_for_challenger": "## Rules & Economic Information\n- **Market:** You are one of 5 firms located symmetrically around a circular market of 1000 customers.\n- **Costs:** Your marginal cost is $8. Your fixed cost is $100.\n- **Customer Behavior:** Customers buy from the firm with the lowest total cost (price + transportation cost). Transportation cost is $1.5 per unit of distance. The maximum price any customer will pay is $30.\n- **Objective:** Your profit is (Your Price - $8) * Quantity Sold - $100.\n\n## Your Task\nChoose your price to maximize your profit. All firms choose their prices simultaneously.\n\n## Output Format\nRespond with valid JSON only:\n{\"price\": <number>}"
+      }
+    },
+    {
+      "simulation_id": 3,
+      "game_name": "salop",
+      "experiment_type": "structural_variations",
+      "condition_name": "more_players",
+      "challenger_model": "gemini_2_0_flash",
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2",
+        "defender_3",
+        "defender_4"
+      ],
+      "actions": {
+        "challenger": {
+          "price": 15.5
+        },
+        "defender_1": {
+          "price": 28.0
+        },
+        "defender_2": {
+          "price": 25.0
+        },
+        "defender_3": {
+          "price": 29.0
+        },
+        "defender_4": {
+          "price": 29.99
+        }
+      },
+      "payoffs": {
+        "challenger": 68875.0,
+        "defender_1": -100.0,
+        "defender_2": 42966.666666666664,
+        "defender_3": 8929.999999999989,
+        "defender_4": -100.0
+      },
+      "game_data": {
+        "constants": {
+          "transport_cost": 1.5,
+          "v": 30,
+          "marginal_cost": 8,
+          "fixed_cost": 100,
+          "market_size": 1000,
+          "number_of_players": 5
+        },
+        "player_quantities": {
+          "challenger": 9196.666666666666,
+          "defender_1": 0,
+          "defender_2": 2533.333333333333,
+          "defender_3": 429.9999999999995,
+          "defender_4": 0
+        },
+        "llm_metadata": {
+          "challenger": {
+            "content": "{\"price\": 15.5}",
+            "model": "gemini_2_0_flash",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 170,
+            "output_tokens": 9,
+            "thinking_tokens": null,
+            "response_time": 0.9570331573486328
+          },
+          "defender_1": {
+            "content": "{\"price\": \"28\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 168,
+            "output_tokens": 7,
+            "thinking_tokens": null,
+            "response_time": 1.1004140377044678
+          },
+          "defender_2": {
+            "content": "{\"price\": \"25\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 168,
+            "output_tokens": 7,
+            "thinking_tokens": null,
+            "response_time": 0.9570450782775879
+          },
+          "defender_3": {
+            "content": "{\"price\": \"29\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 168,
+            "output_tokens": 7,
+            "thinking_tokens": null,
+            "response_time": 0.9588260650634766
+          },
+          "defender_4": {
+            "content": "{\"price\": \"29.99\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 171,
+            "output_tokens": 10,
+            "thinking_tokens": null,
+            "response_time": 1.0416381359100342
+          }
+        },
+        "initial_prompt_for_challenger": "## Rules & Economic Information\n- **Market:** You are one of 5 firms located symmetrically around a circular market of 1000 customers.\n- **Costs:** Your marginal cost is $8. Your fixed cost is $100.\n- **Customer Behavior:** Customers buy from the firm with the lowest total cost (price + transportation cost). Transportation cost is $1.5 per unit of distance. The maximum price any customer will pay is $30.\n- **Objective:** Your profit is (Your Price - $8) * Quantity Sold - $100.\n\n## Your Task\nChoose your price to maximize your profit. All firms choose their prices simultaneously.\n\n## Output Format\nRespond with valid JSON only:\n{\"price\": <number>}"
+      }
+    },
+    {
+      "simulation_id": 4,
+      "game_name": "salop",
+      "experiment_type": "structural_variations",
+      "condition_name": "more_players",
+      "challenger_model": "gemini_2_0_flash",
+      "players": [
+        "challenger",
+        "defender_1",
+        "defender_2",
+        "defender_3",
+        "defender_4"
+      ],
+      "actions": {
+        "challenger": {
+          "price": 15.5
+        },
+        "defender_1": {
+          "price": 20.0
+        },
+        "defender_2": {
+          "price": 29.99
+        },
+        "defender_3": {
+          "price": 28.0
+        },
+        "defender_4": {
+          "price": 28.0
+        }
+      },
+      "payoffs": {
+        "challenger": 43900.0,
+        "defender_1": 41059.99999999999,
+        "defender_2": -100.0,
+        "defender_3": 17166.666666666653,
+        "defender_4": 1900.0
+      },
+      "game_data": {
+        "constants": {
+          "transport_cost": 1.5,
+          "v": 30,
+          "marginal_cost": 8,
+          "fixed_cost": 100,
+          "market_size": 1000,
+          "number_of_players": 5
+        },
+        "player_quantities": {
+          "challenger": 5866.666666666667,
+          "defender_1": 3429.9999999999995,
+          "defender_2": 0,
+          "defender_3": 863.3333333333327,
+          "defender_4": 100.0
+        },
+        "llm_metadata": {
+          "challenger": {
+            "content": "{\"price\": 15.5}",
+            "model": "gemini_2_0_flash",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 170,
+            "output_tokens": 9,
+            "thinking_tokens": null,
+            "response_time": 1.1290769577026367
+          },
+          "defender_1": {
+            "content": "{\"price\": \"20\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 168,
+            "output_tokens": 7,
+            "thinking_tokens": null,
+            "response_time": 1.128999948501587
+          },
+          "defender_2": {
+            "content": "{\"price\": \"29.99\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 171,
+            "output_tokens": 10,
+            "thinking_tokens": null,
+            "response_time": 1.0733020305633545
+          },
+          "defender_3": {
+            "content": "{\"price\": \"28\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 168,
+            "output_tokens": 7,
+            "thinking_tokens": null,
+            "response_time": 1.1275839805603027
+          },
+          "defender_4": {
+            "content": "{\"price\": \"28\"}",
+            "model": "gemini_2_0_flash_lite",
+            "success": true,
+            "error": null,
+            "thoughts": null,
+            "tokens_used": 168,
+            "output_tokens": 7,
+            "thinking_tokens": null,
+            "response_time": 1.4592411518096924
+          }
+        },
+        "initial_prompt_for_challenger": "## Rules & Economic Information\n- **Market:** You are one of 5 firms located symmetrically around a circular market of 1000 customers.\n- **Costs:** Your marginal cost is $8. Your fixed cost is $100.\n- **Customer Behavior:** Customers buy from the firm with the lowest total cost (price + transportation cost). Transportation cost is $1.5 per unit of distance. The maximum price any customer will pay is $30.\n- **Objective:** Your profit is (Your Price - $8) * Quantity Sold - $100.\n\n## Your Task\nChoose your price to maximize your profit. All firms choose their prices simultaneously.\n\n## Output Format\nRespond with valid JSON only:\n{\"price\": <number>}"
+      }
+    }
+  ]
+}
