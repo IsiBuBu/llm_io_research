@@ -87,13 +87,6 @@
     "ablation_experiment_simulations": 5,
     "random_seed": 42
   },
-  "judge_config": {
-    "judge_model": "gemini_2_0_flash_lite",
-    "samples_per_variation_per_game": 5,
-    "reliability_replications": 10,
-    "judge_temperature": 0.5,
-    "judge_random_seed": 123
-  },
   "game_configs": {
     "salop": {
       "baseline": {
