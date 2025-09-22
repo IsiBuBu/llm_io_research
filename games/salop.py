@@ -30,7 +30,7 @@ class SalopGame(StaticGame, PriceParsingMixin):
         variables = get_prompt_variables(game_config, player_id=player_id, **game_state)
         return self.prompt_template.format(**variables)
 
-    def parse_llm_response(self, response: str, player_id: str, call_id: str) -> Optional[Dict[str, Any]]:
+    def parse_llm_response(self, response: str, player_id: str, call_id: str, stage: int = 1) -> Optional[Dict[str, Any]]:
         """Parses the LLM's price decision using the inherited mixin."""
         return self.parse_price_response(response, player_id, call_id)
 
@@ -43,7 +43,7 @@ class SalopGame(StaticGame, PriceParsingMixin):
         fixed_cost = constants.get('fixed_cost', 100)
         transport_cost = constants.get('transport_cost', 1.5)
         market_size = constants.get('market_size', 1000)
-        v = constants.get('v', 30)
+        v = constants.get('reservation_price', 30)
         num_firms = len(actions)
 
         prices = {pid: action.get('price', v) for pid, action in actions.items() if isinstance(action, dict)}

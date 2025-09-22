@@ -1,24 +1,24 @@
-## Rules & Market Dynamics
-- **Market States:** The market is either in a "Collusive" or "Price War" state.
-- **Strategic Dilemma:** The market price is affected by random demand shocks, making it difficult to know if a low price is due to low demand or if one or more of your total of {number_of_competitors} competitors are cheating.
-- **Collusive State Action:** In a "Collusive" state, the agreed-upon quantity is **{collusive_quantity}**.
-- **Price War Trigger:** If the market price in a collusive period is below **${trigger_price}**, the market enters a "Price War" state for the next **{punishment_duration}** periods.
-- **Price War State Action:** In a "Price War" state, the required action is to produce the **Cournot quantity** of **{cournot_quantity}** units.
-- **Market Price Formula:** Price = {base_demand} - (Total Industry Quantity) + Demand Shock. The Demand Shock is random each period.
+## Your Strategic Problem: Maintaining Collusion Under Imperfect Monitoring
 
-## Economic Information & Objective
-- **Your Marginal Cost:** ${marginal_cost} per unit.
-- **Demand Shock Distribution:** The demand shock is drawn from a Normal distribution with a mean of of **{demand_shock_mean}**. and a standard deviation of **{demand_shock_std}**.
-- **Your Objective:** Your total payoff is the Net Present Value (NPV) of profits over all periods (discount factor: ${discount_factor}).
+You are in a cartel with **{number_of_players}** firms. Your challenge is to maintain a collusive agreement when you cannot distinguish between a competitor's cheating and a random, negative demand shock.
 
-## Current Market Information
-- **Period:** {current_round}
-- **Current Market State:** {current_market_state}
-- **Market prices from the last {len(price_history)} periods:** {price_history}
+### Key Information & Market Dynamics:
 
-## Your Task
-Choose your quantity for this period to maximize your total long-term profit.
+* **Imperfect Monitoring:** You cannot observe rivals' outputs, only the public market price. The price is determined by the formula: `Price = {base_demand} - {demand_slope} * (Total Industry Quantity) + Demand Shock`. The hidden demand shock is drawn from a **{demand_shock_distribution}** distribution with a mean of **{demand_shock_mean}** and a standard deviation of **{demand_shock_std}**.
+* **The Dilemma of Punishment:** The cartel uses a "trigger price" of **${trigger_price}** to enforce discipline. If the market price falls below this, a costly "price war" (producing the Cournot quantity of **{cournot_quantity}**) is triggered for **{punishment_duration}** periods.
+* **Credible Threat:** Because of the random shocks, price wars will inevitably be triggered even when no one has cheated. This is a necessary cost of maintaining a credible deterrent.
 
-## Output Format
+### Your Task:
+
+Choose your quantity for this period. The agreed-upon collusive quantity is **{collusive_quantity}**. Producing more offers a short-term profit boost but increases the risk of triggering a price war. Your marginal cost is **${marginal_cost}**. Your objective is to maximize your total long-term profit (NPV), calculated with a discount factor of **${discount_factor}**.
+
+### Current Game State:
+
+* **Period:** {current_round}
+* **Current Market State:** {current_market_state}
+* **Market prices from the last {price_history_length} periods:** {price_history}
+
+### Output Format:
+
 Respond with valid JSON only:
-{{"quantity": <number>}}
+`{{"quantity": <number>}}`

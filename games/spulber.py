@@ -39,7 +39,7 @@ class SpulberGame(StaticGame, PriceParsingMixin):
         )
         return self.prompt_template.format(**variables)
 
-    def parse_llm_response(self, response: str, player_id: str, call_id: str) -> Optional[Dict[str, Any]]:
+    def parse_llm_response(self, response: str, player_id: str, call_id: str, stage: int = 1) -> Optional[Dict[str, Any]]:
         """Parses the LLM's price/bid decision using the inherited mixin."""
         parsed = self.parse_price_response(response, player_id, call_id)
         if parsed and 'bid' in parsed:

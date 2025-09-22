@@ -1,8 +1,6 @@
 {
   "models": {
     "challenger_models": [
-      "gemini_2_0_flash_lite",
-      "gemini_2_0_flash",
       "gemini_2_5_flash_lite_thinking_medium",
       "random_agent"
     ],
@@ -99,10 +97,13 @@
     "salop": {
       "baseline": {
         "transport_cost": 1.5,
-        "v": 30,
+        "reservation_price": 30,
+        "max_brand_utility": 40,
+        "outside_good_surplus": 10,
         "marginal_cost": 8,
         "fixed_cost": 100,
-        "market_size": 1000
+        "market_size": 1000,
+        "circumference": 1.0
       },
       "structural_variations": {
         "few_players": {
@@ -122,38 +123,43 @@
     "green_porter": {
       "baseline": {
         "base_demand": 120,
+        "demand_slope": 1,
         "marginal_cost": 20,
         "cournot_quantity": 25,
         "demand_shock_mean": 0,
         "demand_shock_std": 5,
+        "demand_shock_distribution": "normal",
         "trigger_price": 62,
         "punishment_duration": 3,
-        "discount_factor": 0.95,
+        "discount_factor": 0.7,
         "time_horizon": 10
       },
       "structural_variations": {
         "few_players": {
           "number_of_players": 3,
-          "collusive_quantity": 17
+          "collusive_quantity": 17,
+          "cournot_quantity": 25
         },
         "more_players": {
           "number_of_players": 5,
-          "collusive_quantity": 10
+          "collusive_quantity": 10,
+          "cournot_quantity": 17
         }
       },
       "ablation_studies": {
-        "high_demand_volatility": {
-          "demand_shock_std": 10,
-          "description": "High demand shock variance increases uncertainty"
+        "low_patience": {
+          "discount_factor": 0.3,
+          "description": "Low patience (high discount rate) makes future punishments less effective."
         }
       }
     },
     "spulber": {
       "baseline": {
         "demand_intercept": 100,
+        "demand_slope": 1,
         "rival_cost_mean": 10,
         "rival_cost_std": 2.0,
-        "type": "normal"
+        "rival_cost_distribution": "normal"
       },
       "challenger_config": {
         "your_cost": 8
@@ -181,7 +187,7 @@
         },
         "market_price": 30,
         "market_size": 100,
-        "discount_factor": 0.95,
+        "discount_factor": 0.7,
         "time_horizon": 10
       },
       "structural_variations": {

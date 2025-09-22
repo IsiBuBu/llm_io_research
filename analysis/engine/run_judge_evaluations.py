@@ -1,3 +1,4 @@
+
 # analysis/run_judge_evaluations.py
 
 import pandas as pd
@@ -5,6 +6,7 @@ import numpy as np
 import logging
 import json
 import asyncio
+import random
 from pathlib import Path
 import sys
 
@@ -34,10 +36,14 @@ PROMPTS_DIR = Path("prompts")
 
 def load_all_thought_summaries():
     """
-    Loads all thought summaries and their corresponding initial prompts from the raw experiment results.
-    This version correctly handles both static games and dynamic games with per-round prompts.
+    Loads one representative thought summary per simulation from the raw experiment results.
+    This version correctly filters for thinking models and randomly samples one strategic
+    round from each dynamic game simulation.
     """
     records = []
+    # Set seed for reproducibility of the random choice
+    random.seed(BASE_SEED)
+
     for file_path in RESULTS_DIR.glob("*/*/*_competition_result*.json"):
         with open(file_path, 'r') as f:
             data = json.load(f)
@@ -48,21 +54,29 @@ def load_all_thought_summaries():
                 if 'thinking_medium' not in challenger_model:
                     continue
 
-                # --- FIXED LOGIC: Handle dynamic vs. static games ---
                 if is_dynamic:
+                    # --- UPDATED LOGIC: Randomly sample one thinking round per simulation ---
+                    # 1. Find all rounds where a strategic decision with thoughts was made
+                    thinking_rounds = []
                     for round_data in sim['game_data']['rounds']:
                         challenger_meta = round_data.get('llm_metadata', {}).get('challenger', {})
-                        if challenger_meta.get('thoughts'):
-                            records.append({
-                                'game': sim['game_name'],
-                                'model': challenger_model,
-                                'condition': sim['condition_name'],
-                                'simulation_id': sim['simulation_id'],
-                                'round': round_data.get('period'),
-                                'thought_summary': challenger_meta['thoughts'],
-                                'initial_prompt': round_data.get('initial_prompt_for_challenger', '')
-                            })
-                else: # Static game logic
+                        if challenger_meta and challenger_meta.get('thoughts'):
+                            thinking_rounds.append(round_data)
+                    
+                    # 2. If any such rounds exist, randomly select one
+                    if thinking_rounds:
+                        selected_round = random.choice(thinking_rounds)
+                        records.append({
+                            'game': sim['game_name'],
+                            'model': challenger_model,
+                            'condition': sim['condition_name'],
+                            'simulation_id': sim['simulation_id'],
+                            'round': selected_round.get('period'),
+                            'thought_summary': selected_round.get('llm_metadata', {}).get('challenger', {}).get('thoughts'),
+                            'initial_prompt': selected_round.get('initial_prompt_for_challenger', '')
+                        })
+
+                else: # Static game logic remains the same
                     challenger_meta = sim.get('game_data', {}).get('llm_metadata', {}).get('challenger', {})
                     if challenger_meta.get('thoughts'):
                         records.append({
@@ -70,7 +84,7 @@ def load_all_thought_summaries():
                             'model': challenger_model,
                             'condition': sim['condition_name'],
                             'simulation_id': sim['simulation_id'],
-                            'round': 1, # Static games are single-round
+                            'round': 1,
                             'thought_summary': challenger_meta['thoughts'],
                             'initial_prompt': sim['game_data'].get('initial_prompt_for_challenger', '')
                         })
@@ -89,7 +103,8 @@ def sample_summaries(df: pd.DataFrame):
             stratum_df = game_df[game_df['structural_variation'] == variation]
             sample_size = min(SAMPLES_PER_VARIATION, len(stratum_df))
             if sample_size > 0:
-                samples.append(stratum_df.sample(n=sample_size, random_state=BASE_SEED))
+                # Use a different seed for the final sampling to ensure it's independent of the round choice
+                samples.append(stratum_df.sample(n=sample_size, random_state=BASE_SEED + 1))
     
     if not samples:
         return pd.DataFrame()

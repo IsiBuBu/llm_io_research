@@ -166,6 +166,9 @@ def get_prompt_variables(game_config: GameConfig, player_id: str, **kwargs) -> D
         'number_of_competitors': variables.get('number_of_players', 1) - 1,
         **kwargs
     })
+
+    if 'price_history' in variables:
+        variables['len_price_history'] = len(variables['price_history'])
     return variables
 
 # --- Directory Path Accessors ---

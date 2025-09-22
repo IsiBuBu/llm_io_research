@@ -158,7 +158,8 @@ def _plot_green_porter_ablation(results_dir, plots_dir):
     market_price_df = raw_df.groupby(['condition', 'round'])['market_price'].mean().reset_index()
     plt.figure(figsize=(12, 7))
     sns.lineplot(data=market_price_df, x='round', y='market_price', hue='condition', style='condition', markers=True, lw=2.5)
-    plt.title("Green & Porter: Impact of Uncertainty on Market Price", fontsize=16)
+    # --- UPDATED TITLE ---
+    plt.title("Green & Porter: Impact of Low Patience on Market Price", fontsize=16)
     plt.xlabel("Game Round", fontsize=12)
     plt.ylabel("Average Market Price ($)", fontsize=12)
     plt.grid(True, linestyle='--', alpha=0.6)
@@ -175,7 +176,8 @@ def _plot_green_porter_ablation(results_dir, plots_dir):
     
     plt.figure(figsize=(12, 7))
     sns.lineplot(data=collusion_by_round, x='round', y='proportion', hue='condition', style='condition', markers=True, lw=2.5)
-    plt.title("Green & Porter: Collusion Stability 'Survival Curve'", fontsize=16)
+    # --- UPDATED TITLE ---
+    plt.title("Green & Porter: Impact of Low Patience on Collusion Stability", fontsize=16)
     plt.xlabel("Game Round", fontsize=12)
     plt.ylabel("Proportion of Games in Collusion", fontsize=12)
     plt.ylim(0, 1.05)
@@ -199,7 +201,6 @@ def _plot_spulber_ablation(perf_df, magic_df, plots_dir):
     sns.barplot(data=spulber_awareness, x='model', y='value', hue='condition', palette='muted')
     plt.title("Spulber: Impact of Uncertainty on Bidding Strategy", fontsize=16)
     plt.xlabel("Challenger Model", fontsize=12)
-    # UPDATED LABEL
     plt.ylabel("Bid Appropriateness Rate", fontsize=12)
     plt.xticks(rotation=45, ha='right')
     plt.grid(True, axis='y', linestyle='--', alpha=0.6)

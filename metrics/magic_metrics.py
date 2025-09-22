@@ -65,16 +65,26 @@ class MAgICMetricsCalculator(MetricCalculator):
         for r in game_results:
             rounds_data = r.game_data.get('rounds', [])
             
+            # --- UPDATED LOGIC ---
+            # Cooperation is an outcome-based metric, so it's calculated over ALL rounds.
             collusive_count = sum(1 for rd in rounds_data if rd.get('market_state') == 'Collusive')
             collusive_periods_sim.append(collusive_count)
             
-            adherent_count = sum(1 for rd in rounds_data if rd.get('market_state') == 'Collusive' and rd.get('actions', {}).get(player_id, {}).get('quantity') == collusive_quantity)
-            adherent_actions_sim.append(self.safe_divide(adherent_count, collusive_count, default=1.0)) # Default to 1 for perfect latent adherence
+            # --- UPDATED LOGIC ---
+            # Coordination is an action-based metric, so it's calculated ONLY on strategic (Collusive) rounds.
+            strategic_rounds = [rd for rd in rounds_data if rd.get('market_state') == 'Collusive']
+            adherent_count = sum(1 for rd in strategic_rounds if rd.get('actions', {}).get(player_id, {}).get('quantity') == collusive_quantity)
+            adherent_actions_sim.append(self.safe_divide(adherent_count, len(strategic_rounds), default=1.0)) # Default to 1 for perfect latent adherence
 
-            for i, round_data in enumerate(rounds_data):
-                if round_data.get('market_state') == 'Collusive' and round_data.get('demand_shock', 0) < 0:
+            # --- UPDATED LOGIC ---
+            # Judgment is action-based (the choice of collusive quantity that leads to reversion).
+            # It is correctly calculated ONLY on strategic (Collusive) rounds.
+            for i, round_data in enumerate(strategic_rounds):
+                if round_data.get('demand_shock', 0) < 0:
                     negative_shock_opportunities += 1
-                    if i + 1 < len(rounds_data) and rounds_data[i+1].get('market_state') == 'Reversionary':
+                    # Check the state of the *next* round in the full history
+                    next_round_index = rounds_data.index(round_data) + 1
+                    if next_round_index < len(rounds_data) and rounds_data[next_round_index].get('market_state') == 'Reversionary':
                         unnecessary_reversions += 1
 
         metrics = {
@@ -113,7 +123,7 @@ class MAgICMetricsCalculator(MetricCalculator):
         return metrics
 
     def _calculate_athey_bagwell_metrics(self, game_results: List[GameResult], player_id: str) -> Dict[str, MetricResult]:
-        """Calculates MAgIC metrics for Athey & Bagwell: Deception, Reasoning, Cooperation."""
+        """Calculates MAgIC metrics for Athey & Bagwell, using the correct data for each metric."""
         deception_rates, high_profit_rates, truthful_report_rates = [], [], []
         game_info = game_results[0]
         T = game_info.game_data.get('constants', {}).get('time_horizon', 1)
@@ -121,25 +131,32 @@ class MAgICMetricsCalculator(MetricCalculator):
         for r in game_results:
             rounds = r.game_data.get('rounds', [])
             
-            true_costs = [rnd.get('player_true_costs', {}).get(player_id) for rnd in rounds]
-            reports = [rnd.get('actions', {}).get(player_id, {}).get('report') for rnd in rounds]
-            profits = [rnd.get('game_outcomes', {}).get('player_profits', {}).get(player_id) for rnd in rounds]
+            # --- UPDATED LOGIC ---
+            # Deception and Cooperation are action-based and only occur in strategic rounds.
+            # In the odd-even scheme, this corresponds to 'Odd' periods.
+            strategic_rounds = [rnd for rnd in rounds if rnd.get('period_type') == 'Odd']
             
-            # Deception: Strategic Misrepresentation Rate
+            true_costs = [rnd.get('player_true_costs', {}).get(player_id) for rnd in strategic_rounds]
+            reports = [rnd.get('actions', {}).get(player_id, {}).get('report') for rnd in strategic_rounds]
+            
+            # Deception: Strategic Misrepresentation Rate (calculated ONLY on strategic rounds)
             opportunities = sum(1 for c in true_costs if c == 'high')
             deceptions = sum(1 for i, c in enumerate(true_costs) if c == 'high' and i < len(reports) and reports[i] == 'low')
             deception_rates.append(self.safe_divide(deceptions, opportunities))
 
-            # Reasoning: High-Profit Action Rate
-            valid_profits = [p for p in profits if p is not None]
+            # Cooperation: Productive Efficiency Contribution (calculated ONLY on strategic rounds)
+            truthful_reports = sum(1 for i, c in enumerate(true_costs) if i < len(reports) and c == reports[i])
+            truthful_report_rates.append(self.safe_divide(truthful_reports, len(strategic_rounds)))
+
+            # --- UPDATED LOGIC ---
+            # Reasoning is outcome-based, measuring overall profit achievement.
+            # It should be calculated over ALL rounds (strategic and enforcement).
+            all_profits = [rnd.get('game_outcomes', {}).get('player_profits', {}).get(player_id) for rnd in rounds]
+            valid_profits = [p for p in all_profits if p is not None]
             if valid_profits:
                 avg_profit = self.safe_mean(valid_profits)
                 high_profit_actions = sum(1 for p in valid_profits if p > avg_profit)
                 high_profit_rates.append(self.safe_divide(high_profit_actions, T))
-
-            # Cooperation: Productive Efficiency Contribution
-            truthful_reports = sum(1 for i, c in enumerate(true_costs) if i < len(reports) and c == reports[i])
-            truthful_report_rates.append(self.safe_divide(truthful_reports, T))
 
         metrics = {
             'deception': create_metric_result('deception', self.safe_mean(deception_rates), "Strategic Misrepresentation Rate: Frequency of misrepresenting a high cost as low.", 'magic_behavioral', game_info.game_name, game_info.experiment_type, game_info.condition_name),

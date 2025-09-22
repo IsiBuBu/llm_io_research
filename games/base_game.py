@@ -122,8 +122,11 @@ class EconomicGame(ABC):
         pass
 
     @abstractmethod
-    def parse_llm_response(self, response: str, player_id: str, call_id: str) -> Optional[Dict[str, Any]]:
-        """Parses an LLM's string response into a structured action dictionary."""
+    def parse_llm_response(self, response: str, player_id: str, call_id: str, stage: int = 1) -> Optional[Dict[str, Any]]:
+        """
+        Parses an LLM's string response into a structured action dictionary.
+        The 'stage' parameter is included for compatibility with multi-stage games.
+        """
         pass
 
     @abstractmethod

@@ -44,23 +44,26 @@ class GreenPorterGame(DynamicGame, QuantityParsingMixin):
 
     def generate_player_prompt(self, player_id: str, game_state: Dict, game_config: GameConfig) -> str:
         """Generates a prompt for a player with current market conditions."""
+        price_history = game_state.get('price_history', [])
         variables = get_prompt_variables(
             game_config,
             player_id=player_id,
             current_round=game_state.get('current_period', 1),
             current_market_state=game_state.get('market_state', 'Collusive'),
-            price_history=game_state.get('price_history', [])
+            price_history=price_history,
+            price_history_length=len(price_history)
         )
         return self.prompt_template.format(**variables)
 
-    def parse_llm_response(self, response: str, player_id: str, call_id: str) -> Optional[Dict[str, Any]]:
+    def parse_llm_response(self, response: str, player_id: str, call_id: str, stage: int = 1) -> Optional[Dict[str, Any]]:
         """Parses the LLM's quantity decision using the inherited mixin."""
         return self.parse_quantity_response(response, player_id, call_id)
 
     def calculate_payoffs(self, actions: Dict[str, Any], game_config: GameConfig, game_state: Optional[Dict] = None) -> Dict[str, float]:
         """Calculates player payoffs based on total quantity and the current demand shock."""
         constants = game_config.constants
-        demand_intercept = constants.get('base_demand', 120)
+        base_demand = constants.get('base_demand', 120)
+        demand_slope = constants.get('demand_slope', 1)
         marginal_cost = constants.get('marginal_cost', 20)
         
         current_period = game_state['current_period']
@@ -69,7 +72,7 @@ class GreenPorterGame(DynamicGame, QuantityParsingMixin):
         quantities = {pid: action.get('quantity', constants.get('cournot_quantity', 25)) for pid, action in actions.items()}
         total_quantity = sum(quantities.values())
 
-        market_price = max(0, demand_intercept - total_quantity + demand_shock)
+        market_price = max(0, base_demand - (demand_slope * total_quantity) + demand_shock)
         
         payoffs = {}
         for player_id, quantity in quantities.items():
@@ -91,7 +94,7 @@ class GreenPorterGame(DynamicGame, QuantityParsingMixin):
         game_state['state_history'].append(game_state['market_state'])
         for pid, action in actions.items():
             game_state['quantity_history'][pid].append(action.get('quantity', constants.get('cournot_quantity', 25)))
-            game_state['profit_history'][pid].append(payoffs.get(pid, 0.0)) # <-- FIXED: Record profit history
+            game_state['profit_history'][pid].append(payoffs.get(pid, 0.0))
 
         # State Transition Algorithm
         if game_state['market_state'] == 'Collusive':
@@ -108,9 +111,6 @@ class GreenPorterGame(DynamicGame, QuantityParsingMixin):
     
     def get_game_data_for_logging(self, actions: Dict[str, Any], payoffs: Dict[str, float], game_config: GameConfig, game_state: Optional[Dict] = None) -> Dict[str, Any]:
         """Gathers round-specific outcomes for detailed logging."""
-        # --- FIXED LOGIC ---
-        # The 'period' now correctly reflects the round number that just finished.
-        # The super() call is removed to avoid duplicate data logging.
         current_period_index = game_state.get('current_period', 1) - 1
         return {
             "period": current_period_index + 1,

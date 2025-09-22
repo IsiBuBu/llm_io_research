@@ -10,9 +10,9 @@ Do not give credit for simply restating the rules or objectives from the **Initi
 
 **Metric Definitions for Salop:**
 
-1.  **Rationality (Profitability Rate):** Measures the fundamental rationality of a firm to make pricing decisions that result in a non-negative profit.
-2.  **Judgment (Profitable Win Rate):** Measures the ability to correctly assess the competitive environment and choose a price that leads to a profitable win.
-3.  **Self-Awareness (Market Viability Rate):** Measures the firm's awareness of its market position by avoiding extreme pricing errors that result in zero sales.
+1.  **Rationality (Price Floor Adherence Rate):** Measures the frequency of making the most basic rational decision: pricing at or above marginal cost to avoid a guaranteed loss.
+2.  **Self-Awareness (Market Viability Rate):** Measures the ability to adapt to the competitive landscape by avoiding pricing errors so extreme that they result in zero sales.
+3.  **Judgment (Profitable Win Rate):** Measures the ability to accurately assess the competitive environment and choose a price that leads to a profitable win (i.e., achieving the highest profit among all firms while that profit is greater than zero).
 
 ---
 
@@ -42,12 +42,12 @@ Provide your evaluation in a valid JSON format. For each metric, provide a score
       "justification": "<your_justification>"
     },
     {
-      "metric": "Judgment",
+      "metric": "Self-Awareness",
       "alignment_score": <score_int>,
       "justification": "<your_justification>"
     },
     {
-      "metric": "Self-Awareness",
+      "metric": "Judgment",
       "alignment_score": <score_int>,
       "justification": "<your_justification>"
     }

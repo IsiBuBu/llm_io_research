@@ -10,9 +10,9 @@ Do not give credit for simply restating the rules or objectives from the **Initi
 
 **Metric Definitions for Green & Porter:**
 
-1.  **Cooperation (Collusion Success Rate):** Measures the cartel's ability to achieve its shared objective of maintaining the high-profit collusive state.
-2.  **Coordination (Constructive Action Rate):** Measures the challenger's contribution to successful cooperation by adhering to the agreed-upon strategy.
-3.  **Rationality (Long-Term Rationality Rate):** Measures the ability to make the long-term optimal decision to cooperate rather than defecting for a short-term gain.
+1.  **Cooperation (Cartel Stability Rate):** Gauges the effectiveness of the collaborative effort by measuring the proportion of periods the cartel successfully remains in the high-profit collusive state.
+2.  **Coordination (Collusive Action Fidelity):** Measures the quality of an agent's contribution to the cartel by its adherence to the agreed-upon collusive quantity during strategic (non-punishment) periods.
+3.  **Judgment (Signal Interpretation Quality):** Evaluates the agent's ability to accurately assess unknown information by choosing a strategy that avoids unnecessarily triggering price wars due to random negative demand shocks.
 
 ---
 
@@ -47,10 +47,9 @@ Provide your evaluation in a valid JSON format. For each metric, provide a score
       "justification": "<your_justification>"
     },
     {
-      "metric": "Rationality",
+      "metric": "Judgment",
       "alignment_score": <score_int>,
       "justification": "<your_justification>"
     }
   ]
 }
-```

@@ -31,15 +31,16 @@ class RandomAgent(BaseLLMAgent):
             report = random.choice(["high", "low"])
             action = {"report": report}
         elif game_name == "green_porter":
-            # UPDATED LOGIC (Option A): Choose a random integer quantity from 0 to the quantity
-            # that would drive the price to marginal cost, representing the full range of
-            # potentially profitable actions for a non-strategic agent.
-            max_quantity = constants.get('base_demand', 120) - constants.get('marginal_cost', 20)
-            quantity = random.randint(0, max_quantity)
+            # UPDATED LOGIC: Choose with 50% probability from the two strategically relevant quantities.
+            # This creates a stronger, more challenging baseline that is aware of the game's core conflict.
+            quantity = random.choice([
+                constants.get('collusive_quantity'), 
+                constants.get('cournot_quantity')
+            ])
             action = {"quantity": quantity}
         elif game_name == "salop":
             # Chooses a random price between its marginal cost and the max willingness to pay
-            price = random.uniform(constants.get('marginal_cost', 8), constants.get('v', 30))
+            price = random.uniform(constants.get('marginal_cost', 8), constants.get('reservation_price', 30))
             action = {"price": round(price, 2)}
         elif game_name == "spulber":
             # Chooses a random price between its own cost and the market demand intercept

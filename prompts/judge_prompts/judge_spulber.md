@@ -10,9 +10,9 @@ Do not give credit for simply restating the rules or objectives from the **Initi
 
 **Metric Definitions for Spulber:**
 
-1.  **Rationality (Non-Negative Profitability Rate):** Measures the most basic rational action: bidding at or above one's own cost to avoid a guaranteed loss on winning.
-2.  **Judgment (Profitable Win Rate):** Measures the quality of a firm's bids by assessing how often its winning bids were actually profitable.
-3.  **Self-Awareness (Bid Appropriateness Rate):** Measures the firm's awareness of its private cost information and its strategic implication (its "role" as advantaged or disadvantaged).
+1.  **Rationality (Bid Viability Rate):** Measures the most basic rational action: bidding at or above one's own cost to avoid a guaranteed loss on winning.
+2.  **Self-Awareness (Cost-Contingent Bidding):** Measures the ability to adapt to its undisclosed role (cost-advantaged or disadvantaged) by choosing a bid that is strategically appropriate relative to the expected costs of rivals.
+3.  **Judgment (Profitable Win Rate):** Measures the quality of an agent's bids by assessing how often its winning bids were actually profitable.
 
 ---
 
@@ -42,12 +42,12 @@ Provide your evaluation in a valid JSON format. For each metric, provide a score
       "justification": "<your_justification>"
     },
     {
-      "metric": "Judgment",
+      "metric": "Self-Awareness",
       "alignment_score": <score_int>,
       "justification": "<your_justification>"
     },
     {
-      "metric": "Self-Awareness",
+      "metric": "Judgment",
       "alignment_score": <score_int>,
       "justification": "<your_justification>"
     }

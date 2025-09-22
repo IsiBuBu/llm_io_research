@@ -131,6 +131,15 @@ class Competition:
         return create_game_result(game_state['simulation_id'], config.game_name, config.experiment_type, config.condition_name, challenger_model, list(agents.keys()), actions, payoffs, game_data)
 
     async def _run_dynamic_game(self, game, agents, config, game_state, challenger_model: str):
+        """Dispatcher for dynamic games to their specialized workflows."""
+        if config.game_name == 'athey_bagwell':
+            return await self._run_athey_bagwell_game(game, agents, config, game_state, challenger_model)
+        
+        if config.game_name == 'green_porter':
+            return await self._run_green_porter_game(game, agents, config, game_state, challenger_model)
+        
+        # Fallback for any other dynamic games
+        self.logger.warning(f"No specialized workflow for dynamic game '{config.game_name}'. Using generic loop.")
         time_horizon = config.constants.get('time_horizon', 50)
         all_rounds_data = []
 
@@ -145,6 +154,7 @@ class Competition:
             all_rounds_data.append(round_data)
             game_state = game.update_game_state(game_state, actions, config, payoffs)
 
+        # --- FINAL CALCULATIONS (FALLBACK) ---
         profit_streams = defaultdict(list)
         for round_data in all_rounds_data:
             profits = round_data.get('payoffs', {})
@@ -153,36 +163,129 @@ class Competition:
 
         final_npvs = {p_id: calculate_npv(stream, config.constants.get('discount_factor', 0.95)) for p_id, stream in profit_streams.items()}
 
-        game_data = {
-            "constants": config.constants,
-            "rounds": all_rounds_data,
-            "final_npvs": final_npvs
-        }
-
-        if config.game_name == 'green_porter':
-            state_history = [r.get('market_state', 'Unknown') for r in all_rounds_data]
-            reversion_triggers = sum(1 for i in range(len(state_history) - 1) if state_history[i] == 'Collusive' and state_history[i+1] == 'Reversionary')
-            game_data['reversion_frequency'] = reversion_triggers / (time_horizon - 1) if time_horizon > 1 else 0
-            game_data['state_history'] = state_history
-
-        if config.game_name == 'athey_bagwell':
-            hhi_per_round = [sum((s * 100) ** 2 for s in r.get('game_outcomes', {}).get('player_market_shares', {}).values()) for r in all_rounds_data]
-            game_data['average_hhi'] = np.mean(hhi_per_round) if hhi_per_round else 0
+        game_data = { "constants": config.constants, "rounds": all_rounds_data, "final_npvs": final_npvs }
         
         return create_game_result(game_state['simulation_id'], config.game_name, config.experiment_type, config.condition_name, challenger_model, list(agents.keys()), {}, final_npvs, game_data)
 
-    async def _get_all_actions(self, game, agents, config, game_state) -> (Dict[str, Any], Dict[str, AgentResponse], str):
-        """Gets actions and full responses from all agents concurrently, and returns the challenger's prompt."""
+    async def _run_green_porter_game(self, game, agents, config, game_state, challenger_model: str):
+        """Runs the specialized workflow for Green & Porter, logging both strategic and mechanical rounds."""
+        time_horizon = config.constants.get('time_horizon', 50)
+        all_rounds_data = []
+
+        while game_state['current_period'] <= time_horizon:
+            if game_state['market_state'] == 'Collusive':
+                actions, responses, challenger_prompt = await self._get_all_actions(game, agents, config, game_state)
+            else:
+                cournot_quantity = config.constants.get('cournot_quantity')
+                actions = {pid: {'quantity': cournot_quantity} for pid in agents}
+                responses, challenger_prompt = {}, ""
+            
+            payoffs = game.calculate_payoffs(actions, config, game_state)
+            round_data = game.get_game_data_for_logging(actions, payoffs, config, game_state)
+            
+            if responses:
+                round_data['llm_metadata'] = {pid: resp.__dict__ for pid, resp in responses.items()}
+                round_data['initial_prompt_for_challenger'] = challenger_prompt
+            
+            all_rounds_data.append(round_data)
+            game_state = game.update_game_state(game_state, actions, config, payoffs)
+
+        # --- FINAL CALCULATIONS (GREEN & PORTER) ---
+        profit_streams = defaultdict(list)
+        for round_data in all_rounds_data:
+            profits = round_data.get('payoffs', {})
+            for p_id, profit in profits.items():
+                profit_streams[p_id].append(profit)
+        
+        final_npvs = {p_id: calculate_npv(stream, config.constants.get('discount_factor', 0.95)) for p_id, stream in profit_streams.items()}
+        
+        state_history = [r.get('market_state', 'Unknown') for r in all_rounds_data]
+        reversion_triggers = sum(1 for i in range(len(state_history) - 1) if state_history[i] == 'Collusive' and state_history[i+1] == 'Reversionary')
+
+        game_data = {
+            "constants": config.constants, "rounds": all_rounds_data, "final_npvs": final_npvs,
+            "reversion_frequency": reversion_triggers / (time_horizon - 1) if time_horizon > 1 else 0,
+            "state_history": state_history
+        }
+
+        return create_game_result(game_state['simulation_id'], config.game_name, config.experiment_type, config.condition_name, challenger_model, list(agents.keys()), {}, final_npvs, game_data)
+
+
+    async def _run_athey_bagwell_game(self, game, agents, config, game_state, challenger_model: str):
+        """Runs the specialized two-stage, odd-even workflow, logging both strategic and mechanical rounds."""
+        time_horizon = config.constants.get('time_horizon', 50)
+        all_rounds_data = []
+
+        while game_state['current_period'] <= time_horizon:
+            current_period_is_odd = game_state.get('period_type') == 'Odd'
+            
+            if current_period_is_odd and game_state.get('stage') == 1:
+                reports, responses, challenger_prompt = await self._get_all_actions(game, agents, config, game_state, stage=1)
+                game_state = game.update_game_state(game_state, reports, config, {})
+                
+                low_reporters = [pid for pid, action in reports.items() if action.get('report') == 'low']
+                market_shares = {}
+                if len(low_reporters) == 1:
+                    market_shares = {pid: (1.0 if pid == low_reporters[0] else 0.0) for pid in agents}
+                else:
+                    share = 1.0 / len(agents)
+                    market_shares = {pid: share for pid in agents}
+
+                actions = {pid: {'quantity': share} for pid, share in market_shares.items()}
+                payoffs = game.calculate_payoffs(actions, config, game_state)
+                
+                round_data = game.get_game_data_for_logging(reports, payoffs, config, game_state)
+                round_data['llm_metadata'] = {pid: resp.__dict__ for pid, resp in responses.items()}
+                round_data['initial_prompt_for_challenger'] = challenger_prompt
+                all_rounds_data.append(round_data)
+
+            else: # EVEN PERIOD: Mechanical Enforcement
+                last_reports = game_state.get('last_period_reports', {})
+                low_reporters = [pid for pid, action in last_reports.items() if action.get('report') == 'low']
+                high_reporters = [pid for pid in agents if pid not in low_reporters]
+                market_shares = {}
+                if high_reporters:
+                    share = 1.0 / len(high_reporters)
+                    market_shares = {pid: (share if pid in high_reporters else 0.0) for pid in agents}
+                else:
+                    market_shares = {pid: 1.0 / len(agents) for pid in agents}
+
+                actions = {pid: {'quantity': share} for pid, share in market_shares.items()}
+                payoffs = game.calculate_payoffs(actions, config, game_state)
+                
+                round_data = game.get_game_data_for_logging(actions, payoffs, config, game_state)
+                all_rounds_data.append(round_data)
+            
+            game_state = game.update_game_state(game_state, actions, config, payoffs)
+
+        # --- FINAL CALCULATIONS (ATHEY & BAGWELL) ---
+        profit_streams = defaultdict(list)
+        for round_data in all_rounds_data:
+            profits = round_data.get('payoffs', {})
+            for p_id, profit in profits.items():
+                profit_streams[p_id].append(profit)
+
+        final_npvs = {p_id: calculate_npv(stream, config.constants.get('discount_factor', 0.95)) for p_id, stream in profit_streams.items()}
+        hhi_per_round = [sum((s * 100) ** 2 for s in r.get('game_outcomes', {}).get('player_market_shares', {}).values()) for r in all_rounds_data]
+
+        game_data = {
+            "constants": config.constants, "rounds": all_rounds_data, "final_npvs": final_npvs,
+            "average_hhi": np.mean(hhi_per_round) if hhi_per_round else 0
+        }
+        
+        return create_game_result(game_state['simulation_id'], config.game_name, config.experiment_type, config.condition_name, challenger_model, list(agents.keys()), {}, final_npvs, game_data)
+
+    async def _get_all_actions(self, game, agents, config, game_state, stage: int = 1) -> (Dict[str, Any], Dict[str, AgentResponse], str):
+        """Gets actions and full responses from all agents concurrently."""
         call_id = f"{config.game_name}-{game_state.get('simulation_id', 'N/A')}"
 
-        prompts = {pid: game.generate_player_prompt(pid, game_state, config) for pid, agent in agents.items()}
+        prompts = {pid: game.generate_player_prompt(pid, game_state, config) for pid in agents}
         
         tasks = {pid: agent.get_response(prompts[pid], call_id, config) for pid, agent in agents.items()}
-        
         responses = await asyncio.gather(*tasks.values())
-
         response_map = dict(zip(agents.keys(), responses))
-        actions = {pid: game.parse_llm_response(resp.content, pid, call_id) or {} for pid, resp in response_map.items()}
+        
+        actions = {pid: game.parse_llm_response(resp.content, pid, call_id, stage=stage) or {} for pid, resp in response_map.items()}
 
         challenger_prompt = prompts.get('challenger', '')
 

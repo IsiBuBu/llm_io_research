@@ -1,12 +1,18 @@
-## Rules & Economic Information
-- **Market:** You are one of {number_of_players} firms located **symmetrically** around a circular market of **circumference 1**, with a total of {market_size} customers.
-- **Costs:** Your marginal cost is ${marginal_cost}. Your fixed cost is ${fixed_cost}.
-- **Customer Behavior:** Customers buy from the firm with the lowest total cost (price + transportation cost). Transportation cost is ${transport_cost} per unit of distance. The maximum price any customer will pay is ${v}.
-- **Objective:** Your profit is (Your Price - ${marginal_cost}) * Quantity Sold - ${fixed_cost}.
+## Your Strategic Problem: Pricing for Two Markets at Once
 
-## Your Task
-Choose your price to maximize your profit. All firms choose their prices simultaneously.
+You are one of {number_of_players} firms competing in a circular market with a circumference of **{circumference}** and a total of **{market_size}** customers. Your core challenge is to set a single price that balances the exploitation of your "local monopoly" power over nearby customers against the need to capture market share from direct competitors.
 
-## Output Format
+### Key Information & Market Dynamics:
+
+* **Monopoly Segment:** For customers closest to you, your only competition is an "outside good." You can charge them a higher price, but if your price plus their "transportation cost" of **${transport_cost}** exceeds their effective **reservation price of ${reservation_price}**, they will buy nothing from your industry. (This reservation price is derived from a brand utility of **${max_brand_utility}** and an outside good surplus of **${outside_good_surplus}**).
+* **Competitive Segment:** At the edges of your market, your territory overlaps with your neighbors. To win these customers, you must offer a better deal (price + transport cost) than your rivals. Lowering your price here directly steals their market share.
+* **The Kink:** Your demand curve has a "kink" at the price where your market transitions from purely monopolistic to competitive. Your pricing decision revolves around this point.
+
+### Your Task:
+
+Choose your price for this period. Your objective is to maximize your total profit, calculated as `(Your Price - ${marginal_cost}) * Quantity Sold - ${fixed_cost}`.
+
+### Output Format:
+
 Respond with valid JSON only:
-{{"price": <number>}}
+`{{"price": <number>}}`
