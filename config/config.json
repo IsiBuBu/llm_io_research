@@ -1,8 +1,9 @@
 {
   "models": {
     "challenger_models": [
-      "gemini_2_5_flash_lite_thinking_medium",
-      "random_agent"
+      "gemini_2_0_flash",
+      "random_agent",
+      "gemini_2_0_flash_lite"
     ],
     "defender_model": "gemini_2_0_flash_lite"
   },
@@ -88,7 +89,7 @@
   },
   "judge_config": {
     "judge_model": "gemini_2_0_flash_lite",
-    "samples_per_variation_per_game": 50,
+    "samples_per_variation_per_game": 5,
     "reliability_replications": 10,
     "judge_temperature": 0.5,
     "judge_random_seed": 123
@@ -102,7 +103,7 @@
         "outside_good_surplus": 10,
         "marginal_cost": 8,
         "fixed_cost": 100,
-        "market_size": 1000,
+        "market_size": 3600,
         "circumference": 1.0
       },
       "structural_variations": {
@@ -132,7 +133,7 @@
         "trigger_price": 62,
         "punishment_duration": 3,
         "discount_factor": 0.7,
-        "time_horizon": 10
+        "time_horizon": 5
       },
       "structural_variations": {
         "few_players": {
@@ -188,7 +189,7 @@
         "market_price": 30,
         "market_size": 100,
         "discount_factor": 0.7,
-        "time_horizon": 10
+        "time_horizon": 5
       },
       "structural_variations": {
         "few_players": {
