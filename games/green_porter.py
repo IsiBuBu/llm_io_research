@@ -17,9 +17,11 @@ class GreenPorterGame(DynamicGame, QuantityParsingMixin):
 
     def __init__(self):
         super().__init__("green_porter")
+        self.game_config: Optional[GameConfig] = None
 
     def initialize_game_state(self, game_config: GameConfig, simulation_id: int = 0) -> Dict[str, Any]:
         """Initializes game state with pre-generated demand shocks for the simulation."""
+        self.game_config = game_config  # Store config for the parser to use
         constants = game_config.constants
         time_horizon = constants.get('time_horizon', 50)
         demand_shock_std = constants.get('demand_shock_std', 5)
@@ -56,8 +58,37 @@ class GreenPorterGame(DynamicGame, QuantityParsingMixin):
         return self.prompt_template.format(**variables)
 
     def parse_llm_response(self, response: str, player_id: str, call_id: str, stage: int = 1) -> Optional[Dict[str, Any]]:
-        """Parses the LLM's quantity decision using the inherited mixin."""
-        return self.parse_quantity_response(response, player_id, call_id)
+        """
+        Parses the LLM's 'Cooperate' or 'Defect' decision and returns the corresponding quantity.
+        Accepts 'stage' argument for compatibility with the base class.
+        """
+        if not self.game_config:
+            self.logger.error("Game config not initialized. Cannot map action to quantity.")
+            return None
+
+        constants = self.game_config.constants
+        collusive_quantity = constants.get('collusive_quantity')
+        cournot_quantity = constants.get('cournot_quantity')
+
+        # First, try parsing a structured JSON response
+        json_action = self.robust_json_parse(response)
+        if json_action and 'action' in json_action and isinstance(json_action['action'], str):
+            action_str = json_action['action'].lower()
+            if action_str == 'cooperate':
+                return {'quantity': collusive_quantity}
+            if action_str == 'defect':
+                return {'quantity': cournot_quantity}
+
+        # Fallback to simple keyword search
+        text_lower = response.lower()
+        if 'cooperate' in text_lower:
+            return {'quantity': collusive_quantity}
+        if 'defect' in text_lower:
+            return {'quantity': cournot_quantity}
+
+        self.logger.warning(f"[{call_id}] Could not parse a valid action for {player_id}. Defaulting to cooperation.")
+        return {'quantity': collusive_quantity}
+
 
     def calculate_payoffs(self, actions: Dict[str, Any], game_config: GameConfig, game_state: Optional[Dict] = None) -> Dict[str, float]:
         """Calculates player payoffs based on total quantity and the current demand shock."""

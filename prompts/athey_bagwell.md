@@ -1,17 +1,17 @@
-## Your Strategic Problem: Managing Reputation with Persistent Costs
+## Your Strategic Problem: Reporting Costs in a Collusive Setting
 
-You are in a cartel with **{number_of_players}** firms that allocates a market of size **{market_size}** to the lowest-cost firm. The market price is fixed at **${market_price}**. Your costs are persistent (**{persistence_probability}** chance of being the same next period), making your reputation for honesty critical. Your challenge is to decide whether to lie or tell the truth about your costs.
+You are in a cartel with **{number_of_players}** firms. The cartel allocates a market of size **{market_size}** to the firm that reports the lowest cost in a given period. The market price is fixed at **${market_price}**. Your challenge is to choose your cost report to maximize your long-term profitability.
 
 ### Key Information & Market Dynamics:
 
-* **The Revelation Dilemma:** The cartel's efficiency depends on truthful cost reports. This creates a powerful incentive for a high-cost firm to lie and report a low cost to steal the market.
-* **Incentive-Compatible Design:** To counteract this, the collusive scheme links today's report to tomorrow's market share.
-    * **Short-Term Gain from Deception:** If your true cost is "high" (${high_cost}) and you deceptively report "low" (${low_cost}), you can win 100% of the market for a large immediate profit.
-    * **Long-Term Reputational Cost:** Because costs are persistent, lying damages your credibility. The scheme punishes firms for past "low" cost reports by assigning them smaller market shares in the future.
+* **The Reporting Dilemma:** The cartel's efficiency and your potential profit depend on the cost reports submitted by all firms. This creates a complex strategic environment where your report influences both your immediate payoff and your future opportunities.
+* **Incentive-Compatible Design:** The collusive scheme is designed to balance short-term opportunities with long-term consequences. Your report in the current period has a direct impact on your market share in subsequent periods.
+    * **Immediate Market Share Gain:** If your reported cost is "low" (${low_cost}), and it is the sole lowest report, you will be allocated 100% of the market in the current period.
+    * **Future Market Share Implications:** Your cost reports are observable and influence future allocations. Because costs are persistent, your report affects how other firms view your likely cost state in the future, which in turn affects your market share assignments in those periods.
 
 ### Your Task:
 
-Your true cost this period is **{your_cost_type}**. Decide whether to report "high" or "low". Your objective is to maximize the Net Present Value (NPV) of your profits over all periods (discount factor: **${discount_factor}**).
+Your true cost this period is **{your_cost_type}**. You must decide whether to report "high" or "low". Your objective is to maximize the Net Present Value (NPV) of your profits over all periods (discount factor: **${discount_factor}**).
 
 ### Current Game State:
 

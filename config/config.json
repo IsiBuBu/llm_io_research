@@ -1,9 +1,15 @@
 {
   "models": {
     "challenger_models": [
+      "gemini_2_5_flash_thinking_medium",
+      "gemini_2_5_flash_thinking_low",
+      "gemini_2_5_flash_thinking_off",
+      "gemini_2_5_flash_lite_thinking_medium",
+      "gemini_2_5_flash_lite_thinking_low",
+      "gemini_2_5_flash_lite_thinking_off",
+      "gemini_2_0_flash_lite",
       "gemini_2_0_flash",
-      "random_agent",
-      "gemini_2_0_flash_lite"
+      "random_agent"
     ],
     "defender_model": "gemini_2_0_flash_lite"
   },
@@ -14,13 +20,6 @@
       "display_name": "Random Player",
       "thinking_available": false
     },
-    "gemini_2_0_flash": {
-      "provider": "google",
-      "model_name": "gemini-2.0-flash",
-      "display_name": "Gemini 2.0 Flash",
-      "thinking_available": false,
-      "temperature": 1.0
-    },
     "gemini_2_0_flash_lite": {
       "provider": "google",
       "model_name": "gemini-2.0-flash-lite",
@@ -28,14 +27,11 @@
       "thinking_available": false,
       "temperature": 1.0
     },
-    "gemini_2_5_flash_thinking_off": {
+    "gemini_2_0_flash": {
       "provider": "google",
-      "model_name": "gemini-2.5-flash",
-      "display_name": "Gemini 2.5 Flash (Thinking Off)",
-      "thinking_available": true,
-      "thinking_config": {
-        "thinking_budget": 0
-      },
+      "model_name": "gemini-2.0-flash",
+      "display_name": "Gemini 2.0 Flash",
+      "thinking_available": false,
       "temperature": 1.0
     },
     "gemini_2_5_flash_lite_thinking_off": {
@@ -48,43 +44,60 @@
       },
       "temperature": 1.0
     },
+    "gemini_2_5_flash_thinking_off": {
+      "provider": "google",
+      "model_name": "gemini-2.5-flash",
+      "display_name": "Gemini 2.5 Flash (Thinking Off)",
+      "thinking_available": true,
+      "thinking_config": {
+        "thinking_budget": 0
+      },
+      "temperature": 1.0
+    },
+    "gemini_2_5_flash_lite_thinking_low": {
+      "provider": "google",
+      "model_name": "gemini-2.5-flash-lite",
+      "display_name": "Gemini 2.5 Flash-Lite (Low Budget)",
+      "thinking_available": true,
+      "thinking_config": {
+        "thinking_budget": 1024
+      },
+      "temperature": 1.0
+    },
+    "gemini_2_5_flash_thinking_low": {
+      "provider": "google",
+      "model_name": "gemini-2.5-flash",
+      "display_name": "Gemini 2.5 Flash (Low Budget)",
+      "thinking_available": true,
+      "thinking_config": {
+        "thinking_budget": 1024
+      },
+      "temperature": 1.0
+    },
+     "gemini_2_5_flash_lite_thinking_medium": {
+      "provider": "google",
+      "model_name": "gemini-2.5-flash-lite",
+      "display_name": "Gemini 2.5 Flash-Lite (Medium Budget)",
+      "thinking_available": true,
+      "thinking_config": {
+        "thinking_budget": 8192
+      },
+      "temperature": 1.0
+    },
     "gemini_2_5_flash_thinking_medium": {
       "provider": "google",
       "model_name": "gemini-2.5-flash",
       "display_name": "Gemini 2.5 Flash (Medium Budget)",
       "thinking_available": true,
       "thinking_config": {
-        "thinking_budget": 8192,
-        "include_thoughts": true
-      },
-      "temperature": 1.0
-    },
-    "gemini_2_5_flash_lite_thinking_medium": {
-      "provider": "google",
-      "model_name": "gemini-2.5-flash-lite",
-      "display_name": "Gemini 2.5 Flash-Lite (Medium Budget)",
-      "thinking_available": true,
-      "thinking_config": {
-        "thinking_budget": 8192,
-        "include_thoughts": true
-      },
-      "temperature": 1.0
-    },
-    "gemini_2_5_pro_thinking_medium": {
-      "provider": "google",
-      "model_name": "gemini-2.5-pro",
-      "display_name": "Gemini 2.5 Pro (Medium Budget)",
-      "thinking_available": true,
-      "thinking_config": {
-        "thinking_budget": 8192,
-        "include_thoughts": true
+        "thinking_budget": 8192
       },
       "temperature": 1.0
     }
   },
   "experiment_config": {
-    "main_experiment_simulations": 5,
-    "ablation_experiment_simulations": 5,
+    "main_experiment_simulations": 50,
+    "ablation_experiment_simulations": 50,
     "random_seed": 42
   },
   "game_configs": {
@@ -125,8 +138,8 @@
         "demand_shock_distribution": "normal",
         "trigger_price": 62,
         "punishment_duration": 3,
-        "discount_factor": 0.7,
-        "time_horizon": 5
+        "discount_factor": 0.9,
+        "time_horizon": 50
       },
       "structural_variations": {
         "few_players": {
@@ -141,9 +154,9 @@
         }
       },
       "ablation_studies": {
-        "low_patience": {
-          "discount_factor": 0.3,
-          "description": "Low patience (high discount rate) makes future punishments less effective."
+        "low_discount_factor": {
+          "discount_factor": 0.5,
+          "description": "Low discount factor makes future punishments less effective."
         }
       }
     },
@@ -181,8 +194,8 @@
         },
         "market_price": 30,
         "market_size": 100,
-        "discount_factor": 0.7,
-        "time_horizon": 5
+        "discount_factor": 0.9,
+        "time_horizon": 50
       },
       "structural_variations": {
         "few_players": {
@@ -194,7 +207,7 @@
       },
       "ablation_studies": {
         "low_persistence": {
-          "persistence_probability": 0.2,
+          "persistence_probability": 0.3,
           "description": "Low cost persistence reduces reputational stakes"
         }
       }
@@ -205,7 +218,7 @@
     "file": "experiments.log",
     "console": true
   },
-    "output": {
+  "output": {
     "main_output_dir": "output",
     "data_dir": "data",
     "experiments_dir": "experiments",

@@ -31,13 +31,9 @@ class RandomAgent(BaseLLMAgent):
             report = random.choice(["high", "low"])
             action = {"report": report}
         elif game_name == "green_porter":
-            # UPDATED LOGIC: Choose with 50% probability from the two strategically relevant quantities.
-            # This creates a stronger, more challenging baseline that is aware of the game's core conflict.
-            quantity = random.choice([
-                constants.get('collusive_quantity'), 
-                constants.get('cournot_quantity')
-            ])
-            action = {"quantity": quantity}
+            # UPDATED LOGIC: Choose with 50% probability from the two strategically relevant actions.
+            chosen_action = random.choice(["Cooperate", "Defect"])
+            action = {"action": chosen_action}
         elif game_name == "salop":
             # Chooses a random price between its marginal cost and the max willingness to pay
             price = random.uniform(constants.get('marginal_cost', 8), constants.get('reservation_price', 30))

@@ -5,7 +5,6 @@ from typing import Dict, Any
 
 from .base_agent import BaseLLMAgent, AgentResponse
 from .experiment_agent import ExperimentAgent
-from .judge_agent import JudgeAgent
 from .random_agent import RandomAgent
 
 def create_agent(model_name: str, player_id: str, agent_type: str = 'experiment', mock_mode: bool = False, **kwargs) -> BaseLLMAgent:
@@ -17,10 +16,6 @@ def create_agent(model_name: str, player_id: str, agent_type: str = 'experiment'
     if mock_mode:
         logger.info(f"🎭 MOCK MODE: Creating RandomAgent for {model_name} as {player_id}")
         return RandomAgent(model_name="random_mock", player_id=player_id)
-        
-    if agent_type == 'judge':
-        logger.info(f"⚖️ Creating JudgeAgent for {model_name}")
-        return JudgeAgent(model_name, player_id, **kwargs)
 
     # Default to experiment agent
     if model_name == 'random_agent':
@@ -37,8 +32,7 @@ def create_agent(model_name: str, player_id: str, agent_type: str = 'experiment'
 __all__ = [
     "BaseLLMAgent",
     "AgentResponse",
-    "ExperimentAgent",
-    "JudgeAgent",
+    "ExperimentAgent"
     "RandomAgent",
     "create_agent"
 ]

@@ -121,12 +121,12 @@ class Competition:
             return await self._run_static_game(game, agents, config, game_state, challenger_model)
 
     async def _run_static_game(self, game, agents, config, game_state, challenger_model: str):
-        actions, responses, challenger_prompt = await self._get_all_actions(game, agents, config, game_state)
+        actions, responses = await self._get_all_actions(game, agents, config, game_state)
         payoffs = game.calculate_payoffs(actions, config, game_state)
         game_data = game.get_game_data_for_logging(actions, payoffs, config, game_state)
 
+        # FIX: Re-add the llm_metadata to the game_data for static games
         game_data['llm_metadata'] = {pid: resp.__dict__ for pid, resp in responses.items()}
-        game_data['initial_prompt_for_challenger'] = challenger_prompt
 
         return create_game_result(game_state['simulation_id'], config.game_name, config.experiment_type, config.condition_name, challenger_model, list(agents.keys()), actions, payoffs, game_data)
 
@@ -144,12 +144,9 @@ class Competition:
         all_rounds_data = []
 
         for _ in range(time_horizon):
-            actions, responses, challenger_prompt = await self._get_all_actions(game, agents, config, game_state)
+            actions, responses = await self._get_all_actions(game, agents, config, game_state)
             payoffs = game.calculate_payoffs(actions, config, game_state)
             round_data = game.get_game_data_for_logging(actions, payoffs, config, game_state)
-            
-            round_data['llm_metadata'] = {pid: resp.__dict__ for pid, resp in responses.items()}
-            round_data['initial_prompt_for_challenger'] = challenger_prompt
             
             all_rounds_data.append(round_data)
             game_state = game.update_game_state(game_state, actions, config, payoffs)
@@ -174,18 +171,17 @@ class Competition:
 
         while game_state['current_period'] <= time_horizon:
             if game_state['market_state'] == 'Collusive':
-                actions, responses, challenger_prompt = await self._get_all_actions(game, agents, config, game_state)
+                actions, responses = await self._get_all_actions(game, agents, config, game_state)
             else:
                 cournot_quantity = config.constants.get('cournot_quantity')
                 actions = {pid: {'quantity': cournot_quantity} for pid in agents}
-                responses, challenger_prompt = {}, ""
+                responses = {}
             
             payoffs = game.calculate_payoffs(actions, config, game_state)
             round_data = game.get_game_data_for_logging(actions, payoffs, config, game_state)
             
             if responses:
                 round_data['llm_metadata'] = {pid: resp.__dict__ for pid, resp in responses.items()}
-                round_data['initial_prompt_for_challenger'] = challenger_prompt
             
             all_rounds_data.append(round_data)
             game_state = game.update_game_state(game_state, actions, config, payoffs)
@@ -212,17 +208,25 @@ class Competition:
 
 
     async def _run_athey_bagwell_game(self, game, agents, config, game_state, challenger_model: str):
-        """Runs the specialized two-stage, odd-even workflow, logging both strategic and mechanical rounds."""
+        """
+        Runs the specialized workflow for Athey & Bagwell, correctly modeling
+        the sequential odd and even periods as described in the paper.
+        """
         time_horizon = config.constants.get('time_horizon', 50)
         all_rounds_data = []
+        last_period_reports = {}
 
-        while game_state['current_period'] <= time_horizon:
-            current_period_is_odd = game_state.get('period_type') == 'Odd'
+        for period in range(1, time_horizon + 1):
+            game_state['current_period'] = period
             
-            if current_period_is_odd and game_state.get('stage') == 1:
-                reports, responses, challenger_prompt = await self._get_all_actions(game, agents, config, game_state, stage=1)
-                game_state = game.update_game_state(game_state, reports, config, {})
-                
+            is_odd_period = (period % 2 != 0)
+
+            if is_odd_period:
+                # ODD PERIOD: Strategic reporting with an LLM call
+                reports, responses = await self._get_all_actions(game, agents, config, game_state, stage=1)
+                last_period_reports = reports  # Save reports for the next even period
+
+                # Determine market share based on this period's reports
                 low_reporters = [pid for pid, action in reports.items() if action.get('report') == 'low']
                 market_shares = {}
                 if len(low_reporters) == 1:
@@ -230,33 +234,33 @@ class Competition:
                 else:
                     share = 1.0 / len(agents)
                     market_shares = {pid: share for pid in agents}
-
-                actions = {pid: {'quantity': share} for pid, share in market_shares.items()}
-                payoffs = game.calculate_payoffs(actions, config, game_state)
                 
+                actions_for_payoff = {pid: {'quantity': share} for pid, share in market_shares.items()}
+                payoffs = game.calculate_payoffs(actions_for_payoff, config, game_state)
+                
+                # Log the outcome of the strategic round
                 round_data = game.get_game_data_for_logging(reports, payoffs, config, game_state)
                 round_data['llm_metadata'] = {pid: resp.__dict__ for pid, resp in responses.items()}
-                round_data['initial_prompt_for_challenger'] = challenger_prompt
                 all_rounds_data.append(round_data)
 
-            else: # EVEN PERIOD: Mechanical Enforcement
-                last_reports = game_state.get('last_period_reports', {})
-                low_reporters = [pid for pid, action in last_reports.items() if action.get('report') == 'low']
+            else:  # EVEN PERIOD: Mechanical enforcement, no LLM call
+                # Determine market share based on the *previous* odd period's reports
+                low_reporters = [pid for pid, action in last_period_reports.items() if action.get('report') == 'low']
                 high_reporters = [pid for pid in agents if pid not in low_reporters]
+                
                 market_shares = {}
                 if high_reporters:
                     share = 1.0 / len(high_reporters)
                     market_shares = {pid: (share if pid in high_reporters else 0.0) for pid in agents}
-                else:
+                else: # If everyone reported low, they all get punished with an equal share
                     market_shares = {pid: 1.0 / len(agents) for pid in agents}
 
                 actions = {pid: {'quantity': share} for pid, share in market_shares.items()}
                 payoffs = game.calculate_payoffs(actions, config, game_state)
                 
+                # Log the outcome of the mechanical enforcement round
                 round_data = game.get_game_data_for_logging(actions, payoffs, config, game_state)
                 all_rounds_data.append(round_data)
-            
-            game_state = game.update_game_state(game_state, actions, config, payoffs)
 
         # --- FINAL CALCULATIONS (ATHEY & BAGWELL) ---
         profit_streams = defaultdict(list)
@@ -275,7 +279,7 @@ class Competition:
         
         return create_game_result(game_state['simulation_id'], config.game_name, config.experiment_type, config.condition_name, challenger_model, list(agents.keys()), {}, final_npvs, game_data)
 
-    async def _get_all_actions(self, game, agents, config, game_state, stage: int = 1) -> (Dict[str, Any], Dict[str, AgentResponse], str):
+    async def _get_all_actions(self, game, agents, config, game_state, stage: int = 1) -> (Dict[str, Any], Dict[str, AgentResponse]):
         """Gets actions and full responses from all agents concurrently."""
         call_id = f"{config.game_name}-{game_state.get('simulation_id', 'N/A')}"
 
@@ -287,9 +291,7 @@ class Competition:
         
         actions = {pid: game.parse_llm_response(resp.content, pid, call_id, stage=stage) or {} for pid, resp in response_map.items()}
 
-        challenger_prompt = prompts.get('challenger', '')
-
-        return actions, response_map, challenger_prompt
+        return actions, response_map
 
     def _save_competition_result(self, challenger, config, results):
         """Saves the results of a set of simulations to a JSON file."""

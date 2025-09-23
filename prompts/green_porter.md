@@ -11,10 +11,15 @@ You are in a cartel with **{number_of_players}** firms. Your challenge is to mai
 
 ### Your Task:
 
-Choose your quantity for this period. Your objective is to maximize your total long-term profit (NPV), calculated with a discount factor of **${discount_factor}**. Your marginal cost is **${marginal_cost}**.
+Choose your action for this period. Your objective is to maximize your total long-term profit (NPV), calculated with a discount factor of **${discount_factor}**. Your marginal cost is **${marginal_cost}**.
 
-* If the market is **Collusive**, the agreed-upon quantity is **{collusive_quantity}**. Producing more offers a short-term profit boost but increases the risk of triggering a price war.
-* If the market is in a **Price War**, you are in a punishment phase.
+If the market is Collusive, you must choose between two actions:
+
+* **Cooperate:** Produce the agreed-upon collusive quantity of **{collusive_quantity}**. This maximizes long-term group profit but offers a lower immediate payoff.
+
+* **Defect:** Produce the noncooperative Cournot quantity of **{cournot_quantity}**. This offers a short-term profit boost but significantly increases the risk of triggering a price war.
+
+If the market is in a **Price War**, you are in a punishment phase and your action is fixed at the Cournot quantity.
 
 ### Current Game State:
 
@@ -25,4 +30,4 @@ Choose your quantity for this period. Your objective is to maximize your total l
 ### Output Format:
 
 Respond with valid JSON only:
-`{{"quantity": <number>}}`
+`{{"action": "Cooperate" | "Defect"}}`

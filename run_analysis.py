@@ -11,7 +11,6 @@ from config.config import get_experiments_dir, get_analysis_dir
 from analysis.engine.analyze_metrics import MetricsAnalyzer
 from analysis.engine.create_summary_csvs import SummaryCreator
 from analysis.engine.analyze_correlations import CorrelationAnalyzer
-from analysis.engine.analyze_reliability import analyze_reliability
 from analysis.visualization.visualize_results import main as visualize_all
 
 def setup_logging():
@@ -48,35 +47,28 @@ def main():
 
     try:
         # Step 1: Calculate metrics from raw results
-        logger.info("[Step 1/5] Analyzing metrics from simulation results...")
+        logger.info("[Step 1/4] Analyzing metrics from simulation results...")
         MetricsAnalyzer(results_dir=str(experiments_dir), output_dir=str(analysis_dir)).analyze_all_games()
-        logger.info("[Step 1/5] ✅ Metrics analysis complete.")
+        logger.info("[Step 1/4] ✅ Metrics analysis complete.")
 
         # Step 2: Create flattened summary CSV files
         logger.info("-" * 80)
-        logger.info("[Step 2/5] Creating summary CSV files...")
+        logger.info("[Step 2/4] Creating summary CSV files...")
         SummaryCreator(analysis_dir=str(analysis_dir)).create_all_summaries()
-        logger.info("[Step 2/5] ✅ Summary CSV creation complete.")
+        logger.info("[Step 2/4] ✅ Summary CSV creation complete.")
         
         # Step 3: Analyze correlations between metrics
         logger.info("-" * 80)
-        logger.info("[Step 3/5] Analyzing correlations between metrics...")
+        logger.info("[Step 3/4] Analyzing correlations between metrics...")
         CorrelationAnalyzer(analysis_dir=str(analysis_dir)).analyze_all_correlations()
-        logger.info("[Step 3/5] ✅ Correlation analysis complete.")
+        logger.info("[Step 3/4] ✅ Correlation analysis complete.")
 
-        # Step 4: Analyze reliability of judge evaluations
-        logger.info("-" * 80)
-        logger.info("[Step 4/5] Analyzing reliability of judge evaluations...")
-        logger.info("NOTE: This step assumes `run_judge_evaluations.py` has been run.")
-        analyze_reliability()
-        logger.info("[Step 4/5] ✅ Reliability analysis complete.")
-
-        # Step 5: Generate visualizations
+        # Step 4: Generate visualizations
         logger.info("-" * 80)
         logger.info("[Step 5/5] Generating visualizations...")
         visualize_all()
-        logger.info("[Step 5/5] ✅ Visualization generation complete.")
-        
+        logger.info("[Step 4/4] ✅ Visualization generation complete.")
+
         logger.info("=" * 80)
         logger.info("🎉 ANALYSIS PIPELINE FINISHED SUCCESSFULLY! 🎉")
         logger.info(f"Check the '{analysis_dir}' directory for all outputs.")

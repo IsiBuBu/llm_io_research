@@ -18,7 +18,6 @@ class AgentResponse:
     model: str
     success: bool
     error: Optional[str] = None
-    thoughts: Optional[str] = None
     tokens_used: int = 0
     output_tokens: int = 0
     thinking_tokens: int = 0
