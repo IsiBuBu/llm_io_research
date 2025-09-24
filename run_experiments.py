@@ -21,7 +21,8 @@ from config.config import (
     get_model_display_name,
     get_experiments_dir,
     get_simulation_count,
-    get_data_dir
+    get_data_dir,
+    load_config  # Import load_config to dynamically get game names
 )
 from games import create_game
 from agents import create_agent, AgentResponse
@@ -53,25 +54,42 @@ class Competition:
             sys.exit(1)
 
     async def run_all_experiments(self):
-        """Runs the full suite of experiments as defined in the config."""
+        """
+        Runs the full suite of experiments as defined in the config, parallelizing
+        all models within each game condition for maximum efficiency.
+        """
         self.logger.info("=" * 80)
         self.logger.info("STARTING EXPERIMENT SUITE")
         if self.mock_mode: self.logger.info("🎭 RUNNING IN MOCK MODE 🎭")
         self.logger.info("=" * 80)
 
-        all_game_names = ['salop', 'green_porter', 'spulber', 'athey_bagwell']
+        # --- UPDATED LOGIC: Dynamically get game names from config ---
+        all_game_names = list(load_config().get('game_configs', {}).keys())
+        self.logger.info(f"Found the following games to run in config.json: {all_game_names}")
 
         for game_name in all_game_names:
             game_configs = get_all_game_configs(game_name)
             for config in game_configs:
+                self.logger.info(f"--- Preparing to run all models for: [{game_name}]-[{config.condition_name}] ---")
+
+                model_tasks = []
                 for challenger_model in self.challenger_models:
-                    self.logger.info(f"Running: [{game_name}]-[{config.condition_name}] for Challenger: [{get_model_display_name(challenger_model)}]")
+                    model_task = self._run_and_save_model_simulations(challenger_model, config)
+                    model_tasks.append(model_task)
+                
+                await asyncio.gather(*model_tasks)
+                self.logger.info(f"--- Completed all models for: [{game_name}]-[{config.condition_name}] ---")
 
-                    num_simulations = get_simulation_count(config.experiment_type)
-                    tasks = [self.run_single_simulation(challenger_model, config, sim_id) for sim_id in range(num_simulations)]
-                    simulation_results = await asyncio.gather(*tasks)
-
-                    self._save_competition_result(challenger_model, config, simulation_results)
+    async def _run_and_save_model_simulations(self, challenger_model: str, config):
+        """A helper coroutine to run all simulations for a single model and save the result."""
+        self.logger.info(f"  -> Launching simulations for Challenger: [{get_model_display_name(challenger_model)}]")
+        
+        num_simulations = get_simulation_count(config.experiment_type)
+        simulation_tasks = [self.run_single_simulation(challenger_model, config, sim_id) for sim_id in range(num_simulations)]
+        
+        simulation_results = await asyncio.gather(*simulation_tasks)
+        
+        self._save_competition_result(challenger_model, config, simulation_results)
 
     async def run_single_simulation(self, challenger_model: str, config, sim_id: int):
         """Runs a single simulation of a game."""
@@ -125,7 +143,6 @@ class Competition:
         payoffs = game.calculate_payoffs(actions, config, game_state)
         game_data = game.get_game_data_for_logging(actions, payoffs, config, game_state)
 
-        # FIX: Re-add the llm_metadata to the game_data for static games
         game_data['llm_metadata'] = {pid: resp.__dict__ for pid, resp in responses.items()}
 
         return create_game_result(game_state['simulation_id'], config.game_name, config.experiment_type, config.condition_name, challenger_model, list(agents.keys()), actions, payoffs, game_data)
@@ -138,7 +155,6 @@ class Competition:
         if config.game_name == 'green_porter':
             return await self._run_green_porter_game(game, agents, config, game_state, challenger_model)
         
-        # Fallback for any other dynamic games
         self.logger.warning(f"No specialized workflow for dynamic game '{config.game_name}'. Using generic loop.")
         time_horizon = config.constants.get('time_horizon', 50)
         all_rounds_data = []
@@ -151,7 +167,6 @@ class Competition:
             all_rounds_data.append(round_data)
             game_state = game.update_game_state(game_state, actions, config, payoffs)
 
-        # --- FINAL CALCULATIONS (FALLBACK) ---
         profit_streams = defaultdict(list)
         for round_data in all_rounds_data:
             profits = round_data.get('payoffs', {})
@@ -186,7 +201,6 @@ class Competition:
             all_rounds_data.append(round_data)
             game_state = game.update_game_state(game_state, actions, config, payoffs)
 
-        # --- FINAL CALCULATIONS (GREEN & PORTER) ---
         profit_streams = defaultdict(list)
         for round_data in all_rounds_data:
             profits = round_data.get('payoffs', {})
@@ -222,11 +236,9 @@ class Competition:
             is_odd_period = (period % 2 != 0)
 
             if is_odd_period:
-                # ODD PERIOD: Strategic reporting with an LLM call
                 reports, responses = await self._get_all_actions(game, agents, config, game_state, stage=1)
-                last_period_reports = reports  # Save reports for the next even period
+                last_period_reports = reports
 
-                # Determine market share based on this period's reports
                 low_reporters = [pid for pid, action in reports.items() if action.get('report') == 'low']
                 market_shares = {}
                 if len(low_reporters) == 1:
@@ -238,13 +250,11 @@ class Competition:
                 actions_for_payoff = {pid: {'quantity': share} for pid, share in market_shares.items()}
                 payoffs = game.calculate_payoffs(actions_for_payoff, config, game_state)
                 
-                # Log the outcome of the strategic round
                 round_data = game.get_game_data_for_logging(reports, payoffs, config, game_state)
                 round_data['llm_metadata'] = {pid: resp.__dict__ for pid, resp in responses.items()}
                 all_rounds_data.append(round_data)
 
-            else:  # EVEN PERIOD: Mechanical enforcement, no LLM call
-                # Determine market share based on the *previous* odd period's reports
+            else:
                 low_reporters = [pid for pid, action in last_period_reports.items() if action.get('report') == 'low']
                 high_reporters = [pid for pid in agents if pid not in low_reporters]
                 
@@ -252,17 +262,15 @@ class Competition:
                 if high_reporters:
                     share = 1.0 / len(high_reporters)
                     market_shares = {pid: (share if pid in high_reporters else 0.0) for pid in agents}
-                else: # If everyone reported low, they all get punished with an equal share
+                else:
                     market_shares = {pid: 1.0 / len(agents) for pid in agents}
 
                 actions = {pid: {'quantity': share} for pid, share in market_shares.items()}
                 payoffs = game.calculate_payoffs(actions, config, game_state)
                 
-                # Log the outcome of the mechanical enforcement round
                 round_data = game.get_game_data_for_logging(actions, payoffs, config, game_state)
                 all_rounds_data.append(round_data)
 
-        # --- FINAL CALCULATIONS (ATHEY & BAGWELL) ---
         profit_streams = defaultdict(list)
         for round_data in all_rounds_data:
             profits = round_data.get('payoffs', {})

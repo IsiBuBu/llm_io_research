@@ -36,7 +36,7 @@ def _get_thinking_tokens(results_dir: Path) -> pd.DataFrame:
             data = json.load(f)
             for sim in data.get('simulation_results', []):
                 challenger_meta = sim.get('game_data', {}).get('llm_metadata', {}).get('challenger', {})
-                if 'thinking_medium' in sim['challenger_model'] and challenger_meta.get('thoughts'):
+                if 'thinking_medium' in sim['challenger_model']:
                     if 'rounds' in sim['game_data']:
                         thinking_tokens_per_round = [
                             r.get('llm_metadata', {}).get('challenger', {}).get('thinking_tokens', 0) 
@@ -116,69 +116,6 @@ def _plot_dual_axis_chart(magic_df, thinking_df, plots_dir):
         plt.savefig(plots_dir / f"P4.1_dual_axis_{metric}_{variation}.png")
         plt.close()
 
-def _create_alignment_score_tables(judge_df, tables_dir):
-    """Table 4.2: Creates summary tables of MAgIC metric alignment scores with CIs."""
-    logger = logging.getLogger("RQ4Visualizer")
-    logger.info("Creating Table 4.2: MAgIC Metric Alignment Scores by Social Complexity...")
-    
-    # Aggregate scores to get mean and CI from replications
-    agg_df = judge_df.groupby(['game', 'model', 'structural_variation', 'metric'])['alignment_score'].agg(['mean', get_ci]).reset_index()
-    agg_df['Formatted Score'] = agg_df.apply(lambda row: format_with_ci(row['mean'], row['get_ci'], precision=1), axis=1)
-
-    for game in agg_df['game'].unique():
-        game_df = agg_df[agg_df['game'] == game]
-        pivot = game_df.pivot_table(index='model', columns=['structural_variation', 'metric'], values='Formatted Score', aggfunc='first')
-        pivot.to_csv(tables_dir / f"T4.2_{game}_alignment_scores.csv")
-        logger.info(f"Saved table: T4.2_{game}_alignment_scores.csv")
-
-def _plot_alignment_change_dumbbell(judge_df, plots_dir):
-    """Plot 4.2: Dumbbell plot of alignment score changes."""
-    logger = logging.getLogger("RQ4Visualizer")
-    logger.info("Generating Plot 4.2: Change in Strategic Alignment (Dumbbell Plots)...")
-
-    avg_scores = judge_df.groupby(['game', 'model', 'metric', 'structural_variation'])['alignment_score'].mean().reset_index()
-
-    for (game, metric), plot_data in avg_scores.groupby(['game', 'metric']):
-        pivot_df = plot_data.pivot(index='model', columns='structural_variation', values='alignment_score')
-        
-        plt.figure(figsize=(10, 8))
-        for i, model in enumerate(pivot_df.index):
-            p1 = pivot_df.loc[model, '3-Player']
-            p2 = pivot_df.loc[model, '5-Player']
-            plt.plot([p1, p2], [i, i], 'o-', color='grey', lw=3, markersize=10)
-            plt.scatter(p1, i, color='skyblue', s=150, zorder=5, label='3-Player' if i == 0 else "")
-            plt.scatter(p2, i, color='red', s=150, zorder=5, label='5-Player' if i == 0 else "")
-
-        plt.yticks(range(len(pivot_df.index)), pivot_df.index)
-        plt.title(f"Change in Alignment: {game.title()} - {metric.title()}", fontsize=16)
-        plt.xlabel("Judge's Alignment Score (0-100)", fontsize=12)
-        plt.ylabel("Challenger Model", fontsize=12)
-        plt.grid(True, axis='x', linestyle='--', alpha=0.6)
-        plt.legend()
-        plt.tight_layout()
-        plt.savefig(plots_dir / f"P4.2_dumbbell_{game}_{metric}_alignment.png")
-        plt.close()
-
-def _create_alignment_validation_table(judge_df, magic_df, tables_dir):
-    """Table 4.3: Creates a paired comparison table for judge validation."""
-    logger = logging.getLogger("RQ4Visualizer")
-    logger.info("Creating Table 4.3: Paired Comparison of Alignment and MAgIC Scores...")
-    
-    magic_df['structural_variation'] = np.where(magic_df['condition'].str.contains('5_players|more_players', regex=True), '5-Player', '3-Player')
-    
-    # Aggregate judge scores first
-    avg_judge_scores = judge_df.groupby(['model', 'structural_variation', 'game', 'metric'])['alignment_score'].mean().reset_index()
-    
-    merged_df = pd.merge(
-        avg_judge_scores,
-        magic_df,
-        on=['model', 'structural_variation', 'game', 'metric']
-    )
-    
-    validation_table = merged_df[['game', 'metric', 'model', 'structural_variation', 'alignment_score', 'value']].rename(columns={'value': 'MAgIC_Score'})
-    validation_table.to_csv(tables_dir / "T4.3_alignment_validation_paired.csv", index=False)
-    logger.info("Saved table: T4.3_alignment_validation_paired.csv")
-
 # --- Main Visualization Function ---
 
 def visualize_rq4():
@@ -213,19 +150,6 @@ def visualize_rq4():
         _create_comparative_analysis_table(magic_df_thinking, thinking_df, tables_dir)
         _plot_dual_axis_chart(magic_df_thinking, thinking_df, plots_dir)
         
-        # --- Parts 2 & 3: Qualitative Analysis & Validation ---
-        try:
-            judge_evals = pd.read_csv(analysis_dir / "judge_evaluations.csv")
-            judge_evals['structural_variation'] = np.where(judge_evals['condition'].str.contains('5_players|more_players', regex=True), '5-Player', '3-Player')
-
-            _create_alignment_score_tables(judge_evals, tables_dir)
-            _plot_alignment_change_dumbbell(judge_evals, plots_dir)
-            _create_alignment_validation_table(judge_evals, magic_df_thinking, tables_dir)
-
-        except FileNotFoundError:
-            logger.warning("`judge_evaluations.csv` not found. Skipping qualitative analysis (Parts 2 & 3).")
-            logger.warning("Please run `analysis/run_judge_evaluations.py` first.")
-            
         logger.info("--- Finished RQ4 visualizations ---")
         
     except FileNotFoundError as e:

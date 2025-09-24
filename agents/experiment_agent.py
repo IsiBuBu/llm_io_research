@@ -72,20 +72,15 @@ class ExperimentAgent(BaseLLMAgent):
                     return AgentResponse(content="", model=self.model_name, success=False, error="Response contained no valid parts")
 
                 usage = response.usage_metadata
-                thought_summary = ""
                 answer_text = ""
                 for part in response.candidates[0].content.parts:
                     if part.text:
-                        if hasattr(part, 'thought') and part.thought:
-                            thought_summary = part.text
-                        else:
-                            answer_text = part.text
+                        answer_text = part.text
 
                 return AgentResponse(
                     content=answer_text.strip(),
                     model=self.model_name,
                     success=True,
-                    thoughts=thought_summary if thought_summary else None,
                     tokens_used=usage.total_token_count if usage else 0,
                     output_tokens=usage.candidates_token_count if usage else 0,
                     thinking_tokens=getattr(usage, 'thoughts_token_count', 0),

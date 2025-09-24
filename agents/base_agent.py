@@ -52,7 +52,7 @@ class BaseLLMAgent(ABC):
             call_id: A unique identifier for the API call, used for logging.
             game_config: The complete configuration object for the current game,
                          which can be used by baseline agents to determine their action.
-            seed: An optional random seed for reproducibility, primarily for judge agents.
+            seed: An optional random seed for reproducibility.
 
         Returns:
             An AgentResponse object containing the agent's action and metadata.
