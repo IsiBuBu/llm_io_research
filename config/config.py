@@ -92,45 +92,61 @@ def get_simulation_count(experiment_type: str) -> int:
 
 def get_all_game_configs(game_name: str) -> List[GameConfig]:
     """
-    Generates a full factorial set of GameConfig instances for a given game,
-    creating a cross-product of every structural variation with every ablation study.
+    Generates a flexible set of GameConfig instances for a given game based on
+    the presence of 'structural_variations' and 'ablation_studies' in config.json.
     """
     configs = []
     game_data = load_config()['game_configs'][game_name]
     baseline_constants = game_data.get('baseline', {}).copy()
     baseline_constants.update(game_data.get('challenger_config', {}))
 
-    structural_variations = game_data.get('structural_variations', {'baseline': {}})
+    # --- Process Structural Variations if they exist ---
+    structural_variations = game_data.get('structural_variations', {})
+    if structural_variations:
+        for struct_name, struct_params in structural_variations.items():
+            struct_constants = baseline_constants.copy()
+            struct_constants.update(struct_params)
+            configs.append(GameConfig(
+                game_name=game_name,
+                experiment_type='structural_variations',
+                condition_name=struct_name,
+                constants=struct_constants
+            ))
+
+    # --- Process Ablation Studies if they exist ---
     ablation_studies = game_data.get('ablation_studies', {})
+    if ablation_studies:
+        # Create a 3-player base for all ablations
+        ablation_base_constants = baseline_constants.copy()
+        if 'few_players' in structural_variations:
+            ablation_base_constants.update(structural_variations['few_players'])
+        else:
+            # If 'few_players' is not defined, enforce a 3-player setup manually
+            ablation_base_constants['number_of_players'] = 3
+        
+        for ablation_name, ablation_data in ablation_studies.items():
+            final_ablation_constants = ablation_base_constants.copy()
+            ablation_params = {k: v for k, v in ablation_data.items() if k != 'description'}
+            final_ablation_constants.update(ablation_params)
+            
+            # Ensure condition name reflects the 3-player base
+            condition_name = f"few_players_{ablation_name}"
+            
+            configs.append(GameConfig(
+                game_name=game_name,
+                experiment_type='ablation_studies',
+                condition_name=condition_name,
+                constants=final_ablation_constants
+            ))
 
-    if not structural_variations:
-        structural_variations = {'baseline': {}}
-
-    for struct_name, struct_params in structural_variations.items():
-        struct_constants = baseline_constants.copy()
-        struct_constants.update(struct_params)
+    # --- If no variations or ablations, run a single baseline config ---
+    if not configs:
         configs.append(GameConfig(
             game_name=game_name,
-            experiment_type='structural_variations',
-            condition_name=struct_name,
-            constants=struct_constants
+            experiment_type='baseline',
+            condition_name='baseline',
+            constants=baseline_constants
         ))
-
-        if struct_name == 'few_players':
-            for ablation_name, ablation_data in ablation_studies.items():
-                ablation_constants = struct_constants.copy()
-                
-                ablation_params = {k: v for k, v in ablation_data.items() if k != 'description'}
-                ablation_constants.update(ablation_params)
-                
-                combined_condition_name = f"{struct_name}_{ablation_name}"
-                
-                configs.append(GameConfig(
-                    game_name=game_name,
-                    experiment_type='ablation_studies',
-                    condition_name=combined_condition_name,
-                    constants=ablation_constants
-                ))
 
     return configs
 
@@ -155,8 +171,6 @@ def get_prompt_variables(game_config: GameConfig, player_id: str, **kwargs) -> D
         raise TypeError(f"Expected GameConfig, but got {type(game_config)}")
     variables = game_config.constants.copy()
     
-    # *** FIXED LOGIC ***
-    # Unpack nested cost_types for the Athey & Bagwell prompt
     if 'cost_types' in variables and isinstance(variables['cost_types'], dict):
         variables['high_cost'] = variables['cost_types'].get('high')
         variables['low_cost'] = variables['cost_types'].get('low')

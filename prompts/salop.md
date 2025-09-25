@@ -4,8 +4,8 @@ You are one of {number_of_players} firms competing in a circular market with a c
 
 ### Key Information & Market Dynamics:
 
-* **Monopoly Segment:** For customers closest to you, your only competition is an "outside good." You can charge them a higher price, but if your price plus their "transportation cost" of **${transport_cost}** exceeds their effective **reservation price of ${reservation_price}**, they will buy nothing from your industry. (This reservation price is derived from a brand utility of **${max_brand_utility}** and an outside good surplus of **${outside_good_surplus}**).
-* **Competitive Segment:** At the edges of your market, your territory overlaps with your neighbors. To win these customers, you must offer a better deal (price + transport cost) than your rivals. Lowering your price here directly steals their market share.
+* **Monopoly Segment:** For customers closest to you, your only competition is an "outside good." You can charge them a higher price, but their total cost is your price plus a travel cost. This travel cost is calculated as the **transportation cost of ${transport_cost} per unit of distance** multiplied by how far they are from you. If this total cost exceeds their effective **reservation price of ${reservation_price}**, they will buy nothing from your industry. (This reservation price is derived from a brand utility of **${max_brand_utility}** and an outside good surplus of **${outside_good_surplus}**).
+* **Competitive Segment:** At the edges of your market, your territory overlaps with your neighbors. To win these customers, you must offer a better deal (your price + their travel cost) than your rivals. Lowering your price here directly steals their market share.
 * **The Kink:** Your demand curve has a "kink" at the price where your market transitions from purely monopolistic to competitive. Your pricing decision revolves around this point.
 
 ### Your Task:

@@ -43,7 +43,7 @@ class CorrelationAnalyzer:
     metrics and traditional performance metrics based on the experimental design.
     """
 
-    def __init__(self, analysis_dir: str = "analysis_output"):
+    def __init__(self, analysis_dir: str = "output/analysis"):
         self.analysis_dir = Path(analysis_dir)
         self.logger = logging.getLogger(self.__class__.__name__)
         self.hypotheses = self._define_hypotheses()
@@ -94,7 +94,7 @@ class CorrelationAnalyzer:
             self.logger.error("Summary CSV files or config.json not found. Please ensure analysis steps ran correctly.")
             return
 
-        # Dynamically determine which models to include
+        # Dynamically determine which models to include (baseline, non-thinking models)
         models_to_include = []
         for model_name, model_conf in config.get('model_configs', {}).items():
             is_thinking_model = model_conf.get('thinking_available', False)
@@ -105,30 +105,33 @@ class CorrelationAnalyzer:
             else:
                 models_to_include.append(model_name)
         
-        # Filter dataframes to exclude ablations and thinking-on models
-        perf_df_filtered = perf_df_raw[
-            perf_df_raw['model'].isin(models_to_include) & 
-            ~perf_df_raw['condition'].str.contains('ablation', na=False)
-        ]
-        magic_df_filtered = magic_df_raw[
-            magic_df_raw['model'].isin(models_to_include) &
-            ~magic_df_raw['condition'].str.contains('ablation', na=False)
-        ]
+        # Filter dataframes to include only the desired models
+        perf_df_filtered = perf_df_raw[perf_df_raw['model'].isin(models_to_include)]
+        magic_df_filtered = magic_df_raw[magic_df_raw['model'].isin(models_to_include)]
 
-        # Pivot and merge the clean data
-        perf_df = perf_df_filtered.pivot_table(index=['game', 'model', 'condition'], columns='metric', values='mean').reset_index()
-        magic_df = magic_df_filtered.pivot_table(index=['game', 'model', 'condition'], columns='metric', values='mean').reset_index()
+        # --- CORRECTED LOGIC: Explicitly filter OUT ablation studies ---
+        # A structural condition must contain 'players' but not be part of an ablation study.
+        structural_conditions = [
+            c for c in perf_df_filtered['condition'].unique() 
+            if ('players' in c) and ('ablation' not in c) and ('low_persistence' not in c) and ('low_transport' not in c) and ('wide_cost_range' not in c) and ('low_discount_factor' not in c)
+        ]
+        
+        perf_df_struct = perf_df_filtered[perf_df_filtered['condition'].isin(structural_conditions)]
+        magic_df_struct = magic_df_filtered[magic_df_filtered['condition'].isin(structural_conditions)]
+
+        # Pivot and merge the clean data for structural variations
+        perf_df = perf_df_struct.pivot_table(index=['game', 'model', 'condition'], columns='metric', values='mean').reset_index()
+        magic_df = magic_df_struct.pivot_table(index=['game', 'model', 'condition'], columns='metric', values='mean').reset_index()
         merged_df = pd.merge(perf_df, magic_df, on=['game', 'model', 'condition'])
         
         # Exclude random agent for meaningful correlation analysis
         merged_df = merged_df[merged_df['model'] != 'random_agent'].copy()
 
         if merged_df.empty:
-            self.logger.warning("After filtering, the dataset is empty. No correlations to analyze.")
+            self.logger.warning("After filtering for structural variations, the dataset is empty. No correlations to analyze.")
             return
 
-        # --- UPDATED LOGIC: Calculate pooled and separate correlations ---
-        
+        # Define analysis scopes: pooled structural, and each structural condition separately
         analysis_scopes = {'pooled': merged_df}
         for condition_name in merged_df['condition'].unique():
             analysis_scopes[condition_name] = merged_df[merged_df['condition'] == condition_name]
@@ -143,7 +146,7 @@ class CorrelationAnalyzer:
                     result = self._test_hypothesis(hypothesis, game_df)
                     if result:
                         result_dict = result.to_dict()
-                        result_dict['condition_type'] = scope_name # Add the scope to the result
+                        result_dict['condition_type'] = scope_name 
                         all_correlation_results.append(result_dict)
 
         self._save_results(all_correlation_results)
@@ -164,11 +167,15 @@ class CorrelationAnalyzer:
         if subset_df[magic_col].nunique() == 1 or subset_df[perf_col].nunique() == 1:
             corr, p_value, ci_low, ci_high = 0.0, 1.0, 0.0, 0.0
         else:
-            result = pearsonr(subset_df[magic_col], subset_df[perf_col])
-            corr, p_value = result.statistic, result.pvalue
-            ci = result.confidence_interval(confidence_level=0.95)
-            ci_low, ci_high = ci.low, ci.high
-        
+            if n_samples >= 3:
+                result = pearsonr(subset_df[magic_col], subset_df[perf_col])
+                corr, p_value = result.statistic, result.pvalue
+                ci = result.confidence_interval(confidence_level=0.95)
+                ci_low, ci_high = ci.low, ci.high
+            else:
+                corr, p_value = pearsonr(subset_df[magic_col], subset_df[perf_col])
+                ci_low, ci_high = np.nan, np.nan
+
         return CorrelationResult(
             hypothesis=hypothesis,
             correlation_coefficient=corr,
@@ -184,19 +191,18 @@ class CorrelationAnalyzer:
             self.logger.warning("No correlation results were generated to save.")
             return
 
-        output_path = self.analysis_dir / "correlations_analysis_baseline.csv"
+        output_path = self.analysis_dir / "correlations_analysis_structural.csv"
         df = pd.DataFrame(results)
         df = pd.concat([df.drop(['hypothesis'], axis=1), df['hypothesis'].apply(pd.Series)], axis=1)
         
-        # Reorder columns for clarity
         cols_order = [
-            'condition_type', 'game_name', 'magic_metric', 'performance_metric', 
+            'condition_type', 'game_name', 'magic_metric', 'performance_metric',
             'correlation_coefficient', 'p_value', 'n_samples',
             'ci_95_low', 'ci_95_high'
         ]
         df = df[cols_order]
         df.to_csv(output_path, index=False)
-        self.logger.info(f"Successfully saved baseline correlation analysis to {output_path}")
+        self.logger.info(f"Successfully saved structural correlation analysis to {output_path}")
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
