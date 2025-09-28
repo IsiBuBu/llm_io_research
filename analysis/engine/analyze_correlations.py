@@ -80,7 +80,7 @@ class CorrelationAnalyzer:
 
     def analyze_all_correlations(self):
         """
-        Runs correlation analysis for baseline models, providing both a pooled result
+        Runs correlation analysis for all models, providing both a pooled result
         and separate results for each structural variation.
         """
         self.logger.info("Starting comprehensive correlation analysis.")
@@ -94,18 +94,10 @@ class CorrelationAnalyzer:
             self.logger.error("Summary CSV files or config.json not found. Please ensure analysis steps ran correctly.")
             return
 
-        # Dynamically determine which models to include (baseline, non-thinking models)
-        models_to_include = []
-        for model_name, model_conf in config.get('model_configs', {}).items():
-            is_thinking_model = model_conf.get('thinking_available', False)
-            if is_thinking_model:
-                thinking_budget = model_conf.get('thinking_config', {}).get('thinking_budget', 0)
-                if thinking_budget == 0:
-                    models_to_include.append(model_name)
-            else:
-                models_to_include.append(model_name)
+        # --- UPDATED LOGIC: Include all models from the configuration ---
+        models_to_include = list(config.get('model_configs', {}).keys())
         
-        # Filter dataframes to include only the desired models
+        # Filter dataframes to include all desired models
         perf_df_filtered = perf_df_raw[perf_df_raw['model'].isin(models_to_include)]
         magic_df_filtered = magic_df_raw[magic_df_raw['model'].isin(models_to_include)]
 

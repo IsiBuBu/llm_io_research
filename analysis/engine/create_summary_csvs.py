@@ -99,22 +99,28 @@ class SummaryCreator:
                 for name, metric_obj in magic_metrics.items():
                     all_magic_records.append({'game': game_name, 'model': challenger_model, 'condition': condition_name, 'metric': name, 'value': metric_obj.value})
 
+        # --- UPDATED LOGIC: Save raw dataframes before aggregation ---
+        perf_df_raw = pd.DataFrame(all_perf_records)
+        magic_df_raw = pd.DataFrame(all_magic_records)
+
+        self._save_to_csv(perf_df_raw, "performance_metrics_raw.csv")
+        self._save_to_csv(magic_df_raw, "magic_behavioral_metrics_raw.csv")
+
+
         # Aggregate and save Performance Metrics
-        perf_df = pd.DataFrame(all_perf_records)
-        
-        if not perf_df.empty:
+        if not perf_df_raw.empty:
             # Calculate volatility separately
-            volatility_df = perf_df[perf_df['metric'] == 'average_profit'].groupby(['game', 'model', 'condition'])['value'].std().reset_index()
+            volatility_df = perf_df_raw[perf_df_raw['metric'] == 'average_profit'].groupby(['game', 'model', 'condition'])['value'].std().reset_index()
             volatility_df.rename(columns={'value': 'std'}, inplace=True)
             volatility_df['metric'] = 'profit_volatility'
             
             # Standard aggregation
-            perf_agg_df = perf_df.groupby(['game', 'model', 'condition', 'metric'])['value'].agg(['mean', 'std', ('ci_95_low', lambda x: get_ci(x)[0]),('ci_95_high', lambda x: get_ci(x)[1])]).reset_index()
+            perf_agg_df = perf_df_raw.groupby(['game', 'model', 'condition', 'metric'])['value'].agg(['mean', 'std', ('ci_95_low', lambda x: get_ci(x)[0]),('ci_95_high', lambda x: get_ci(x)[1])]).reset_index()
 
             # Merge volatility back in
             perf_agg_df = perf_agg_df[perf_agg_df['metric'] != 'profit_volatility']
             
-            volatility_df_agg = perf_df[perf_df['metric'] == 'average_profit'].groupby(['game', 'model', 'condition'])['value'].agg(['mean', ('ci_95_low', lambda x: get_ci(x)[0]),('ci_95_high', lambda x: get_ci(x)[1])]).reset_index()
+            volatility_df_agg = perf_df_raw[perf_df_raw['metric'] == 'average_profit'].groupby(['game', 'model', 'condition'])['value'].agg(['mean', ('ci_95_low', lambda x: get_ci(x)[0]),('ci_95_high', lambda x: get_ci(x)[1])]).reset_index()
             
             volatility_df = pd.merge(volatility_df, volatility_df_agg, on=['game', 'model', 'condition'])
             volatility_df = volatility_df[['game', 'model', 'condition', 'metric', 'mean', 'std', 'ci_95_low', 'ci_95_high']]
@@ -128,9 +134,8 @@ class SummaryCreator:
 
 
         # Aggregate and save MAgIC Metrics
-        magic_df = pd.DataFrame(all_magic_records)
-        if not magic_df.empty:
-            magic_agg_df = magic_df.groupby(['game', 'model', 'condition', 'metric'])['value'].agg(['mean','std',('ci_95_low', lambda x: get_ci(x)[0]),('ci_95_high', lambda x: get_ci(x)[1])]).reset_index()
+        if not magic_df_raw.empty:
+            magic_agg_df = magic_df_raw.groupby(['game', 'model', 'condition', 'metric'])['value'].agg(['mean','std',('ci_95_low', lambda x: get_ci(x)[0]),('ci_95_high', lambda x: get_ci(x)[1])]).reset_index()
             self._save_to_csv(magic_agg_df, "magic_behavioral_metrics.csv")
         else:
             self.logger.warning("No MAgIC records found to create summary CSV.")

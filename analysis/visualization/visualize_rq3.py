@@ -210,7 +210,7 @@ def _plot_shap_summary(perf_df: pd.DataFrame, magic_df: pd.DataFrame, plots_dir:
         shap.summary_plot(shap_values_profit, X_profit, show=False, plot_type="bar")
         plt.title("SHAP Summary for Predicting Average Profit/NPV", fontsize=16)
         plt.tight_layout()
-        plt.savefig(plots_dir / "P3.3_shap_summary_avg_profit.png")
+        plt.savefig("P3.3_shap_summary_avg_profit.png")
         plt.close()
 
     # Model 2: Predicting Win Rate
