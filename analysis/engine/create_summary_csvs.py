@@ -20,17 +20,16 @@ from metrics import (
 )
 
 
-# --- Helper function for confidence interval ---
-def get_ci(data):
-    """Calculates the lower and upper bounds of the 95% confidence interval for a mean."""
+# Helper function for confidence interval
+def get_ci_half_width(data):
+    """Calculates half the width of the 95% CI (the distance from the mean)."""
     if len(data) < 2:
-        return 0, 0
-    mean = np.mean(data)
+        return 0.0
     sem = stats.sem(data)
     if sem == 0:
-        return mean, mean
-    ci_half_width = sem * stats.t.ppf((1 + 0.95) / 2., len(data)-1)
-    return mean - ci_half_width, mean + ci_half_width
+        return 0.0
+    # Return half the width of the CI, which can be used as mean ± value
+    return sem * stats.t.ppf((1 + 0.95) / 2., len(data)-1)
 
 class SummaryCreator:
     """
@@ -55,7 +54,7 @@ class SummaryCreator:
         all_perf_records = []
         all_magic_records = []
 
-        json_files = list(self.experiments_dir.glob("*/*/*_competition_result.json"))
+        json_files = list(self.experiments_dir.glob("*/*/*_competition_result*.json"))
         if not json_files:
             self.logger.warning("No raw experiment result JSON files found. Cannot create summary CSVs.")
             return
@@ -79,7 +78,6 @@ class SummaryCreator:
 
             # Get per-simulation raw values for universal performance metrics
             challenger_outcomes = [r.payoffs.get('challenger', 0.0) for r in game_results]
-
             wins = [1 if r.payoffs and r.payoffs.get('challenger', 0.0) == max(r.payoffs.values()) else 0 for r in game_results]
 
             # Create records for each simulation
@@ -99,43 +97,23 @@ class SummaryCreator:
                 for name, metric_obj in magic_metrics.items():
                     all_magic_records.append({'game': game_name, 'model': challenger_model, 'condition': condition_name, 'metric': name, 'value': metric_obj.value})
 
-        # --- UPDATED LOGIC: Save raw dataframes before aggregation ---
-        perf_df_raw = pd.DataFrame(all_perf_records)
-        magic_df_raw = pd.DataFrame(all_magic_records)
-
-        self._save_to_csv(perf_df_raw, "performance_metrics_raw.csv")
-        self._save_to_csv(magic_df_raw, "magic_behavioral_metrics_raw.csv")
-
-
         # Aggregate and save Performance Metrics
-        if not perf_df_raw.empty:
-            # Calculate volatility separately
-            volatility_df = perf_df_raw[perf_df_raw['metric'] == 'average_profit'].groupby(['game', 'model', 'condition'])['value'].std().reset_index()
-            volatility_df.rename(columns={'value': 'std'}, inplace=True)
-            volatility_df['metric'] = 'profit_volatility'
-            
-            # Standard aggregation
-            perf_agg_df = perf_df_raw.groupby(['game', 'model', 'condition', 'metric'])['value'].agg(['mean', 'std', ('ci_95_low', lambda x: get_ci(x)[0]),('ci_95_high', lambda x: get_ci(x)[1])]).reset_index()
-
-            # Merge volatility back in
-            perf_agg_df = perf_agg_df[perf_agg_df['metric'] != 'profit_volatility']
-            
-            volatility_df_agg = perf_df_raw[perf_df_raw['metric'] == 'average_profit'].groupby(['game', 'model', 'condition'])['value'].agg(['mean', ('ci_95_low', lambda x: get_ci(x)[0]),('ci_95_high', lambda x: get_ci(x)[1])]).reset_index()
-            
-            volatility_df = pd.merge(volatility_df, volatility_df_agg, on=['game', 'model', 'condition'])
-            volatility_df = volatility_df[['game', 'model', 'condition', 'metric', 'mean', 'std', 'ci_95_low', 'ci_95_high']]
-            
-            perf_agg_df = pd.concat([perf_agg_df, volatility_df], ignore_index=True)
-
+        perf_df = pd.DataFrame(all_perf_records)
+        
+        if not perf_df.empty:
+            # --- SIMPLIFIED AGGREGATION ---
+            # Standard aggregation now includes std for average_profit, making a separate
+            # volatility calculation redundant.
+            perf_agg_df = perf_df.groupby(['game', 'model', 'condition', 'metric'])['value'].agg(['mean', 'std', ('ci_95', get_ci_half_width)]).reset_index()
 
             self._save_to_csv(perf_agg_df, "performance_metrics.csv")
         else:
             self.logger.warning("No performance records found to create summary CSV.")
 
-
         # Aggregate and save MAgIC Metrics
-        if not magic_df_raw.empty:
-            magic_agg_df = magic_df_raw.groupby(['game', 'model', 'condition', 'metric'])['value'].agg(['mean','std',('ci_95_low', lambda x: get_ci(x)[0]),('ci_95_high', lambda x: get_ci(x)[1])]).reset_index()
+        magic_df = pd.DataFrame(all_magic_records)
+        if not magic_df.empty:
+            magic_agg_df = magic_df.groupby(['game', 'model', 'condition', 'metric'])['value'].agg(['mean','std', ('ci_95', get_ci_half_width)]).reset_index()
             self._save_to_csv(magic_agg_df, "magic_behavioral_metrics.csv")
         else:
             self.logger.warning("No MAgIC records found to create summary CSV.")
