@@ -16,6 +16,8 @@ try:
 except ImportError:
     PLOT_LIBS_INSTALLED = False
 
+from config.config import get_analysis_dir, get_experiments_dir
+
 # --- Helper Functions ---
 
 def get_ci(data):
@@ -66,7 +68,7 @@ def _create_rq2_tables(magic_df, tables_dir):
     logger = logging.getLogger("RQ2Visualizer")
     logger.info("Creating RQ2 per-game summary tables (Tables 2.1-2.4)...")
 
-    agg_df = magic_df.groupby(['game', 'model', 'condition', 'metric'])['value'].agg(['mean', get_ci]).reset_index()
+    agg_df = magic_df.groupby(['game', 'model', 'condition', 'metric'])['mean'].agg(['mean', get_ci]).reset_index()
 
     for game in agg_df['game'].unique():
         game_df = agg_df[agg_df['game'] == game]
@@ -97,7 +99,7 @@ def _create_composite_magic_table(magic_df, tables_dir):
         lambda row: f"{row['metric'].replace('_', ' ').title()} ({row['game'].replace('_', ' ').title()})", axis=1
     )
     
-    agg_df = baseline_df.groupby(['model', 'composite_metric'])['value'].agg(['mean', get_ci]).reset_index()
+    agg_df = baseline_df.groupby(['model', 'composite_metric'])['mean'].agg(['mean', get_ci]).reset_index()
     agg_df['formatted_score'] = agg_df.apply(lambda row: format_with_ci(row['mean'], row['get_ci']), axis=1)
 
     pivot_table = agg_df.pivot_table(index='model', columns='composite_metric', values='formatted_score', aggfunc='first')
@@ -122,7 +124,7 @@ def _plot_composite_magic_profile(magic_df, plots_dir):
     
     for variation in magic_df['structural_variation'].unique():
         condition_df = magic_df[magic_df['structural_variation'] == variation]
-        pivot_df = condition_df.pivot_table(index='model', columns='composite_metric', values='value').fillna(0)
+        pivot_df = condition_df.pivot_table(index='model', columns='composite_metric', values='mean').fillna(0)
         
         labels = pivot_df.columns
         num_vars = len(labels)
@@ -161,7 +163,7 @@ def _plot_game_specific_adaptation(magic_df, plots_dir):
         
         # --- If 2 metrics, use a 2x2 Scatter Plot ---
         if len(metrics) == 2:
-            pivot_df = game_df.pivot_table(index=['model', 'structural_variation'], columns='metric', values='value').reset_index()
+            pivot_df = game_df.pivot_table(index=['model', 'structural_variation'], columns='metric', values='mean').reset_index()
             metric1, metric2 = metrics[0], metrics[1]
 
             plt.figure(figsize=(10, 8))
@@ -185,7 +187,7 @@ def _plot_game_specific_adaptation(magic_df, plots_dir):
         elif len(metrics) >= 3:
             for variation in game_df['structural_variation'].unique():
                 var_df = game_df[game_df['structural_variation'] == variation]
-                pivot_df = var_df.pivot_table(index='model', columns='metric', values='value').fillna(0)
+                pivot_df = var_df.pivot_table(index='model', columns='metric', values='mean').fillna(0)
                 
                 labels = pivot_df.columns
                 num_vars = len(labels)
@@ -301,9 +303,8 @@ def visualize_rq2():
     logger = logging.getLogger("RQ2Visualizer")
     logger.info("--- Generating visualizations for RQ2: Strategic Capability ---")
     
-    script_dir = Path(__file__).parent
-    analysis_dir = script_dir.parent
-    results_dir = script_dir.parent.parent / "output" / "experiments"
+    analysis_dir = get_analysis_dir()
+    results_dir = get_experiments_dir()
 
     plots_dir = analysis_dir / "plots" / "rq2"
     tables_dir = analysis_dir / "tables" / "rq2"

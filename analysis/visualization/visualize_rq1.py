@@ -83,7 +83,7 @@ def _create_rq1_tables(perf_df, tables_dir):
     logger = logging.getLogger("RQ1Visualizer")
     logger.info("Creating RQ1 summary tables (Tables 1.1-1.4)...")
 
-    agg_df = perf_df.groupby(['game', 'model', 'condition', 'metric'])['value'].agg(['mean', get_ci]).reset_index()
+    agg_df = perf_df.groupby(['game', 'model', 'condition', 'metric'])['mean'].agg(['mean', get_ci]).reset_index()
 
     for game in agg_df['game'].unique():
         game_df = agg_df[agg_df['game'] == game].copy()
@@ -119,7 +119,7 @@ def _plot_performance_heatmap(perf_df, plots_dir):
     for metric in ['win_rate', 'average_profit']:
         metric_df = main_condition_df[main_condition_df['metric'] == metric].copy()
         
-        metric_df['normalized_value'] = metric_df.groupby('game')['value'].transform(
+        metric_df['normalized_value'] = metric_df.groupby('game')['mean'].transform(
             lambda x: (x - x.min()) / (x.max() - x.min()) if (x.max() - x.min()) > 0 else 0
         )
 
@@ -184,7 +184,7 @@ def _plot_risk_reward_profiles(perf_df, plots_dir):
         pivot_df = game_df.pivot_table(
             index=['model', 'condition'],
             columns='metric',
-            values='value'
+            values='mean'
         ).reset_index()
 
         plt.figure(figsize=(12, 8))

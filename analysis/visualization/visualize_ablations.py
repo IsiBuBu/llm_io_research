@@ -14,6 +14,8 @@ try:
 except ImportError:
     PLOT_LIBS_INSTALLED = False
 
+from config.config import get_analysis_dir, get_experiments_dir
+
 # --- Helper Functions ---
 
 def get_ci(data):
@@ -79,7 +81,7 @@ def _create_ablation_tables(perf_df, magic_df, tables_dir):
     ablation_data = combined_df[combined_df['condition'].str.contains('3_players')].copy()
     ablation_data['condition_type'] = np.where(ablation_data['condition'].str.contains('ablation', case=False), 'Ablation', 'Baseline')
     
-    agg_df = ablation_data.groupby(['game', 'model', 'condition_type', 'metric'])['value'].agg(['mean', get_ci]).reset_index()
+    agg_df = ablation_data.groupby(['game', 'model', 'condition_type', 'metric'])['mean'].agg(['mean', get_ci]).reset_index()
 
     for game, metrics in [
         ('salop', ['average_profit', 'judgment']),
@@ -106,7 +108,7 @@ def _create_ablation_tables(perf_df, magic_df, tables_dir):
 
 def _plot_dumbbell(df: pd.DataFrame, game_name: str, metric: str, plots_dir: Path):
     """Helper function to create a dumbbell plot."""
-    pivot_df = df.pivot(index='model', columns='condition', values=metric)
+    pivot_df = df.pivot(index='model', columns='condition', values='mean')
     
     plt.figure(figsize=(10, 8))
     for i, model in enumerate(pivot_df.index):
@@ -137,16 +139,17 @@ def _plot_salop_ablation(perf_df, results_dir, plots_dir):
     
     # Behavioral Plot (Violin)
     raw_df = _get_raw_results_ablation(results_dir, 'salop')
-    plt.figure(figsize=(14, 8))
-    sns.violinplot(data=raw_df, x='model', y='price', hue='condition', split=True, inner='quart', palette='muted')
-    plt.title("Salop: Price Distribution Under Increased Competition", fontsize=16)
-    plt.xlabel("Challenger Model", fontsize=12)
-    plt.ylabel("Price ($)", fontsize=12)
-    plt.xticks(rotation=45, ha='right')
-    plt.grid(True, linestyle='--', alpha=0.6)
-    plt.tight_layout()
-    plt.savefig(plots_dir / "Ablation_salop_violin_price.png")
-    plt.close()
+    if not raw_df.empty:
+        plt.figure(figsize=(14, 8))
+        sns.violinplot(data=raw_df, x='model', y='price', hue='condition', split=True, inner='quart', palette='muted')
+        plt.title("Salop: Price Distribution Under Increased Competition", fontsize=16)
+        plt.xlabel("Challenger Model", fontsize=12)
+        plt.ylabel("Price ($)", fontsize=12)
+        plt.xticks(rotation=45, ha='right')
+        plt.grid(True, linestyle='--', alpha=0.6)
+        plt.tight_layout()
+        plt.savefig(plots_dir / "Ablation_salop_violin_price.png")
+        plt.close()
 
 def _plot_green_porter_ablation(results_dir, plots_dir):
     """Generates the performance and behavioral plots for the Green & Porter ablation study."""
@@ -198,7 +201,7 @@ def _plot_spulber_ablation(perf_df, magic_df, plots_dir):
     # Behavioral Plot (Grouped Bar)
     spulber_awareness = magic_df[(magic_df['game'] == 'spulber') & (magic_df['metric'] == 'self_awareness')]
     plt.figure(figsize=(12, 8))
-    sns.barplot(data=spulber_awareness, x='model', y='value', hue='condition', palette='muted')
+    sns.barplot(data=spulber_awareness, x='model', y='mean', hue='condition', palette='muted')
     plt.title("Spulber: Impact of Uncertainty on Bidding Strategy", fontsize=16)
     plt.xlabel("Challenger Model", fontsize=12)
     plt.ylabel("Bid Appropriateness Rate", fontsize=12)
@@ -220,7 +223,7 @@ def _plot_athey_bagwell_ablation(perf_df, magic_df, plots_dir):
     # Behavioral Plot (Grouped Bar for Deception Rate)
     ab_deception = magic_df[(magic_df['game'] == 'athey_bagwell') & (magic_df['metric'] == 'deception')]
     plt.figure(figsize=(12, 8))
-    sns.barplot(data=ab_deception, x='model', y='value', hue='condition', palette='muted')
+    sns.barplot(data=ab_deception, x='model', y='mean', hue='condition', palette='muted')
     plt.title("Athey & Bagwell: Impact of Reputational Stakes on Deception", fontsize=16)
     plt.xlabel("Challenger Model", fontsize=12)
     plt.ylabel("Deception Rate", fontsize=12)
@@ -245,9 +248,8 @@ def visualize_ablations():
     logger = logging.getLogger("AblationVisualizer")
     logger.info("--- Generating visualizations for Ablation Studies ---")
     
-    script_dir = Path(__file__).parent
-    analysis_dir = script_dir
-    results_dir = script_dir.parent.parent / "results"
+    analysis_dir = get_analysis_dir()
+    results_dir = get_experiments_dir()
 
     plots_dir = analysis_dir / "plots" / "ablations"
     tables_dir = analysis_dir / "tables" / "ablations"
@@ -255,8 +257,8 @@ def visualize_ablations():
     tables_dir.mkdir(exist_ok=True, parents=True)
 
     try:
-        perf_df_full = pd.read_csv(analysis_dir.parent / "performance_metrics.csv")
-        magic_df_full = pd.read_csv(analysis_dir.parent / "magic_behavioral_metrics.csv")
+        perf_df_full = pd.read_csv(analysis_dir / "performance_metrics.csv")
+        magic_df_full = pd.read_csv(analysis_dir / "magic_behavioral_metrics.csv")
         
         # Prepare data by filtering and renaming conditions
         df_list = []

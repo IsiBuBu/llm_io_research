@@ -22,6 +22,8 @@ try:
 except ImportError:
     ADVANCED_LIBS_INSTALLED = False
 
+from config.config import get_analysis_dir, get_experiments_dir
+
 
 def _create_master_correlation_table(corr_df: pd.DataFrame, tables_dir: Path):
     """Saves the complete, unfiltered correlation results to a CSV file for the appendix."""
@@ -79,8 +81,8 @@ def _plot_significant_scatter(corr_df: pd.DataFrame, perf_df: pd.DataFrame, magi
     logger.info("Generating Plot 3.2: Scatter Plots for Significant Correlations...")
     significant_corrs = corr_df[corr_df['p_value'] < 0.05]
     
-    perf_pivot = perf_df.pivot_table(index=['game', 'model', 'condition'], columns='metric', values='value')
-    magic_pivot = magic_df.pivot_table(index=['game', 'model', 'condition'], columns='metric', values='value')
+    perf_pivot = perf_df.pivot_table(index=['game', 'model', 'condition'], columns='metric', values='mean')
+    magic_pivot = magic_df.pivot_table(index=['game', 'model', 'condition'], columns='metric', values='mean')
     merged_metrics = pd.merge(perf_pivot, magic_pivot, on=['game', 'model', 'condition']).reset_index()
     
     for _, row in significant_corrs.iterrows():
@@ -88,7 +90,7 @@ def _plot_significant_scatter(corr_df: pd.DataFrame, perf_df: pd.DataFrame, magi
         magic_metric = row['magic_metric']
         perf_metric = row['performance_metric']
         
-        plot_data = merged_metrics[merged_metrics['game'] == game]
+        plot_data = merged_metrics[merged_metrics['game'] == game].copy()
         
         if plot_data.empty or magic_metric not in plot_data.columns or perf_metric not in plot_data.columns:
             continue
@@ -117,11 +119,11 @@ def _plot_composite_performance_summary(perf_df: pd.DataFrame, magic_df: pd.Data
 
     # 1. Aggregate Data
     core_metrics = ['judgment', 'reasoning', 'deception', 'self_awareness', 'cooperation', 'coordination', 'rationality']
-    magic_agg = magic_df[magic_df['metric'].isin(core_metrics)].groupby(['model', 'metric'])['value'].mean().reset_index()
-    magic_pivot = magic_agg.pivot_table(index='model', columns='metric', values='value').reindex(columns=core_metrics)
+    magic_agg = magic_df[magic_df['metric'].isin(core_metrics)].groupby(['model', 'metric'])['mean'].mean().reset_index()
+    magic_pivot = magic_agg.pivot_table(index='model', columns='metric', values='mean').reindex(columns=core_metrics)
 
-    win_rate_agg = perf_df[perf_df['metric'] == 'win_rate'].groupby('model')['value'].mean().reset_index()
-    avg_profit_agg = perf_df[perf_df['metric'] == 'average_profit'].groupby('model')['value'].mean().reset_index()
+    win_rate_agg = perf_df[perf_df['metric'] == 'win_rate'].groupby('model')['mean'].mean().reset_index()
+    avg_profit_agg = perf_df[perf_df['metric'] == 'average_profit'].groupby('model')['mean'].mean().reset_index()
 
     # 2. Calculate Polygon Area
     n = len(core_metrics)
@@ -154,7 +156,7 @@ def _plot_composite_performance_summary(perf_df: pd.DataFrame, magic_df: pd.Data
     ax1.tick_params(axis='y', labelcolor='skyblue')
     ax1.set_xticklabels(ax1.get_xticklabels(), rotation=45, ha="right")
     ax2 = ax1.twinx()
-    sns.lineplot(data=plot_df_win, x='model', y='value', ax=ax2, color='red', marker='o', sort=False, lw=2.5)
+    sns.lineplot(data=plot_df_win, x='model', y='mean', ax=ax2, color='red', marker='o', sort=False, lw=2.5)
     ax2.set_ylabel("Average Win Rate", color='red', fontsize=12)
     ax2.tick_params(axis='y', labelcolor='red')
     ax2.set_ylim(bottom=0)
@@ -173,7 +175,7 @@ def _plot_composite_performance_summary(perf_df: pd.DataFrame, magic_df: pd.Data
     ax1.tick_params(axis='y', labelcolor='green')
     ax1.set_xticklabels(ax1.get_xticklabels(), rotation=45, ha="right")
     ax2 = ax1.twinx()
-    sns.lineplot(data=plot_df_profit, x='model', y='value', ax=ax2, color='purple', marker='s', sort=False, lw=2.5)
+    sns.lineplot(data=plot_df_profit, x='model', y='mean', ax=ax2, color='purple', marker='s', sort=False, lw=2.5)
     ax2.set_ylabel("Average Profit / NPV", color='purple', fontsize=12)
     ax2.tick_params(axis='y', labelcolor='purple')
     plt.title("Capability Score vs. Average Profit/NPV", fontsize=16)
@@ -191,13 +193,13 @@ def _plot_shap_summary(perf_df: pd.DataFrame, magic_df: pd.DataFrame, plots_dir:
         logger.warning("Please run: pip install shap scikit-learn")
         return
     
-    magic_pivot = magic_df.pivot_table(index=['model', 'condition', 'game'], columns='metric', values='value').reset_index()
+    magic_pivot = magic_df.pivot_table(index=['model', 'condition', 'game'], columns='metric', values='mean').reset_index()
     
     # Model 1: Predicting Average Profit
     profit_df = perf_df[perf_df['metric'] == 'average_profit']
-    df_profit = pd.merge(magic_pivot, profit_df[['model', 'condition', 'game', 'value']], on=['model', 'condition', 'game']).rename(columns={'value': 'average_profit'})
+    df_profit = pd.merge(magic_pivot, profit_df[['model', 'condition', 'game', 'mean']], on=['model', 'condition', 'game']).rename(columns={'mean': 'average_profit'})
     
-    X_profit = df_profit.drop(columns=['average_profit', 'model', 'condition', 'game'])
+    X_profit = df_profit.drop(columns=['average_profit', 'model', 'condition', 'game']).fillna(0)
     y_profit = df_profit['average_profit']
 
     if len(X_profit) > 1:
@@ -210,14 +212,14 @@ def _plot_shap_summary(perf_df: pd.DataFrame, magic_df: pd.DataFrame, plots_dir:
         shap.summary_plot(shap_values_profit, X_profit, show=False, plot_type="bar")
         plt.title("SHAP Summary for Predicting Average Profit/NPV", fontsize=16)
         plt.tight_layout()
-        plt.savefig("P3.3_shap_summary_avg_profit.png")
+        plt.savefig(plots_dir / "P3.3_shap_summary_avg_profit.png")
         plt.close()
 
     # Model 2: Predicting Win Rate
     win_df = perf_df[perf_df['metric'] == 'win_rate']
-    df_win = pd.merge(magic_pivot, win_df[['model', 'condition', 'game', 'value']], on=['model', 'condition', 'game']).rename(columns={'value': 'win_rate'})
+    df_win = pd.merge(magic_pivot, win_df[['model', 'condition', 'game', 'mean']], on=['model', 'condition', 'game']).rename(columns={'mean': 'win_rate'})
     
-    X_win = df_win.drop(columns=['win_rate', 'model', 'condition', 'game'])
+    X_win = df_win.drop(columns=['win_rate', 'model', 'condition', 'game']).fillna(0)
     y_win = (df_win['win_rate'] > df_win['win_rate'].median()).astype(int)
 
     if len(X_win) > 1 and len(y_win.unique()) > 1:
@@ -247,9 +249,8 @@ def visualize_rq3():
     logger = logging.getLogger("RQ3Visualizer")
     logger.info("--- Generating visualizations for RQ3: Correlations & Predictive Models ---")
     
-    script_dir = Path(__file__).parent
-    analysis_dir = script_dir.parent
-    results_dir = script_dir.parent.parent / "output" / "experiments"
+    analysis_dir = get_analysis_dir()
+    results_dir = get_experiments_dir()
 
     plots_dir = analysis_dir / "plots" / "rq3"
     tables_dir = analysis_dir / "tables" / "rq3"
@@ -257,7 +258,7 @@ def visualize_rq3():
     tables_dir.mkdir(exist_ok=True, parents=True)
 
     try:
-        corr_df = pd.read_csv(analysis_dir / "correlations_analysis.csv")
+        corr_df = pd.read_csv(analysis_dir / "correlations_analysis_structural.csv")
         perf_df = pd.read_csv(analysis_dir / "performance_metrics.csv")
         magic_df = pd.read_csv(analysis_dir / "magic_behavioral_metrics.csv")
 

@@ -1,10 +1,11 @@
-# analysis/visualize_rq4.py
+# analysis/visualization/visualize_rq4.py
 
 import pandas as pd
 import numpy as np
 import logging
 import json
 from pathlib import Path
+from scipy import stats
 from scipy.stats import pearsonr, t
 
 try:
@@ -13,6 +14,8 @@ try:
     PLOT_LIBS_INSTALLED = True
 except ImportError:
     PLOT_LIBS_INSTALLED = False
+
+from config.config import get_analysis_dir, get_experiments_dir
 
 # --- Helper Functions ---
 
@@ -64,7 +67,7 @@ def _create_comparative_analysis_table(magic_df, thinking_df, tables_dir):
     logger.info("Creating Table 4.1: Comparative Analysis of Thinking Tokens and MAgIC Scores...")
     
     # Aggregate both magic scores and thinking tokens to get mean and CI
-    magic_agg = magic_df.groupby(['game', 'model', 'condition', 'metric'])['value'].agg(['mean', get_ci]).reset_index()
+    magic_agg = magic_df.groupby(['game', 'model', 'condition', 'metric'])['mean'].agg(['mean', get_ci]).reset_index()
     tokens_agg = thinking_df.groupby(['game', 'model', 'condition'])['thinking_tokens'].agg(['mean', get_ci]).reset_index()
 
     # Format with CIs
@@ -101,7 +104,7 @@ def _plot_dual_axis_chart(magic_df, thinking_df, plots_dir):
     for (metric, variation), plot_data in merged_df.groupby(['metric', 'structural_variation']):
         fig, ax1 = plt.subplots(figsize=(10, 6))
 
-        sns.barplot(data=plot_data, x='model', y='value', ax=ax1, palette='muted', alpha=0.8, ci=None)
+        sns.barplot(data=plot_data, x='model', y='mean', ax=ax1, palette='muted', alpha=0.8, ci=None)
         ax1.set_ylabel(f"{metric.title()} Score", color='b')
         ax1.tick_params(axis='y', labelcolor='b')
         ax1.set_xticklabels(ax1.get_xticklabels(), rotation=45, ha="right")
@@ -130,9 +133,8 @@ def visualize_rq4():
     logger = logging.getLogger("RQ4Visualizer")
     logger.info("--- Generating visualizations for RQ4: Thinking & Strategic Capability ---")
     
-    script_dir = Path(__file__).parent
-    analysis_dir = script_dir
-    results_dir = script_dir.parent / "results"
+    analysis_dir = get_analysis_dir()
+    results_dir = get_experiments_dir()
 
     plots_dir = analysis_dir / "plots" / "rq4"
     tables_dir = analysis_dir / "tables" / "rq4"
